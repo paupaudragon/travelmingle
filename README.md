@@ -65,7 +65,83 @@ On some READMEs, you may see small images that convey metadata, such as whether 
 Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
 ## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+
+### Install Flutter
+
+1. **Download and Extract Flutter SDK**
+   - Download the latest Flutter SDK (e.g., version 3.24.4) for Windows from [Flutter’s official website](https://flutter.dev/docs/get-started/install).
+   - Extract the zip file to `C:\Users\username\flutter`.
+
+2. **Set Up Environment Path**
+   - Go to **Advanced System Settings** > **Environment Variables**.
+   - Under "User variables for (username)", click **New**.
+     - **Variable Name**: `Path`
+     - **Variable Value**: `C:\Users\username\flutter\bin`
+   - Click **OK** three times to save.
+
+---
+
+### Android Studio Setup
+
+1. **Install SDK and API**
+   - Open **Android Studio** and navigate to **Tools** > **SDK Manager**.
+   - In the **SDK Platforms** tab, select **Android API 35** and click **Apply** to download it.
+   - Go to the **SDK Tools** tab and ensure the following are selected:
+     - **Android SDK Command-line Tools**
+     - **Android SDK Build-Tools**
+     - **Android SDK Platform-Tools**
+     - **Android Emulator**
+   - Click **Apply** and wait for the installation to complete.
+
+2. **Create Virtual Device**
+   - Go to **Tools** > **Device Manager**.
+   - Click the **+** button to create a new device.
+   - Select **Medium Phone** > **Next** > **x86 Images**.
+   - Download **API 35 with Google APIs**.
+   - In **Advanced Settings**, set **Graphics** to **Hardware** and finish the setup.
+   - Click the **Run** icon to start the virtual device.
+
+---
+
+### Accept Android Licenses
+
+1. Open **Command Prompt** as Administrator.
+2. Run the following command to accept Android SDK licenses:
+   ```flutter doctor --android-licenses```
+3. Type y to accept each license agreement as prompted.
+4. (Optional) To disable CLI animations, run:
+    ```flutter config --no-cli-animations```
+
+### Verify Installation
+Run flutter doctor in PowerShell or Command Prompt to check the installation status.
+Note: Ensure both "powershell" and "system32" paths are included in your PATH environment variable.
+
+### Common Issues
+#### Missing buildscript in android/build.gradle
+If you encounter a "missing buildscript" error, add the following to android/build.gradle:
+<pre> buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.0.2'  // Ensure compatibility with your setup
+    }
+} </pre>
+
+#### Missing Java Extension in VS Code
+Ensure that you have the Java extensions installed in VS Code for Android support.
+
+### Run the Flutter Project
+Select and Start the Device: Use the device dropdown in the bottom-right corner of VS Code to choose your emulator.
+In the VS Code terminal, run the following commands:
+
+```flutter clean```
+```flutter pub get```
+```flutter run```
+
+You’re all set! This guide should help you get Flutter up and running, create a virtual device, and launch your project in Visual Studio Code.
+
 
 ## Usage
 Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
