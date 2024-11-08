@@ -8,6 +8,7 @@ To make it easy for you to get started with GitLab, here's a list of recommended
 
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
+
 ## Add your files
 
 - [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
@@ -141,6 +142,37 @@ In the VS Code terminal, run the following commands:
 ```flutter run```
 
 You’re all set! This guide should help you get Flutter up and running, create a virtual device, and launch your project in Visual Studio Code.
+
+## How to run the full-stack project
+
+### Run backend Django server
+
+1. cd flutterdemo.backend
+2. python manage.py runserver
+3. To test it runs on browser: go to http://127.0.0.1:8000/api/hello/, and you should see:
+
+```
+{
+    "message": "Hello from Django!"
+}
+
+```
+
+### Run frontend Flutter and Android Studio
+
+1. ctrl+Shift+P in vscode: "Flutter Lauch Emulator", and choose the default emulator(first one):
+   ![emulator](image-3.png)
+2. open a new terminal. You should have two open now, one for Django server, one for flutter.
+3. In new terminal, cd flutterdemo.demo
+4. flutter run
+5. wait for a while, you should see the emulator like this down below. Make sure you see the "Hello from Django!".
+   ![emulator](image-4.png)
+
+## Developer notes:
+
+### 1. url localhost vs. 10.0.2.2
+   For web develoment, in our case for bakcend testing, we use the standard "localhost" or "127.0.0.1".
+   However, in Flutter with Android device, the url should be "10.0.2.2", or it won't work.
 
 
 ## Usage
