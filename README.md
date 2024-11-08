@@ -79,12 +79,30 @@ Ensure that you have the Java extensions installed in VS Code for Android suppor
 ### Run the Flutter Project
 Select and Start the Device: Use the device dropdown in the bottom-right corner of VS Code to choose your emulator.
 In the VS Code terminal, run the following commands:
-
 ```flutter clean```
 ```flutter pub get```
 ```flutter run```
 
 You’re all set! This guide should help you get Flutter up and running, create a virtual device, and launch your project in Visual Studio Code.
+
+### Install Python and Django
+#### Download and Install Python
+1. Go to the official Python download page and download the latest version (Python 3.13).
+2. Run the installer. During installation:
+3. Check the box that says "Add Python to PATH".
+4. Choose "Install Now" for a default installation.
+5. Verify the installation by opening Command Prompt and running:
+```python --version```
+This should output the Python version (e.g., Python 3.13).
+
+#### Install Django
+1. Install the latest Django version (4.3.1) using pip:
+```pip install django```
+
+2. Verify the installation by running:
+```python -m django --version```
+
+This should output the Django version (e.g., 4.3.1).
 
 ## How to run the full-stack project
 
