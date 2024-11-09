@@ -90,7 +90,7 @@ This should output the Django version (e.g., 4.3.1).
 ## How to run the full-stack project
 ### Run backend Django server
 
-1. cd flutterdemo.backend
+1. cd backend
 2. python manage.py runserver
 3. To test it runs on browser: go to http://127.0.0.1:8000/api/hello/, and you should see:
 
@@ -106,9 +106,10 @@ This should output the Django version (e.g., 4.3.1).
 1. ctrl+Shift+P in vscode: "Flutter Lauch Emulator", and choose the default emulator(first one):
    ![emulator](image-3.png)
 2. open a new terminal. You should have two open now, one for Django server, one for flutter.
-3. In new terminal, cd flutterdemo.demo
+3. In new terminal, cd demo
 4. flutter run
 5. wait for a while, you should see the emulator like this down below. Make sure you see the "Hello from Django!".
+
    ![emulator](image-4.png)
 
 ## Developer notes:
