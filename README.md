@@ -1,7 +1,5 @@
 # TravelMingle
 
-
-
 ## Getting started
 
 To make it easy for you to get started with GitLab, here's a list of recommended next steps.
@@ -9,9 +7,7 @@ To make it easy for you to get started with GitLab, here's a list of recommended
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
 ## Installation
-
 ### Install Flutter
-
 1. **Download and Extract Flutter SDK**
    - Download the latest Flutter SDK (e.g., version 3.24.4) for Windows from [Flutter’s official website](https://flutter.dev/docs/get-started/install).
    - Extract the zip file to `C:\Users\username\flutter`.
@@ -23,10 +19,20 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
      - **Variable Value**: `C:\Users\username\flutter\bin`
    - Click **OK** three times to save.
 
----
+3. Accept Android Licenses
+   - Open **Command Prompt** as Administrator.
+   - Run the following command to accept Android SDK licenses:
+      ```flutter doctor --android-licenses```
+   - Type y to accept each license agreement as prompted.
+   - (Optional) To disable CLI animations, run:
+      ```flutter config --no-cli-animations```
+
+4. Verify Installation
+   - Run flutter doctor in PowerShell or Command Prompt to check the installation status.
+   Note: Ensure both "powershell" and "system32" paths are included in your PATH environment variable.
+
 
 ### Android Studio Setup
-
 1. **Install SDK and API**
    - Open **Android Studio** and navigate to **Tools** > **SDK Manager**.
    - In the **SDK Platforms** tab, select **Android API 35** and click **Apply** to download it.
@@ -45,20 +51,7 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
    - In **Advanced Settings**, set **Graphics** to **Hardware** and finish the setup.
    - Click the **Run** icon to start the virtual device.
 
----
 
-### Accept Android Licenses
-
-1. Open **Command Prompt** as Administrator.
-2. Run the following command to accept Android SDK licenses:
-   ```flutter doctor --android-licenses```
-3. Type y to accept each license agreement as prompted.
-4. (Optional) To disable CLI animations, run:
-    ```flutter config --no-cli-animations```
-
-### Verify Installation
-Run flutter doctor in PowerShell or Command Prompt to check the installation status.
-Note: Ensure both "powershell" and "system32" paths are included in your PATH environment variable.
 
 ### Common Issues
 #### Missing buildscript in android/build.gradle
@@ -73,20 +66,9 @@ If you encounter a "missing buildscript" error, add the following to android/bui
     }
 } </pre>
 
-#### Missing Java Extension in VS Code
-Ensure that you have the Java extensions installed in VS Code for Android support.
-
-### Run the Flutter Project
-Select and Start the Device: Use the device dropdown in the bottom-right corner of VS Code to choose your emulator.
-In the VS Code terminal, run the following commands:
-```flutter clean```
-```flutter pub get```
-```flutter run```
-
-You’re all set! This guide should help you get Flutter up and running, create a virtual device, and launch your project in Visual Studio Code.
 
 ### Install Python and Django
-#### Download and Install Python
+#### Install Python
 1. Go to the official Python download page and download the latest version (Python 3.13).
 2. Run the installer. During installation:
 3. Check the box that says "Add Python to PATH".
@@ -104,8 +86,8 @@ This should output the Python version (e.g., Python 3.13).
 
 This should output the Django version (e.g., 4.3.1).
 
-## How to run the full-stack project
 
+## How to run the full-stack project
 ### Run backend Django server
 
 1. cd flutterdemo.backend
