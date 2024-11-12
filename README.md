@@ -51,7 +51,15 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
    - In **Advanced Settings**, set **Graphics** to **Hardware** and finish the setup.
    - Click the **Run** icon to start the virtual device.
 
-
+### Install Postgress
+### On Windows
+1. Download the PostgreSQL installer from the [official PostgreSQL website](https://www.postgresql.org/download/).
+2. Run the installer and select:
+    - **Database Server**: PostgreSQL 17.0
+    - **Add-ons, Tools, and Utilities**: Include `pgAdmin` and `psql`.
+    - **Spatial Extensions**: Optionally include `PostGIS 3.5`.
+3. Set a password for the `postgres` user during installation (remember this password).
+4. Complete the installation and ensure that the PostgreSQL service is running.
 
 ### Common Issues
 #### Missing buildscript in android/build.gradle
