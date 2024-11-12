@@ -140,6 +140,67 @@ git branch -M main
 git push -uf origin main
 ```
 
+## Branching Strategy
+
+This section outlines the branching strategy to be used for the TravelMingle social media app project. We'll follow a Git Flow approach, with branches such as `main`, `develop`, `feature`, `bugfix`, and `release`.
+
+---
+
+### Overview of Branches
+
+#### 1. `main`
+- The `main` branch is the production branch.
+- It contains stable, release-ready code.
+- Only `release` branches should be merged into `main`.
+
+#### 2. `development`
+- The `develop` branch is where all new features and bug fixes are integrated.
+- It serves as the main branch for development before code is released to production.
+
+#### 3. `feature/*`
+- `feature` branches are used for developing new features.
+- These branches are created from `develop` and merged back into `develop` once the feature is complete and tested.
+- Naming convention: `feature/<feature-name>`.
+  - Examples:
+    - `feature/create-post`
+    - `feature/user-authentication`
+
+#### 4. `bugfix/*`
+- `bugfix` branches are used for fixing bugs found during development.
+- These branches are also created from `develop` and merged back into `develop`.
+- Naming convention: `bugfix/<bug-description>`.
+  - Examples:
+    - `bugfix/fix-comment-section`
+    - `bugfix/login-error`
+
+#### 5. `release/*`
+- `release` branches are used to prepare for a new production release.
+- These branches are created from `develop` and merged into both `main` and `develop` once the release is complete.
+- Naming convention: `release/<version-number>`.
+  - Example: `release/1.0.0`
+
+---
+
+### Workflow Example
+Notice only `development` branch is create from `main`. All the other branches should be from  `deployment`.
+
+#### Step 1: Create the `develop` Branch in GitLab UI
+1. Go to your **GitLab project**.
+2. Click on **Repository** in the left sidebar.
+3. Select **Branches**.
+4. Click the **"New branch"** button.
+5. Enter `develop` as the branch name.
+6. Select `main` as the source branch.
+7. Click **"Create branch"**.
+
+---
+
+#### Step 2: Create a Feature Branch in GitLab UI
+1. Navigate to **Repository** > **Branches**.
+2. Click **"New branch"**.
+3. Enter the branch name: 
+
+
 ## Integrate with your tools
 
 - [ ] [Set up project integrations](https://capstone.cs.utah.edu/travelmingle/travelmingle/-/settings/integrations)
