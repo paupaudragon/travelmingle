@@ -201,6 +201,20 @@ Notice only `development` branch is create from `main`. All the other branches s
 3. Enter the branch name: 
 
 
+## Connect PostgreSQL with AWS RDS
+
+### 1. Create a back-up file in your local directory
+```
+& "C:\Program Files\PostgreSQL\17\bin\pg_dump" -U postgres -d travelmingle -F c -b -v -f "C:\Users\Owner\Desktop\travelmingle_backup.sql"
+```
+
+### 2. Add this db instance to your aws RDS instance
+```
+& "C:\Program Files\PostgreSQL\17\bin\pg_restore" -h travelmingle-dev.c7su04ccshpq.us-east-2.rds.amazonaws.com -U postgres -d travelmingle -p 5432 -v "C:\Users\Owner\Desktop\travelmingle_backup.sql"
+```
+It should look like: 
+
+
 ## Integrate with your tools
 
 - [ ] [Set up project integrations](https://capstone.cs.utah.edu/travelmingle/travelmingle/-/settings/integrations)
