@@ -77,17 +77,13 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'travelmingle',  # Your RDS database name
-        'USER': 'postgres',      # Your RDS username
-        'PASSWORD': 'postgres',  # Your RDS password
-        'HOST': 'travelmingle-dev.c7su04ccshpq.us-east-2.rds.amazonaws.com',  # Your RDS endpoint
+        'NAME': 'travelmingle',
+        'USER': 'dev',
+        'PASSWORD': '',
+        'HOST': 'localhost',
         'PORT': '5432',
-        'OPTIONS': {
-            'sslmode': 'require',  # Ensure SSL connection
-        },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
