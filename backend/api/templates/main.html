@@ -3,83 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Social Media Post</title>
+    <title>Posts</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f5f5f5;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-      }
-      .post-container {
-        background-color: #fff;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        width: 600px;
-        padding: 20px;
-        margin-top: 20px;
-      }
-      .post-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-      }
-      .post-author {
-        font-weight: bold;
-        margin-left: 10px;
-      }
-      .post-title {
-        font-size: 24px;
-        margin: 0;
-      }
-      .post-content {
-        margin: 15px 0;
-      }
-      .post-image {
-        width: 100%;
-        height: auto;
-        border-radius: 10px;
-      }
-      .comment-section {
-        margin-top: 20px;
-      }
-      .comment {
-        border-top: 1px solid #ddd;
-        padding: 10px 0;
-      }
-      .comment-author {
-        font-weight: bold;
-        margin-right: 5px;
-      }
-      .comment-input {
-        display: flex;
-        margin-top: 10px;
-      }
-      .comment-input textarea {
-        flex: 1;
-        resize: none;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-      }
-      .comment-input button {
-        margin-left: 10px;
-        padding: 10px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+      .post-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
       }
       .comment-input button:hover {
         background-color: #0056b3;
-      }
-      .post-avatar {
-        width: 50px;
-        height: 60px;
-        border-radius: 50%;
       }
     </style>
   </head>
@@ -91,7 +23,6 @@
           src="{{ MEDIA_URL }}profiles/user1.png"
           alt="Author Avatar"
           class="post-avatar"
-          style="border-radius: 50%"
         />
         <span class="post-author">John Doe</span>
       </div>
@@ -121,13 +52,12 @@
           <span class="comment-author">Alice:</span> Wow, that looks amazing!
         </div>
         <div class="comment">
-          <span class="comment-author">Bob:</span> I'd love to visit this place
-          one day.
+          <span class="comment-author">Bob:</span> I wish I could be there!
         </div>
 
-        <!-- New Comment Input -->
+        <!-- Comment Input -->
         <div class="comment-input">
-          <textarea rows="2" placeholder="Write a comment..."></textarea>
+          <input type="text" placeholder="Add a comment..." />
           <button type="button">Post</button>
         </div>
       </div>

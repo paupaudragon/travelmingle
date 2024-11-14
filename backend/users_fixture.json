@@ -1,0 +1,54 @@
+[
+    {
+        "model": "api.user",
+        "pk": 1,
+        "fields": {
+            "username": "john_doe",
+            "email": "john@example.com",
+            "password": "pbkdf2_sha256$260000$...",
+            "bio": "Loves hiking and exploring nature.",
+            "profile_picture": "profiles/user1.png",
+            "created_at": "2024-11-10T12:00:00Z",
+            "updated_at": "2024-11-10T12:30:00Z"
+        }
+    },
+    {
+        "model": "api.user",
+        "pk": 2,
+        "fields": {
+            "username": "alice_johnson",
+            "email": "alice@example.com",
+            "password": "pbkdf2_sha256$260000$...",
+            "bio": "Pasta enthusiast and coffee lover.",
+            "profile_picture": "profiles/user2.png",
+            "created_at": "2024-11-11T08:30:00Z",
+            "updated_at": "2024-11-11T09:00:00Z"
+        }
+    },
+    {
+        "model": "api.user",
+        "pk": 3,
+        "fields": {
+            "username": "bob_smith",
+            "email": "bob@example.com",
+            "password": "pbkdf2_sha256$260000$...",
+            "bio": "Photographer who loves cityscapes.",
+            "profile_picture": "profiles/user1.png",
+            "created_at": "2024-11-12T14:15:00Z",
+            "updated_at": "2024-11-12T14:45:00Z"
+        }
+    },
+    {
+        "model": "api.user",
+        "pk": 4,
+        "fields": {
+            "username": "emily_brown",
+            "email": "emily@example.com",
+            "password": "pbkdf2_sha256$260000$...",
+            "bio": "Beach lover and sunset chaser.",
+            "profile_picture": "profiles/user2.png",
+            "created_at": "2024-11-13T16:20:00Z",
+            "updated_at": "2024-11-13T16:50:00Z"
+        }
+    }
+]
