@@ -7,7 +7,8 @@ class User(models.Model):
     email = models.CharField(max_length=100, unique=True)
     password = models.CharField(max_length=100)
     bio = models.TextField(null=True, blank=True)
-    profile_picture = models.CharField(max_length=255, null=True, blank=True)
+    profile_picture = models.ImageField(
+        upload_to='profiles/', null=True, blank=True)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 
@@ -25,6 +26,17 @@ class Post(models.Model):
 
     class Meta:
         db_table = 'posts'
+
+
+class PostImage(models.Model):
+    id = models.AutoField(primary_key=True)
+    post = models.ForeignKey(
+        Post, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='postImages/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'post_images'
 
 
 class Comment(models.Model):

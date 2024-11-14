@@ -43,4 +43,4 @@ app.*.map.json
 /android/app/release
 
 
-backend/api/migrations/0001_initial.py
+backend/api/migrations/*
