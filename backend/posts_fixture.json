@@ -4,21 +4,21 @@
         "pk": 1,
         "fields": {
             "user": 1,
-            "title": "Exploring the Mountains",
-            "content": "Today, I went on a hike to explore the beautiful mountains nearby. It was an amazing experience with breathtaking views!",
-            "created_at": "2024-11-14T12:00:00Z",
-            "updated_at": "2024-11-14T12:30:00Z"
+            "title": "Mountain Biking",
+            "content": "Content for post 1. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T15:13:00Z",
+            "updated_at": "2024-11-04T22:25:00Z"
         }
     },
     {
         "model": "api.post",
         "pk": 2,
         "fields": {
-            "user": 2,
-            "title": "Delicious Homemade Pasta",
-            "content": "Tried making homemade pasta for the first time today. It turned out amazing, can't wait to make it again!",
-            "created_at": "2024-11-13T10:00:00Z",
-            "updated_at": "2024-11-13T10:45:00Z"
+            "user": 4,
+            "title": "Night Sky Photography",
+            "content": "Content for post 2. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T07:04:00Z",
+            "updated_at": "2024-11-05T00:12:00Z"
         }
     },
     {
@@ -26,10 +26,527 @@
         "pk": 3,
         "fields": {
             "user": 3,
-            "title": "City Lights at Night",
-            "content": "The city lights are mesmerizing. I captured this moment from the rooftop. It's truly a sight to behold.",
-            "created_at": "2024-11-12T19:00:00Z",
-            "updated_at": "2024-11-12T19:30:00Z"
+            "title": "Culinary Experiments",
+            "content": "Content for post 3. Enjoyed every moment of it!",
+            "created_at": "2024-11-10T07:28:00Z",
+            "updated_at": "2024-11-03T11:35:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 4,
+        "fields": {
+            "user": 2,
+            "title": "Baking Cookies",
+            "content": "Content for post 4. Enjoyed every moment of it!",
+            "created_at": "2024-11-10T18:34:00Z",
+            "updated_at": "2024-11-03T16:24:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 5,
+        "fields": {
+            "user": 1,
+            "title": "Pottery Workshop",
+            "content": "Content for post 5. Enjoyed every moment of it!",
+            "created_at": "2024-11-11T17:55:00Z",
+            "updated_at": "2024-11-04T05:57:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 6,
+        "fields": {
+            "user": 1,
+            "title": "Morning Coffee Ritual",
+            "content": "Content for post 6. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T11:43:00Z",
+            "updated_at": "2024-11-15T06:09:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 7,
+        "fields": {
+            "user": 4,
+            "title": "Sunset at the Beach",
+            "content": "Content for post 7. Enjoyed every moment of it!",
+            "created_at": "2024-11-04T22:27:00Z",
+            "updated_at": "2024-11-02T00:00:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 8,
+        "fields": {
+            "user": 4,
+            "title": "Exploring the Countryside",
+            "content": "Content for post 8. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T06:02:00Z",
+            "updated_at": "2024-11-08T19:52:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 9,
+        "fields": {
+            "user": 1,
+            "title": "Surfing the Waves",
+            "content": "Content for post 9. Enjoyed every moment of it!",
+            "created_at": "2024-11-15T09:43:00Z",
+            "updated_at": "2024-11-08T22:36:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 10,
+        "fields": {
+            "user": 2,
+            "title": "Sketching Outdoors",
+            "content": "Content for post 10. Enjoyed every moment of it!",
+            "created_at": "2024-11-12T15:26:00Z",
+            "updated_at": "2024-11-11T06:35:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 11,
+        "fields": {
+            "user": 4,
+            "title": "Picnic by the Lake",
+            "content": "Content for post 11. Enjoyed every moment of it!",
+            "created_at": "2024-11-10T19:21:00Z",
+            "updated_at": "2024-11-11T05:07:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 12,
+        "fields": {
+            "user": 3,
+            "title": "Learning a New Instrument",
+            "content": "Content for post 12. Enjoyed every moment of it!",
+            "created_at": "2024-11-07T08:15:00Z",
+            "updated_at": "2024-11-06T14:11:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 13,
+        "fields": {
+            "user": 2,
+            "title": "Camping Under the Stars",
+            "content": "Content for post 13. Enjoyed every moment of it!",
+            "created_at": "2024-11-14T13:29:00Z",
+            "updated_at": "2024-11-10T08:17:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 14,
+        "fields": {
+            "user": 2,
+            "title": "Sunday Brunch",
+            "content": "Content for post 14. Enjoyed every moment of it!",
+            "created_at": "2024-11-06T22:33:00Z",
+            "updated_at": "2024-11-07T12:44:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 15,
+        "fields": {
+            "user": 1,
+            "title": "Museum Visit",
+            "content": "Content for post 15. Enjoyed every moment of it!",
+            "created_at": "2024-11-08T07:37:00Z",
+            "updated_at": "2024-11-08T19:34:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 16,
+        "fields": {
+            "user": 1,
+            "title": "Culinary Experiments",
+            "content": "Content for post 16. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T07:19:00Z",
+            "updated_at": "2024-11-12T10:19:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 17,
+        "fields": {
+            "user": 3,
+            "title": "Coding Challenges",
+            "content": "Content for post 17. Enjoyed every moment of it!",
+            "created_at": "2024-11-09T05:56:00Z",
+            "updated_at": "2024-11-03T08:38:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 18,
+        "fields": {
+            "user": 2,
+            "title": "Morning Coffee Ritual",
+            "content": "Content for post 18. Enjoyed every moment of it!",
+            "created_at": "2024-11-15T18:31:00Z",
+            "updated_at": "2024-11-04T04:42:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 19,
+        "fields": {
+            "user": 4,
+            "title": "Rock Climbing Adventures",
+            "content": "Content for post 19. Enjoyed every moment of it!",
+            "created_at": "2024-11-08T21:20:00Z",
+            "updated_at": "2024-11-07T14:37:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 20,
+        "fields": {
+            "user": 1,
+            "title": "Surfing the Waves",
+            "content": "Content for post 20. Enjoyed every moment of it!",
+            "created_at": "2024-11-08T17:34:00Z",
+            "updated_at": "2024-11-01T12:28:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 21,
+        "fields": {
+            "user": 4,
+            "title": "Surfing the Waves",
+            "content": "Content for post 21. Enjoyed every moment of it!",
+            "created_at": "2024-11-14T17:22:00Z",
+            "updated_at": "2024-11-12T09:57:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 22,
+        "fields": {
+            "user": 4,
+            "title": "Rock Climbing Adventures",
+            "content": "Content for post 22. Enjoyed every moment of it!",
+            "created_at": "2024-11-06T01:31:00Z",
+            "updated_at": "2024-11-09T20:07:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 23,
+        "fields": {
+            "user": 2,
+            "title": "Kayaking Fun",
+            "content": "Content for post 23. Enjoyed every moment of it!",
+            "created_at": "2024-11-03T13:13:00Z",
+            "updated_at": "2024-11-10T18:42:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 24,
+        "fields": {
+            "user": 4,
+            "title": "Local Market Finds",
+            "content": "Content for post 24. Enjoyed every moment of it!",
+            "created_at": "2024-11-01T12:12:00Z",
+            "updated_at": "2024-11-14T15:49:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 25,
+        "fields": {
+            "user": 1,
+            "title": "Concert Night",
+            "content": "Content for post 25. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T00:09:00Z",
+            "updated_at": "2024-11-15T18:00:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 26,
+        "fields": {
+            "user": 3,
+            "title": "Delicious Homemade Pasta",
+            "content": "Content for post 26. Enjoyed every moment of it!",
+            "created_at": "2024-11-12T09:05:00Z",
+            "updated_at": "2024-11-03T19:00:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 27,
+        "fields": {
+            "user": 2,
+            "title": "Sunset at the Beach",
+            "content": "Content for post 27. Enjoyed every moment of it!",
+            "created_at": "2024-11-04T03:25:00Z",
+            "updated_at": "2024-11-04T18:24:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 28,
+        "fields": {
+            "user": 1,
+            "title": "Sunset at the Beach",
+            "content": "Content for post 28. Enjoyed every moment of it!",
+            "created_at": "2024-11-03T14:08:00Z",
+            "updated_at": "2024-11-08T22:48:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 29,
+        "fields": {
+            "user": 2,
+            "title": "Sketching Outdoors",
+            "content": "Content for post 29. Enjoyed every moment of it!",
+            "created_at": "2024-11-06T08:54:00Z",
+            "updated_at": "2024-11-03T07:14:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 30,
+        "fields": {
+            "user": 1,
+            "title": "Gardening Adventures",
+            "content": "Content for post 30. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T18:05:00Z",
+            "updated_at": "2024-11-11T23:53:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 31,
+        "fields": {
+            "user": 4,
+            "title": "Cooking a Feast",
+            "content": "Content for post 31. Enjoyed every moment of it!",
+            "created_at": "2024-11-12T21:35:00Z",
+            "updated_at": "2024-11-08T08:55:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 32,
+        "fields": {
+            "user": 3,
+            "title": "Camping Under the Stars",
+            "content": "Content for post 32. Enjoyed every moment of it!",
+            "created_at": "2024-11-09T01:34:00Z",
+            "updated_at": "2024-11-11T06:32:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 33,
+        "fields": {
+            "user": 2,
+            "title": "Skiing in the Alps",
+            "content": "Content for post 33. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T23:14:00Z",
+            "updated_at": "2024-11-01T13:58:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 34,
+        "fields": {
+            "user": 1,
+            "title": "Street Food Tour",
+            "content": "Content for post 34. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T14:41:00Z",
+            "updated_at": "2024-11-11T22:08:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 35,
+        "fields": {
+            "user": 3,
+            "title": "DIY Home Decor",
+            "content": "Content for post 35. Enjoyed every moment of it!",
+            "created_at": "2024-11-03T01:08:00Z",
+            "updated_at": "2024-11-14T10:26:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 36,
+        "fields": {
+            "user": 1,
+            "title": "Skiing in the Alps",
+            "content": "Content for post 36. Enjoyed every moment of it!",
+            "created_at": "2024-11-02T19:24:00Z",
+            "updated_at": "2024-11-14T03:09:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 37,
+        "fields": {
+            "user": 1,
+            "title": "A Day at the Zoo",
+            "content": "Content for post 37. Enjoyed every moment of it!",
+            "created_at": "2024-11-02T11:31:00Z",
+            "updated_at": "2024-11-05T15:29:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 38,
+        "fields": {
+            "user": 2,
+            "title": "Beach Volleyball",
+            "content": "Content for post 38. Enjoyed every moment of it!",
+            "created_at": "2024-11-15T06:07:00Z",
+            "updated_at": "2024-11-13T21:51:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 39,
+        "fields": {
+            "user": 1,
+            "title": "Coding Challenges",
+            "content": "Content for post 39. Enjoyed every moment of it!",
+            "created_at": "2024-11-14T22:24:00Z",
+            "updated_at": "2024-11-04T12:05:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 40,
+        "fields": {
+            "user": 4,
+            "title": "Rainy Day Reads",
+            "content": "Content for post 40. Enjoyed every moment of it!",
+            "created_at": "2024-11-12T04:28:00Z",
+            "updated_at": "2024-11-08T08:14:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 41,
+        "fields": {
+            "user": 4,
+            "title": "Pottery Workshop",
+            "content": "Content for post 41. Enjoyed every moment of it!",
+            "created_at": "2024-11-14T17:37:00Z",
+            "updated_at": "2024-11-12T06:39:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 42,
+        "fields": {
+            "user": 2,
+            "title": "Culinary Experiments",
+            "content": "Content for post 42. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T20:50:00Z",
+            "updated_at": "2024-11-10T07:04:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 43,
+        "fields": {
+            "user": 1,
+            "title": "Morning Coffee Ritual",
+            "content": "Content for post 43. Enjoyed every moment of it!",
+            "created_at": "2024-11-01T20:33:00Z",
+            "updated_at": "2024-11-03T09:27:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 44,
+        "fields": {
+            "user": 1,
+            "title": "Kayaking Fun",
+            "content": "Content for post 44. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T00:16:00Z",
+            "updated_at": "2024-11-01T02:07:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 45,
+        "fields": {
+            "user": 3,
+            "title": "Baking Cookies",
+            "content": "Content for post 45. Enjoyed every moment of it!",
+            "created_at": "2024-11-02T14:52:00Z",
+            "updated_at": "2024-11-02T13:09:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 46,
+        "fields": {
+            "user": 4,
+            "title": "Yoga and Meditation",
+            "content": "Content for post 46. Enjoyed every moment of it!",
+            "created_at": "2024-11-14T23:22:00Z",
+            "updated_at": "2024-11-03T16:03:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 47,
+        "fields": {
+            "user": 4,
+            "title": "Stargazing with Friends",
+            "content": "Content for post 47. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T11:23:00Z",
+            "updated_at": "2024-11-11T06:40:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 48,
+        "fields": {
+            "user": 3,
+            "title": "Exploring the Mountains",
+            "content": "Content for post 48. Enjoyed every moment of it!",
+            "created_at": "2024-11-02T13:18:00Z",
+            "updated_at": "2024-11-12T04:18:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 49,
+        "fields": {
+            "user": 1,
+            "title": "Mountain Biking",
+            "content": "Content for post 49. Enjoyed every moment of it!",
+            "created_at": "2024-11-11T06:05:00Z",
+            "updated_at": "2024-11-02T23:39:00Z"
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 50,
+        "fields": {
+            "user": 4,
+            "title": "Stargazing with Friends",
+            "content": "Content for post 50. Enjoyed every moment of it!",
+            "created_at": "2024-11-06T15:08:00Z",
+            "updated_at": "2024-11-12T15:29:00Z"
         }
     }
 ]
