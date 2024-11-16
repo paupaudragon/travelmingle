@@ -1,25 +1,38 @@
-from django.conf import settings
-from django.http import JsonResponse
-from .models import User, Post, Comment
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from .models import User, Post
+from .serializers import UserSerializer, PostSerializer
 
-from django.shortcuts import render
-# def user_list(request):
-#     users = User.objects.values()  # Get all users as dictionaries
-#     return JsonResponse(list(users), safe=False)
-
-
-# def post_list(request):
-#     posts = Post.objects.values()  # Get all posts as dictionaries
-#     return JsonResponse(list(posts), safe=False)
+# List and Create Users
 
 
-# def comment_list(request):
-#     comments = Comment.objects.values()  # Get all comments as dictionaries
-#     return JsonResponse(list(comments), safe=False)
+class UserListCreateView(ListCreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+# Retrieve, Update, Delete a single User
 
 
-def myapp(request):
-    context = {
-        'MEDIA_URL': settings.MEDIA_URL,
-    }
-    return render(request, 'main.html', context)
+class UserDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+# List and Create Posts
+
+
+class PostListCreateView(ListCreateAPIView):
+    queryset = Post.objects.select_related('user').all()
+    serializer_class = PostSerializer
+
+    def perform_create(self, serializer):
+        user = User.objects.get(id=self.request.data.get('user_id'))
+        serializer.save(user=user)
+
+# Retrieve, Update, Delete a single Post
+
+
+class PostDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Post.objects.select_related('user').all()
+    serializer_class = PostSerializer
