@@ -13,5 +13,6 @@ from django.conf.urls.static import static
 # ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 urlpatterns = [
-    path('api/', views.myapp, name='myapp'),
+    # avoid putting nesting /api twice here 
+    path('', views.myapp, name='myapp'),
 ]
