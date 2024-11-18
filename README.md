@@ -58,6 +58,7 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
    - Click the **Run** icon to start the virtual device.
 
 ### Install Postgress
+
 ### On Windows
 
 1. Download the PostgreSQL installer from the [official PostgreSQL website](https://www.postgresql.org/download/).
@@ -108,12 +109,14 @@ This should output the Django version (e.g., 4.3.1).
 
 ### PostgreSQL with Django
 
-1. download PostgreSQL and it's commanline tool. 
+1. download PostgreSQL and it's commanline tool.
 2. install python library using this command:
+
 ```
 pip install psycopg2-binary
 ```
-3. In settings.py under `backend`, add password. Now you can run the backend as usual. 
+
+3. In settings.py under `backend`, add password. Now you can run the backend as usual.
 
 ## How to run the full-stack project
 
@@ -227,7 +230,6 @@ Notice only `development` branch is create from `main`. All the other branches s
 1. Navigate to **Repository** > **Branches**.
 2. Click **"New branch"**.
 3. Enter the branch name:
-
 
 ## Connect PostgreSQL with AWS RDS(Team, please ignore this section for now)
 

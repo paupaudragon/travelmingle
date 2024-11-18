@@ -1,18 +1,9 @@
-from . import views
 from django.urls import path
-from django.conf import settings
-from django.conf.urls.static import static
-
-# urlpatterns = [
-#     # Example route for a simple view
-
-#     # Routes for users, posts, and comments
-#     path('users/', views.user_list, name='user_list'),
-#     path('posts/', views.post_list, name='post_list'),
-#     path('comments/', views.comment_list, name='comment_list'),
-# ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+from .views import UserListCreateView, UserDetailView, PostListCreateView, PostDetailView
 
 urlpatterns = [
-    # avoid putting nesting /api twice here 
-    path('', views.myapp, name='myapp'),
+    path('users/', UserListCreateView.as_view(), name='user-list-create'),
+    path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
+    path('posts/', PostListCreateView.as_view(), name='post-list-create'),
+    path('posts/<int:pk>/', PostDetailView.as_view(), name='post-detail'),
 ]
