@@ -57,11 +57,11 @@ class _FeedPageState extends State<FeedPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : GridView.builder(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8.0), // Padding around the entire grid
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, // Two columns
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+                // crossAxisSpacing: 2, // Reduced horizontal spacing between items
+                // mainAxisSpacing: 2, // Reduced vertical spacing between items
                 childAspectRatio: 0.7, // Adjusted to show two rows on screen
               ),
               itemCount: posts.length,
