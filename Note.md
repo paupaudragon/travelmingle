@@ -32,7 +32,15 @@ pip install pillow
 pip install psycopg2 or pip install psycopg2-binary
 (please ask AI to match this with your own python version)
 ```
-
+for Python 3.13:
+```
+pip install django
+pip install djangorestframework
+pip install drf-yasg
+pip install pillow
+pip install psycopg
+pip install --upgrade psycopg[binary]
+```
 ## 3. How to connect with your postgres local database server
 
 We are not using remote host for now due to financial cost issue.
@@ -82,7 +90,7 @@ DATABASES = {
 }
 ```
 
-Replace your postgres username, password and port number in the code. Default username is `postgres`. You should see all these three values while setting up your postgres for the first time. If not, please use AI to figure out on your machine.
+Replace your postgres username, password and port number in the code. Default username is `postgres`. You should see all these three values while setting up your postgres for the first time. Also, you can find those infor by `\conninfo`
 
 ### - Automate table creations with Django
 
