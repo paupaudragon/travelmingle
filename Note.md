@@ -122,8 +122,9 @@ There are two josn files called `posts_fixture.json` and `users_fixture.json` in
 
 ```
 cd backend (you should be at travelmingle/backend )
-python manage.py loaddata posts_fixture.json
 python manage.py loaddata users_fixture.json
+python manage.py loaddata posts_fixture.json
+
 ```
 
 Now let's verify the data is added to your local db:
