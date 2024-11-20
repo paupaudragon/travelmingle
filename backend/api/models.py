@@ -39,13 +39,20 @@ class PostImage(models.Model):
         db_table = 'post_images'
 
 
+###
 class Comment(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     content = models.TextField()
+    parent = models.ForeignKey(
+        'self', null=True, blank=True, related_name='sub_comments', on_delete=models.CASCADE
+    )
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
+
+    def has_sub_comments(self):
+        return self.sub_comments.exists()
 
     class Meta:
         db_table = 'comments'

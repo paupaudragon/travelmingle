@@ -25,6 +25,8 @@ class _FeedPageState extends State<FeedPage> {
   Future<void> fetchPosts() async {
     final apiService = ApiService();
     final fetchedPosts = await apiService.fetchPosts();
+
+    print('Fetched Posts: ${fetchedPosts.length}');
     setState(() {
       posts = fetchedPosts;
       isLoading = false;
@@ -67,6 +69,9 @@ class _FeedPageState extends State<FeedPage> {
               itemCount: posts.length,
               itemBuilder: (context, index) {
                 final post = posts[index];
+
+                print('Rendering Post: ${post.title}');
+
                 return PostCard(post: post); // Use PostCard for individual items
               },
             ),

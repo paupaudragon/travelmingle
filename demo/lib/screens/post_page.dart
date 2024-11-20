@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Ensure this works after adding the package
 import '../models/post_model.dart';
 
-class PostPage extends StatelessWidget {
+class PostPage extends StatefulWidget {
   final Post post;
 
   const PostPage({Key? key, required this.post}) : super(key: key);
+
+  @override
+  _PostPageState createState() => _PostPageState();
+}
+
+class _PostPageState extends State<PostPage> {
+  final Map<int, bool> expandedComments = {};
 
   String formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inDays >= 1) {
-      return DateFormat('MMM d, h:mm a').format(date); // Example: Nov 15, 3:45 PM
+      return '${difference.inDays}d ago';
     } else if (difference.inHours >= 1) {
       return '${difference.inHours}h ago';
     } else {
@@ -20,9 +26,15 @@ class PostPage extends StatelessWidget {
     }
   }
 
+  void toggleExpand(int commentId) {
+    setState(() {
+      expandedComments[commentId] = !(expandedComments[commentId] ?? false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final formattedDate = formatDate(post.createdAt);
+    final formattedDate = formatDate(widget.post.createdAt);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,9 +45,9 @@ class PostPage extends StatelessWidget {
         title: Row(
           children: [
             CircleAvatar(
-              backgroundImage: post.user.profilePicture != null &&
-                      post.user.profilePicture!.isNotEmpty
-                  ? AssetImage(post.user.profilePicture!)
+              backgroundImage: widget.post.user.profilePicture != null &&
+                      widget.post.user.profilePicture!.isNotEmpty
+                  ? AssetImage(widget.post.user.profilePicture!)
                   : const AssetImage('assets/default_profile.png'),
             ),
             const SizedBox(width: 10),
@@ -43,7 +55,7 @@ class PostPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  post.user.username,
+                  widget.post.user.username,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
@@ -55,7 +67,6 @@ class PostPage extends StatelessWidget {
             const Spacer(),
             ElevatedButton(
               onPressed: () {
-                // Placeholder for follow functionality
                 print("Follow button pressed");
               },
               style: ElevatedButton.styleFrom(
@@ -74,33 +85,92 @@ class PostPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Single Image Section
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
-                'assets/cover.png', // Replace with your actual path
+                'assets/cover.png',
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: 250,
               ),
             ),
             const SizedBox(height: 20),
-
-            // Title Section
             Text(
-              post.title,
+              widget.post.title,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 10),
-
-            // Content Section
             Text(
-              post.content,
+              widget.post.content,
               style: const TextStyle(fontSize: 16),
             ),
+            const SizedBox(height: 20),
+            const Text(
+              'Comments',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            if (widget.post.comments.isEmpty)
+              const Text(
+                'No comments available for this post.',
+                style: TextStyle(color: Colors.grey),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: widget.post.comments.where((c) => c.parentId == null).length,
+                itemBuilder: (context, index) {
+                  final topComments = widget.post.comments.where((c) => c.parentId == null).toList();
+                  final comment = topComments[index];
+                  final subComments = widget.post.comments.where((c) => c.parentId == comment.id).toList();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top-level comment
+                      ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: comment.user.profilePicture != null
+                              ? AssetImage(comment.user.profilePicture!)
+                              : const AssetImage('assets/default_profile.png'),
+                        ),
+                        title: Text(comment.user.username),
+                        subtitle: Text(comment.content),
+                      ),
+                      // Display all sub-comments if expanded
+                      if (expandedComments[comment.id] == true)
+                        for (var subComment in subComments)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 40.0),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage: subComment.user.profilePicture != null
+                                    ? AssetImage(subComment.user.profilePicture!)
+                                    : const AssetImage('assets/default_profile.png'),
+                              ),
+                              title: Text(subComment.user.username),
+                              subtitle: Text(subComment.content),
+                            ),
+                          ),
+                      // Show "View more replies" button
+                      if (subComments.isNotEmpty && expandedComments[comment.id] != true)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 40.0),
+                          child: TextButton(
+                            onPressed: () {
+                              toggleExpand(comment.id);
+                            },
+                            child: Text('View ${subComments.length} replies'),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
           ],
         ),
       ),
