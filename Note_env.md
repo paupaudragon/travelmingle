@@ -27,8 +27,8 @@ psql -U postgres
 ```
 
 ### Test
-'''cmd
+```cmd
 cd backend
 python manage.py dbshell
-'''
+```
 If the connection is successful, Django will apply the migrations or indicate that everything is up-to-date. If there’s an issue with the credentials, you’ll see an error message.
