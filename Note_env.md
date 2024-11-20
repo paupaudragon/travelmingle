@@ -1,10 +1,15 @@
 ### Pull from main
+
 ### Install required library
+
 ```cmd
 pip install django-environ
 ```
+
 ### Set DB info locally
-In `root/backend/backend` `.env`, you will see this block of code:
+
+Create file named `.env` in `root/backend` and add this block of code:
+
 ```.env
 # Database configuration
 DB_NAME=travelmingle
@@ -20,9 +25,10 @@ Replace your postgres username, password and port number in the code. you can fi
 psql -U postgres
 \conninfo
 ```
-### Test
-drop database, then use automate table creations in [Note.md](Note.md#automate-table-creations-with-django)
 
-```psql
-DROP DATABASE travelmingle;
-```
+### Test
+'''cmd
+cd backend
+python manage.py dbshell
+'''
+If the connection is successful, Django will apply the migrations or indicate that everything is up-to-date. If there’s an issue with the credentials, you’ll see an error message.
