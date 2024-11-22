@@ -12,10 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-import json
-
-with open("../configuration.json") as f:
-    credentials = json.load(f)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,10 +85,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
-        'USER': credentials["database_username"],
-        'PASSWORD': credentials["database_password"],
+        'USER': 'postgres',
+        'PASSWORD': 'afj1470',
         'HOST': 'localhost',
-        'PORT': credentials["port"],
+        'PORT': '8080',
     }
 }
 
