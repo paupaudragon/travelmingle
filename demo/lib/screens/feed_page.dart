@@ -14,7 +14,9 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   List<Post> posts = [];
+  List<Post> filteredPosts = [];
   bool isLoading = true;
+  bool isSearching = false;
 
   @override
   void initState() {
@@ -33,6 +35,20 @@ class _FeedPageState extends State<FeedPage> {
     });
   }
 
+  void searchPosts(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredPosts = posts;
+        isSearching = false;
+      } else {
+        isSearching = true;
+        filteredPosts = posts.where((post) {
+          return post.title.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,7 +68,10 @@ class _FeedPageState extends State<FeedPage> {
             print("Menu button pressed");
           },
           onSearchPressed: () {
-            print("Search button pressed");
+              showSearch(
+              context: context,
+              delegate: PostSearchDelegate(posts: posts, onSearch: searchPosts),
+            );
           },
         ),
       ),
@@ -92,6 +111,68 @@ class _FeedPageState extends State<FeedPage> {
           print("Me button pressed");
         },
       ),
+    );
+  }
+}
+
+class PostSearchDelegate extends SearchDelegate<Post?> {
+  final List<Post> posts;
+  final Function(String) onSearch;
+
+  PostSearchDelegate({required this.posts, required this.onSearch});
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          onSearch('');
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null);
+        onSearch('');
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    onSearch(query);
+    return Container(); // Results will be shown in the main grid
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestions = query.isEmpty
+        ? []
+        : posts.where((post) {
+            return post.title.toLowerCase().contains(query.toLowerCase());
+          }).toList();
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final post = suggestions[index];
+        return ListTile(
+          title: Text(post.title),
+          subtitle: Text(post.description),
+          onTap: () {
+            query = post.title;
+            onSearch(query);
+            close(context, post);
+          },
+        );
+      },
     );
   }
 }
