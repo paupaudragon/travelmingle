@@ -1,5 +1,5 @@
 {
-    "database_username": "postgres",
-    "database_password": "Scout!67",
-    "port": "5432"
+    "database_username": "",
+    "database_password": "",
+    "port": ""
 }
