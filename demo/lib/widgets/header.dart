@@ -43,14 +43,14 @@ class Header extends StatelessWidget {
                 onPressed: () => onExplorePressed(),
                 child: const Text(
                   "Explore",
-                  style: TextStyle(color: Colors.orange, fontSize: 16),
+                  style: TextStyle(color: Colors.orange, fontSize: 16), // Highlighted as active
                 ),
               ),
               TextButton(
                 onPressed: () => onNearbyPressed(),
                 child: const Text(
                   "Nearby",
-                  style: TextStyle(color: Colors.black, fontSize: 16), // Highlighted as active
+                  style: TextStyle(color: Colors.black, fontSize: 16), 
                 ),
               ),
             ],
