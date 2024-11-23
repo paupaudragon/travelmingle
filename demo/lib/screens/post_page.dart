@@ -109,12 +109,14 @@ class _PostPageState extends State<PostPage> {
 
   void addComment() async {
     final newCommentText = _commentController.text.trim();
-    if (newCommentText.isEmpty && selectedImage == null)
-      return; // Ensure either text or image exists
+    if (newCommentText.isEmpty && selectedImage == null) return;
 
     final prefixedText = replyingToUsername != null
         ? '@$replyingToUsername $newCommentText'
         : newCommentText;
+
+    print(
+        'Adding comment with: postId=${widget.post.id}, userId=${widget.adminUser.id}, content=$prefixedText, parentId=$activeReplyToCommentId');
 
     try {
       final response = await ApiService().addComment(
@@ -122,8 +124,6 @@ class _PostPageState extends State<PostPage> {
         userId: widget.adminUser.id,
         content: prefixedText,
         parentId: activeReplyToCommentId,
-        // If your API supports uploading images, you can include the image file here
-        // image: selectedImage,
       );
 
       if (response.statusCode == 201) {
@@ -136,16 +136,17 @@ class _PostPageState extends State<PostPage> {
               content: prefixedText,
               createdAt: DateTime.now(),
               parentId: activeReplyToCommentId,
-              // Store the file path of the selected image
               imagePath: selectedImage?.path,
             ),
           );
           _commentController.clear();
-          cancelReply(); // Reset reply state
-          selectedImage = null; // Reset the selected image
+          cancelReply();
+          selectedImage = null;
         });
 
         await ApiService().updateCommentsCount(widget.post.id, totalComments);
+      } else {
+        print('Failed to add comment: ${response.body}');
       }
     } catch (e) {
       print('Error adding comment: $e');
