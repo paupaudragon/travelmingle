@@ -4,10 +4,12 @@ import '../screens/post_page.dart'; // Import PostPage
 
 class PostCard extends StatelessWidget {
   final Post post;
+  final User adminUser; // Pass the "admin" user to the card
 
   const PostCard({
     super.key,
     required this.post,
+    required this.adminUser, // Admin user is required
   });
 
   @override
@@ -17,7 +19,7 @@ class PostCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PostPage(post: post),
+            builder: (context) => PostPage(post: post, adminUser: adminUser), // Pass both post and admin user
           ),
         );
       },

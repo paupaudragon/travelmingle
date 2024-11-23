@@ -15,20 +15,23 @@ class UserSerializer(serializers.ModelSerializer):
         return f'assets/user{obj.id}.png'
 
 
-# class PostSerializer(serializers.ModelSerializer):
-#     user = UserSerializer(read_only=True)
-
-#     class Meta:
-#         model = Post
-#         fields = ['id', 'user', 'title', 'content', 'created_at', 'updated_at']
-
-
 class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
     class Meta:
         model = Comment
         fields = ['id', 'post', 'user', 'content', 'created_at', 'updated_at', 'parent']
+        # fields = ['id', 'post', 'user', 'content', 'created_at', 'updated_at', 'parent', 'image', 'image_path']
+        extra_kwargs = {
+            'parent': {'required': False},  # Allow `parent` to be optional
+            # 'image': {'write_only': True},  # Prevent raw image exposure
+        }
+
+    # def get_image_path(self, obj):
+    #     request = self.context.get('request')
+    #     if obj.image and request:
+    #         return request.build_absolute_uri(obj.image.url)
+    #     return None
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -36,4 +39,5 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'user', 'title', 'content', 'created_at', 'updated_at', 'comments']
+        fields = ['id', 'user', 'title', 'content', 'created_at', 'updated_at', 'likes', 'saves', 'comments']
+

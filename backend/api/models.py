@@ -23,6 +23,8 @@ class Post(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
+    likes = models.PositiveIntegerField(default=0)  # New field for likes
+    saves = models.PositiveIntegerField(default=0)  # New field for saves
 
     class Meta:
         db_table = 'posts'
@@ -39,20 +41,18 @@ class PostImage(models.Model):
         db_table = 'post_images'
 
 
-###
 class Comment(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     content = models.TextField()
     parent = models.ForeignKey(
-        'self', null=True, blank=True, related_name='sub_comments', on_delete=models.CASCADE
+        'self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies'
     )
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-
-    def has_sub_comments(self):
-        return self.sub_comments.exists()
+    # image = models.ImageField(upload_to='commentImages/', blank=True, null=True)  # New field for storing image
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'comments'
+

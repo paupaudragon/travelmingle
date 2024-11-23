@@ -37,6 +37,7 @@ class Comment {
   final String content;
   final DateTime createdAt;
   final int? parentId; // For nested comments
+  final String? imagePath; // Optional field for image
 
   Comment({
     required this.id,
@@ -44,6 +45,7 @@ class Comment {
     required this.content,
     required this.createdAt,
     this.parentId,
+    this.imagePath,
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class Comment {
       content: json['content'],
       createdAt: DateTime.parse(json['created_at']),
       parentId: json['parent'],
+      imagePath: json['image_path'], // Parse imagePath
     );
   }
 }
@@ -66,8 +69,9 @@ class Post {
   final String content;
   final DateTime createdAt;
   final DateTime updatedAt;
-  ///
   final List<Comment> comments;
+  final int likes; // New field for likes
+  final int saves; // New field for saves
 
   Post({
     required this.id,
@@ -76,9 +80,9 @@ class Post {
     required this.content,
     required this.createdAt,
     required this.updatedAt,
-
-    ///
     this.comments = const [],
+    required this.likes, // Initialize new field
+    required this.saves, // Initialize new field
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -94,7 +98,10 @@ class Post {
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       comments: comments,
+      likes: json['likes'], // Parse new field
+      saves: json['saves'], // Parse new field
     );
   }
 }
+
 

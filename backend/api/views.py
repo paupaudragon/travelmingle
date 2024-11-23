@@ -37,7 +37,9 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
         serializer = PostSerializer(post)
         return Response(serializer.data)
 
-
+###
+import logging
+logger = logging.getLogger(__name__)
 
 # Add Comment views
 class CommentListCreateView(ListCreateAPIView):
@@ -45,10 +47,20 @@ class CommentListCreateView(ListCreateAPIView):
     serializer_class = CommentSerializer
 
     def perform_create(self, serializer):
-        post = Post.objects.get(id=self.request.data.get('post_id'))
-        user = User.objects.get(id=self.request.data.get('user_id'))
-        serializer.save(post=post, user=user)
+        post = Post.objects.get(id=self.request.data.get('post'))
+        user = User.objects.get(id=self.request.data.get('user'))
+        parent_id = self.request.data.get('parent')
 
+        parent_comment = None
+        if parent_id:
+            parent_comment = Comment.objects.filter(id=parent_id).first()
+
+        serializer.save(
+            post=post, 
+            user=user, 
+            parent=parent_comment,
+            # image=self.request.FILES.get('image')  # Save uploaded image
+        )
 
 class CommentDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.select_related('user', 'post').all()
