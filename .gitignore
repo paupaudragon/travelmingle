@@ -48,3 +48,8 @@ app.*.map.json
 
 backend/api/migrations/
 demo/linux/flutter/*
+demo/linux/flutter/generated_plugin_registrant.cc
+demo/linux/flutter/generated_plugins.cmake
+demo/macos/Flutter/GeneratedPluginRegistrant.swift
+demo/windows/flutter/generated_plugin_registrant.cc
+demo/windows/flutter/generated_plugins.cmake
