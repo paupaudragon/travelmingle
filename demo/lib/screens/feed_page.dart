@@ -65,12 +65,17 @@ class _FeedPageState extends State<FeedPage> {
           onSearchPressed: () {
             print("Search button pressed");
           },
+          onCreateUserPressed: () {
+            Navigator.pushNamed(
+                context, '/register'); // Navigate to registration page
+          },
         ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : GridView.builder(
-              padding: const EdgeInsets.all(8.0), // Padding around the entire grid
+              padding:
+                  const EdgeInsets.all(8.0), // Padding around the entire grid
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, // Two columns
                 childAspectRatio: 0.7, // Adjusted to show two rows on screen

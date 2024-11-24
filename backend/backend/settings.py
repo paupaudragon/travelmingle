@@ -15,7 +15,7 @@ import os
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 MEDIA_URL = '/media/'
@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
 ]
+
+AUTH_USER_MODEL = 'api.Users'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -160,4 +162,26 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization',
+            'description': "JWT Authorization header using the Bearer scheme. Example: 'Bearer <your_token>'"
+        }
+    },
+    'USE_SESSION_AUTH': False,
 }
