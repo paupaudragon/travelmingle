@@ -1,145 +1,72 @@
 [
     {
-        "model": "api.user",
-        "pk": 0,
-        "fields": {
-            "username": "admin",
-            "email": "admin@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Admin",
-            "profile_picture": "profiles/user0.png",
-            "created_at": "2024-11-10T12:00:00Z",
-            "updated_at": "2024-11-10T12:30:00Z"
-        }
-    },
-    {
-        "model": "api.user",
+        "model": "api.users",
         "pk": 1,
         "fields": {
-            "username": "john_doe",
-            "email": "john@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Loves hiking and exploring nature.",
-            "profile_picture": "profiles/user1.png",
-            "created_at": "2024-11-10T12:00:00Z",
-            "updated_at": "2024-11-10T12:30:00Z"
+            "username": "Alice",
+            "email": "alice@example.com",
+            "bio": "I'm Alice",
+            "profile_picture": null,
+            "is_staff": false,
+            "is_superuser": false,
+            "is_active": true,
+            "password": "pbkdf2_sha256$870000$EG8ZYWzcXyqkCGNIdxmO9f$CjXrdPC3WAMa/CrMgOl2s9kNpyW/88U2mEIixtdhOac="
         }
     },
     {
-        "model": "api.user",
+        "model": "api.users",
         "pk": 2,
         "fields": {
-            "username": "alice_johnson",
-            "email": "alice@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Pasta enthusiast and coffee lover.",
-            "profile_picture": "profiles/user2.png",
-            "created_at": "2024-11-11T08:30:00Z",
-            "updated_at": "2024-11-11T09:00:00Z"
+            "username": "Bob",
+            "email": "bob@example.com",
+            "bio": "I'm Bob",
+            "profile_picture": null,
+            "is_staff": false,
+            "is_superuser": false,
+            "is_active": true,
+            "password": "pbkdf2_sha256$870000$5FF6R8YoQqS4Nsm8axUUYr$9G07JCvGiZJYeOVUxWVNcydy4wVfPy+Facm9HE+QuwU="
         }
     },
     {
-        "model": "api.user",
+        "model": "api.users",
         "pk": 3,
         "fields": {
-            "username": "bob_smith",
-            "email": "bob@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Photographer who loves cityscapes.",
-            "profile_picture": "profiles/user3.png",
-            "created_at": "2024-11-12T14:15:00Z",
-            "updated_at": "2024-11-12T14:45:00Z"
+            "username": "Cindy",
+            "email": "cindy@example.com",
+            "bio": "I'm Cindy",
+            "profile_picture": null,
+            "is_staff": false,
+            "is_superuser": false,
+            "is_active": true,
+            "password": "pbkdf2_sha256$870000$u64yTBz6jWjHoweWKe9LB7$pYEZ0ii5PdR7FXSC+Oiaiwg08LxQfvajJht3iau3ft0="
         }
     },
     {
-        "model": "api.user",
+        "model": "api.users",
         "pk": 4,
         "fields": {
-            "username": "emily_brown",
-            "email": "emily@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Beach lover and sunset chaser.",
-            "profile_picture": "profiles/user4.png",
-            "created_at": "2024-11-13T16:20:00Z",
-            "updated_at": "2024-11-13T16:50:00Z"
+            "username": "Dan",
+            "email": "dan@example.com",
+            "bio": "I'm Dan",
+            "profile_picture": null,
+            "is_staff": false,
+            "is_superuser": false,
+            "is_active": true,
+            "password": "pbkdf2_sha256$870000$8lXjPAoFnyoxIm4VbJbcPA$yrk8q+8y3FDLTHNcoMGue9cDeKPIut83PAj+sBYRp6U="
         }
     },
     {
-        "model": "api.user",
+        "model": "api.users",
         "pk": 5,
         "fields": {
-            "username": "michael_clark",
-            "email": "michael@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "History buff and avid reader.",
-            "profile_picture": "profiles/user5.png",
-            "created_at": "2024-11-14T10:00:00Z",
-            "updated_at": "2024-11-14T10:30:00Z"
-        }
-    },
-    {
-        "model": "api.user",
-        "pk": 6,
-        "fields": {
-            "username": "sarah_lee",
-            "email": "sarah@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Yoga lover and fitness enthusiast.",
-            "profile_picture": "profiles/user6.png",
-            "created_at": "2024-11-15T09:00:00Z",
-            "updated_at": "2024-11-15T09:30:00Z"
-        }
-    },
-    {
-        "model": "api.user",
-        "pk": 7,
-        "fields": {
-            "username": "david_kim",
-            "email": "david@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Tech geek and software developer.",
-            "profile_picture": "profiles/user7.png",
-            "created_at": "2024-11-16T11:00:00Z",
-            "updated_at": "2024-11-16T11:30:00Z"
-        }
-    },
-    {
-        "model": "api.user",
-        "pk": 8,
-        "fields": {
-            "username": "olivia_martin",
-            "email": "olivia@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Traveler and adventure seeker.",
-            "profile_picture": "profiles/user8.png",
-            "created_at": "2024-11-17T12:00:00Z",
-            "updated_at": "2024-11-17T12:30:00Z"
-        }
-    },
-    {
-        "model": "api.user",
-        "pk": 9,
-        "fields": {
-            "username": "james_brown",
-            "email": "james@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Musician and songwriter.",
-            "profile_picture": "profiles/user9.png",
-            "created_at": "2024-11-18T14:00:00Z",
-            "updated_at": "2024-11-18T14:30:00Z"
-        }
-    },
-    {
-        "model": "api.user",
-        "pk": 10,
-        "fields": {
-            "username": "emma_clark",
-            "email": "emma@example.com",
-            "password": "pbkdf2_sha256$260000$...",
-            "bio": "Artist and digital illustrator.",
-            "profile_picture": "profiles/user10.png",
-            "created_at": "2024-11-19T16:00:00Z",
-            "updated_at": "2024-11-19T16:30:00Z"
+            "username": "Eddie",
+            "email": "eddie@example.com",
+            "bio": "I'm Eddie",
+            "profile_picture": null,
+            "is_staff": false,
+            "is_superuser": false,
+            "is_active": true,
+            "password": "pbkdf2_sha256$870000$YggFWvAvq8PzvaJ4q3S1nx$gkEzkRGHYV4oM39nFRZ25yNWZNCYvYtEA3XnMRKqQ6g="
         }
     }
 ]
