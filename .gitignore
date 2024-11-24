@@ -48,3 +48,7 @@ app.*.map.json
 
 backend/api/migrations/
 backend/.env
+demo/linux/flutter/*
+
+demo/macos/Flutter/*
+demo/windows/flutter/*
