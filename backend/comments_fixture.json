@@ -1,0 +1,41 @@
+[
+    {
+        "model": "api.comment",
+        "pk": 11,
+        "fields": {
+            "post": 1,
+            "user": 2,
+            "content": "This is a top-level comment 11 on post 1.",
+            "created_at": "2024-11-02T10:00:00Z",
+            "updated_at": "2024-11-02T10:00:00Z",
+            "parent": null
+        }
+    },
+    {
+        "model": "api.comment",
+        "pk": 111,
+        "fields": {
+            "post": 1,
+            "user": 3,
+            "content": "This is a sub-comment 111 on comment 11.",
+            "created_at": "2024-11-03T12:00:00Z",
+            "updated_at": "2024-11-03T12:00:00Z",
+            "parent": 11
+
+        }
+    },
+    {
+        "model": "api.comment",
+        "pk": 112,
+        "fields": {
+            "post": 1,
+            "user": 4,
+            "content": "This is a sub-comment 112 on comment 11.",
+            "created_at": "2024-11-04T12:00:00Z",
+            "updated_at": "2024-11-04T12:00:00Z",
+            "parent": 11
+
+        }
+    }
+]
+

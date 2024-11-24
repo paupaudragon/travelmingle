@@ -4,21 +4,25 @@
         "pk": 1,
         "fields": {
             "user": 1,
-            "title": "Exploring the Mountains",
-            "content": "Today, I went on a hike to explore the beautiful mountains nearby. It was an amazing experience with breathtaking views!",
-            "created_at": "2024-11-14T12:00:00Z",
-            "updated_at": "2024-11-14T12:30:00Z"
+            "title": "Mountain Biking",
+            "content": "Content for post 1. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T15:13:00Z",
+            "updated_at": "2024-11-04T22:25:00Z",
+            "likes": 45,
+            "saves": 10
         }
     },
     {
         "model": "api.post",
         "pk": 2,
         "fields": {
-            "user": 2,
-            "title": "Delicious Homemade Pasta",
-            "content": "Tried making homemade pasta for the first time today. It turned out amazing, can't wait to make it again!",
-            "created_at": "2024-11-13T10:00:00Z",
-            "updated_at": "2024-11-13T10:45:00Z"
+            "user": 4,
+            "title": "Night Sky Photography",
+            "content": "Content for post 2. Enjoyed every moment of it!",
+            "created_at": "2024-11-13T07:04:00Z",
+            "updated_at": "2024-11-05T00:12:00Z",
+            "likes": 30,
+            "saves": 15
         }
     },
     {
@@ -26,10 +30,64 @@
         "pk": 3,
         "fields": {
             "user": 3,
-            "title": "City Lights at Night",
-            "content": "The city lights are mesmerizing. I captured this moment from the rooftop. It's truly a sight to behold.",
-            "created_at": "2024-11-12T19:00:00Z",
-            "updated_at": "2024-11-12T19:30:00Z"
+            "title": "Culinary Experiments",
+            "content": "Content for post 3. Enjoyed every moment of it!",
+            "created_at": "2024-11-10T07:28:00Z",
+            "updated_at": "2024-11-03T11:35:00Z",
+            "likes": 60,
+            "saves": 25
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 4,
+        "fields": {
+            "user": 2,
+            "title": "Baking Cookies",
+            "content": "Content for post 4. Enjoyed every moment of it!",
+            "created_at": "2024-11-10T18:34:00Z",
+            "updated_at": "2024-11-03T16:24:00Z",
+            "likes": 20,
+            "saves": 8
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 5,
+        "fields": {
+            "user": 1,
+            "title": "Pottery Workshop",
+            "content": "Content for post 5. Enjoyed every moment of it!",
+            "created_at": "2024-11-11T17:55:00Z",
+            "updated_at": "2024-11-04T05:57:00Z",
+            "likes": 55,
+            "saves": 30
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 6,
+        "fields": {
+            "user": 1,
+            "title": "Morning Coffee Ritual",
+            "content": "Content for post 6. Enjoyed every moment of it!",
+            "created_at": "2024-11-05T11:43:00Z",
+            "updated_at": "2024-11-15T06:09:00Z",
+            "likes": 70,
+            "saves": 40
+        }
+    },
+    {
+        "model": "api.post",
+        "pk": 7,
+        "fields": {
+            "user": 4,
+            "title": "Sunset at the Beach",
+            "content": "Content for post 7. Enjoyed every moment of it!",
+            "created_at": "2024-11-04T22:27:00Z",
+            "updated_at": "2024-11-02T00:00:00Z",
+            "likes": 10,
+            "saves": 5
         }
     }
 ]
