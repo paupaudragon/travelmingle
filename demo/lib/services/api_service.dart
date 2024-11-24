@@ -11,19 +11,34 @@ class ApiService {
     final String url = "$baseApiUrl/posts/";
 
     try {
+      // Make the GET request
       final response = await http.get(Uri.parse(url));
+
+      // Check if the response status code indicates success
       if (response.statusCode == 200) {
+        // Decode the JSON response
         List<dynamic> data = json.decode(response.body);
+
+        // Log the response body for debugging purposes
         print('API Response: ${response.body}');
-        final posts = data.map((json) => Post.fromJson(json)).toList();
-        posts.forEach((post) =>
-            print('Post: ${post.title}, Comments: ${post.comments.length}'));
+
+        // Map the JSON data to a list of Post objects
+        List<Post> posts = data.map((json) => Post.fromJson(json)).toList();
+
+        // Log each post title and number of comments for debugging
+        for (var post in posts) {
+          print(
+              'Post: ${post.title}, Comments: ${post.detailedComments.length}');
+        }
 
         return posts;
       } else {
-        throw Exception('Failed to load posts');
+        // Throw an exception if the server response is not successful
+        throw Exception(
+            'Failed to load posts. Status code: ${response.statusCode}');
       }
     } catch (e) {
+      // Log the error and return an empty list
       print('Error fetching posts: $e');
       return [];
     }

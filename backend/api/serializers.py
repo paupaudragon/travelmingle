@@ -72,26 +72,30 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    comments = CommentSerializer(
-        many=True, read_only=True, source='comment_set')
     images = PostImageSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
-    is_collected = serializers.SerializerMethodField()
+    collected_count = serializers.SerializerMethodField()
+    detailed_comments = serializers.SerializerMethodField()
 
     class Meta:
         model = Posts
         fields = ['id', 'user', 'title', 'content', 'location', 'created_at',
-                  'updated_at', 'status', 'visibility', 'comments', 'images',
-                  'likes_count', 'is_collected']
+                  'updated_at', 'status', 'visibility', 'images', 'likes_count',
+                  'collected_count', 'detailed_comments']
 
     def get_likes_count(self, obj):
+        """Calculate and return the total like count for the post."""
         return obj.post_likes.count()
 
-    def get_is_collected(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Collects.objects.filter(user=request.user, post=obj).exists()
-        return False
+    def get_collected_count(self, obj):
+        """Calculate and return the total count of collections for the post."""
+        return Collects.objects.filter(post=obj).count()
+
+    def get_detailed_comments(self, obj):
+        """Generate and return a detailed JSON of comments with their replies and likes."""
+        comments = obj.comments_set.filter(
+            reply_to=None)  # Fetch only top-level comments
+        return CommentSerializer(comments, many=True).data
 
 
 class LikeSerializer(serializers.ModelSerializer):

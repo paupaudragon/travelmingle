@@ -16,17 +16,6 @@ class _FeedPageState extends State<FeedPage> {
   List<Post> posts = [];
   bool isLoading = true;
 
-  // Define the "admin" user
-  final User adminUser = User(
-    id: 0,
-    username: "admin",
-    email: "admin@example.com",
-    bio: "Admin of the platform",
-    profilePicture: 'profiles/user0.png', // Path to admin's profile picture
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -74,8 +63,7 @@ class _FeedPageState extends State<FeedPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : GridView.builder(
-              padding:
-                  const EdgeInsets.all(8.0), // Padding around the entire grid
+              padding: const EdgeInsets.all(8.0), // Padding around the grid
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, // Two columns
                 childAspectRatio: 0.7, // Adjusted to show two rows on screen
@@ -86,8 +74,7 @@ class _FeedPageState extends State<FeedPage> {
 
                 print('Rendering Post: ${post.title}');
 
-                // Pass the "admin" user and post's user to PostCard
-                return PostCard(post: post, adminUser: adminUser);
+                return PostCard(post: post);
               },
             ),
       bottomNavigationBar: Footer(
