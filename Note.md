@@ -59,9 +59,10 @@ flutter clean
 flutter pub get
 flutter run
 
-```
+```  
 
-<br>
+# End of new update
+
 
 # How to run the backend with Django
 
