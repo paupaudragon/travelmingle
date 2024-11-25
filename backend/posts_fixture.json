@@ -1,93 +1,282 @@
 [
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 1,
         "fields": {
             "user": 1,
-            "title": "Mountain Biking",
-            "content": "Content for post 1. Enjoyed every moment of it!",
-            "created_at": "2024-11-13T15:13:00Z",
-            "updated_at": "2024-11-04T22:25:00Z",
-            "likes": 45,
-            "saves": 10
+            "title": "Exploring the Mountains",
+            "content": "Had an amazing hike up the Rockies this weekend! Breathtaking views and fresh air.",
+            "location": "Rocky Mountains, CO",
+            "created_at": "2024-11-20T08:30:00Z",
+            "updated_at": "2024-11-20T08:30:00Z",
+            "status": "published",
+            "visibility": "public"
         }
     },
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 2,
         "fields": {
-            "user": 4,
-            "title": "Night Sky Photography",
-            "content": "Content for post 2. Enjoyed every moment of it!",
-            "created_at": "2024-11-13T07:04:00Z",
-            "updated_at": "2024-11-05T00:12:00Z",
-            "likes": 30,
-            "saves": 15
+            "user": 2,
+            "title": "Coding Marathon",
+            "content": "Spent the weekend solving algorithms. Excited to learn more!",
+            "location": "Salt Lake City, UT",
+            "created_at": "2024-11-21T14:15:00Z",
+            "updated_at": "2024-11-21T14:15:00Z",
+            "status": "published",
+            "visibility": "friends"
         }
     },
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 3,
         "fields": {
             "user": 3,
-            "title": "Culinary Experiments",
-            "content": "Content for post 3. Enjoyed every moment of it!",
-            "created_at": "2024-11-10T07:28:00Z",
-            "updated_at": "2024-11-03T11:35:00Z",
-            "likes": 60,
-            "saves": 25
+            "title": null,
+            "content": "Planning a trip to Paris next summer. Recommendations, anyone?",
+            "location": null,
+            "created_at": "2024-11-19T10:00:00Z",
+            "updated_at": "2024-11-19T10:00:00Z",
+            "status": "draft",
+            "visibility": "private"
         }
     },
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 4,
         "fields": {
-            "user": 2,
-            "title": "Baking Cookies",
-            "content": "Content for post 4. Enjoyed every moment of it!",
-            "created_at": "2024-11-10T18:34:00Z",
-            "updated_at": "2024-11-03T16:24:00Z",
-            "likes": 20,
-            "saves": 8
+            "user": 4,
+            "title": "Coffee Lovers Unite",
+            "content": "Discovered a new coffee blend today. It's a must-try for all coffee enthusiasts!",
+            "location": "San Francisco, CA",
+            "created_at": "2024-11-22T09:45:00Z",
+            "updated_at": "2024-11-22T09:45:00Z",
+            "status": "published",
+            "visibility": "public"
         }
     },
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 5,
         "fields": {
-            "user": 1,
-            "title": "Pottery Workshop",
-            "content": "Content for post 5. Enjoyed every moment of it!",
-            "created_at": "2024-11-11T17:55:00Z",
-            "updated_at": "2024-11-04T05:57:00Z",
-            "likes": 55,
-            "saves": 30
+            "user": 5,
+            "title": "Winter Wonderland",
+            "content": "Snowstorm today! The world looks like a fairytale.",
+            "location": "Park City, UT",
+            "created_at": "2024-11-23T12:00:00Z",
+            "updated_at": "2024-11-23T12:00:00Z",
+            "status": "published",
+            "visibility": "friends"
         }
     },
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 6,
         "fields": {
             "user": 1,
-            "title": "Morning Coffee Ritual",
-            "content": "Content for post 6. Enjoyed every moment of it!",
-            "created_at": "2024-11-05T11:43:00Z",
-            "updated_at": "2024-11-15T06:09:00Z",
-            "likes": 70,
-            "saves": 40
+            "title": "Music Festival Highlights",
+            "content": "Attended the annual Jazz Festival. The performances were incredible!",
+            "location": "New Orleans, LA",
+            "created_at": "2024-11-18T17:00:00Z",
+            "updated_at": "2024-11-18T17:00:00Z",
+            "status": "published",
+            "visibility": "public"
         }
     },
     {
-        "model": "api.post",
+        "model": "api.posts",
         "pk": 7,
         "fields": {
+            "user": 2,
+            "title": "Weekend Baking",
+            "content": "Tried a new chocolate chip cookie recipe. It turned out amazing!",
+            "location": null,
+            "created_at": "2024-11-20T15:00:00Z",
+            "updated_at": "2024-11-20T15:00:00Z",
+            "status": "published",
+            "visibility": "private"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 8,
+        "fields": {
+            "user": 3,
+            "title": "Tech Conference Insights",
+            "content": "Learned about exciting AI advancements at this year’s TechXpo.",
+            "location": "Austin, TX",
+            "created_at": "2024-11-15T09:00:00Z",
+            "updated_at": "2024-11-15T09:00:00Z",
+            "status": "draft",
+            "visibility": "friends"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 9,
+        "fields": {
             "user": 4,
-            "title": "Sunset at the Beach",
-            "content": "Content for post 7. Enjoyed every moment of it!",
-            "created_at": "2024-11-04T22:27:00Z",
-            "updated_at": "2024-11-02T00:00:00Z",
-            "likes": 10,
-            "saves": 5
+            "title": "Art Exhibition",
+            "content": "Visited the modern art gallery. The sculptures were thought-provoking!",
+            "location": "New York, NY",
+            "created_at": "2024-11-16T13:30:00Z",
+            "updated_at": "2024-11-16T13:30:00Z",
+            "status": "published",
+            "visibility": "public"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 10,
+        "fields": {
+            "user": 5,
+            "title": "Garden Renovation",
+            "content": "Spent the weekend planting roses. Excited for them to bloom!",
+            "location": "Provo, UT",
+            "created_at": "2024-11-19T10:00:00Z",
+            "updated_at": "2024-11-19T10:00:00Z",
+            "status": "draft",
+            "visibility": "private"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 11,
+        "fields": {
+            "user": 1,
+            "title": "Sunset by the Beach",
+            "content": "Captured this beautiful sunset at Malibu Beach. Nature is stunning!",
+            "location": "Malibu, CA",
+            "created_at": "2024-11-21T19:00:00Z",
+            "updated_at": "2024-11-21T19:00:00Z",
+            "status": "published",
+            "visibility": "public"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 12,
+        "fields": {
+            "user": 2,
+            "title": "Mountain Biking Adventures",
+            "content": "Conquered a new trail today! Feeling accomplished and tired.",
+            "location": "Moab, UT",
+            "created_at": "2024-11-14T10:30:00Z",
+            "updated_at": "2024-11-14T10:30:00Z",
+            "status": "published",
+            "visibility": "friends"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 13,
+        "fields": {
+            "user": 3,
+            "title": "New Book Alert",
+            "content": "Just started reading 'Sapiens'. Highly recommended so far!",
+            "location": null,
+            "created_at": "2024-11-17T16:00:00Z",
+            "updated_at": "2024-11-17T16:00:00Z",
+            "status": "draft",
+            "visibility": "public"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 14,
+        "fields": {
+            "user": 4,
+            "title": "Family Picnic",
+            "content": "Enjoyed a wonderful day with the family at the park. Great weather!",
+            "location": "Golden Gate Park, SF",
+            "created_at": "2024-11-20T11:00:00Z",
+            "updated_at": "2024-11-20T11:00:00Z",
+            "status": "published",
+            "visibility": "public"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 15,
+        "fields": {
+            "user": 5,
+            "title": "Fitness Goals",
+            "content": "Started a new gym routine. Excited for the results!",
+            "location": null,
+            "created_at": "2024-11-18T08:00:00Z",
+            "updated_at": "2024-11-18T08:00:00Z",
+            "status": "published",
+            "visibility": "friends"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 16,
+        "fields": {
+            "user": 1,
+            "title": "Holiday Baking",
+            "content": "Tried making a gingerbread house for the first time. Fun but messy!",
+            "location": null,
+            "created_at": "2024-11-19T20:30:00Z",
+            "updated_at": "2024-11-19T20:30:00Z",
+            "status": "draft",
+            "visibility": "private"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 17,
+        "fields": {
+            "user": 2,
+            "title": "Road Trip Chronicles",
+            "content": "Took a spontaneous road trip through the countryside. Refreshing!",
+            "location": "Nebraska, USA",
+            "created_at": "2024-11-22T09:30:00Z",
+            "updated_at": "2024-11-22T09:30:00Z",
+            "status": "published",
+            "visibility": "public"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 18,
+        "fields": {
+            "user": 3,
+            "title": "Study Session",
+            "content": "Final exams are approaching. Late nights and coffee are my best friends!",
+            "location": "University of Utah",
+            "created_at": "2024-11-22T21:00:00Z",
+            "updated_at": "2024-11-22T21:00:00Z",
+            "status": "draft",
+            "visibility": "private"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 19,
+        "fields": {
+            "user": 4,
+            "title": "Cooking Experiment",
+            "content": "Made my own sushi today! Surprisingly easy and very tasty.",
+            "location": null,
+            "created_at": "2024-11-23T14:00:00Z",
+            "updated_at": "2024-11-23T14:00:00Z",
+            "status": "published",
+            "visibility": "public"
+        }
+    },
+    {
+        "model": "api.posts",
+        "pk": 20,
+        "fields": {
+            "user": 5,
+            "title": "Evening Walks",
+            "content": "Nothing beats a calming evening walk to end the day on a positive note.",
+            "location": "Salt Lake City, UT",
+            "created_at": "2024-11-24T19:30:00Z",
+            "updated_at": "2024-11-24T19:30:00Z",
+            "status": "published",
+            "visibility": "friends"
         }
     }
 ]

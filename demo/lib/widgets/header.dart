@@ -6,6 +6,7 @@ class Header extends StatelessWidget {
   final Function onNearbyPressed;
   final Function onMenuPressed;
   final Function onSearchPressed;
+  final Function onCreateUserPressed; // Add callback for "Create User"
 
   const Header({
     Key? key,
@@ -14,6 +15,7 @@ class Header extends StatelessWidget {
     required this.onNearbyPressed,
     required this.onMenuPressed,
     required this.onSearchPressed,
+    required this.onCreateUserPressed, // Add parameter
   }) : super(key: key);
 
   @override
@@ -43,22 +45,33 @@ class Header extends StatelessWidget {
                 onPressed: () => onExplorePressed(),
                 child: const Text(
                   "Explore",
-                  style: TextStyle(color: Colors.orange, fontSize: 16), // Highlighted as active
+                  style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 16), // Highlighted as active
                 ),
               ),
               TextButton(
                 onPressed: () => onNearbyPressed(),
                 child: const Text(
                   "Nearby",
-                  style: TextStyle(color: Colors.black, fontSize: 16), 
+                  style: TextStyle(color: Colors.black, fontSize: 16),
                 ),
               ),
             ],
           ),
-          // Search Icon
-          IconButton(
-            icon: const Icon(Icons.search, size: 28, color: Colors.black),
-            onPressed: () => onSearchPressed(),
+          // Search and Create User Icons
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.search, size: 28, color: Colors.black),
+                onPressed: () => onSearchPressed(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.person_add,
+                    size: 28, color: Colors.black), // "Create User" Icon
+                onPressed: () => onCreateUserPressed(), // Trigger callback
+              ),
+            ],
           ),
         ],
       ),

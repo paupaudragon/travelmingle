@@ -1,112 +1,97 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
-import '../screens/post_page.dart'; // Import PostPage
 
 class PostCard extends StatelessWidget {
   final Post post;
-  final User adminUser; // Pass the "admin" user to the card
 
   const PostCard({
     super.key,
     required this.post,
-    required this.adminUser, // Admin user is required
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PostPage(post: post, adminUser: adminUser), // Pass both post and admin user
-          ),
-        );
-      },
-      child: Card(
-        color: const Color(0xFFFAFAFA),
-        elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Top Row: Author Info
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundImage: post.user.profilePicture != null &&
-                            post.user.profilePicture!.isNotEmpty
-                        ? AssetImage(post.user.profilePicture!)
-                        : const AssetImage('assets/default_profile.png'),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      post.user.username,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Middle Section: Cover Photo with smaller height
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(10)),
-              child: Image.asset(
-                'assets/cover.png',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: 120, // Reduced height for the cover image
-              ),
-            ),
-
-            // Bottom Section: Title and Content Snippet
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  Text(
-                    post.title,
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Author Info
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundImage: NetworkImage(post.user.profilePictureUrl),
+                  radius: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    post.user.username,
                     style: const TextStyle(
-                      fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis, // Prevents overflow
                   ),
-                  const SizedBox(height: 5),
-                  // Content Snippet
-                  Text(
-                    post.content,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ),
+
+          // Cover Photo
+          if (post.images.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 9, // Standard aspect ratio for photos
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  post.images.first.imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
               ),
             ),
-          ],
-        ),
+          const SizedBox(height: 8),
+
+          // Title Preview and Like Count
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.title.isNotEmpty
+                      ? post.title.length > 30
+                          ? '${post.title.substring(0, 30)}...'
+                          : post.title
+                      : 'No Title',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis, // Prevents overflow
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Text('❤️', style: TextStyle(fontSize: 16)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${post.likesCount}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }

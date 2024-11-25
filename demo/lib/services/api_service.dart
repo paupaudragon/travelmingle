@@ -3,27 +3,47 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   // Fetch posts
   Future<List<Post>> fetchPosts() async {
     final String url = "$baseApiUrl/posts/";
 
     try {
+      // Make the GET request
       final response = await http.get(Uri.parse(url));
+
+      // Check if the response status code indicates success
       if (response.statusCode == 200) {
+        // Decode the JSON response
         List<dynamic> data = json.decode(response.body);
+
+        // Log the response body for debugging purposes
         print('API Response: ${response.body}');
-        final posts = data.map((json) => Post.fromJson(json)).toList();
-        posts.forEach((post) =>
-            print('Post: ${post.title}, Comments: ${post.comments.length}'));
+
+        // Map the JSON data to a list of Post objects
+        List<Post> posts = data.map((json) => Post.fromJson(json)).toList();
+
+        // Log each post title and number of comments for debugging
+        for (var post in posts) {
+          print(
+              'Post: ${post.title}, Comments: ${post.detailedComments.length}');
+        }
 
         return posts;
       } else {
-        throw Exception('Failed to load posts');
+        // Throw an exception if the server response is not successful
+        throw Exception(
+            'Failed to load posts. Status code: ${response.statusCode}');
       }
     } catch (e) {
+      // Log the error and return an empty list
       print('Error fetching posts: $e');
       return [];
     }
@@ -109,5 +129,126 @@ class ApiService {
     } catch (e) {
       print('Error updating comments count: $e');
     }
+  }
+
+  // Register a new user
+  static Future<String?> registerAUser({
+    required String username,
+    required String email,
+    required String password,
+    String? bio,
+    String? profileImagePath,
+  }) async {
+    const String url = "$baseApiUrl/register/";
+
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      request.fields['username'] = username;
+      request.fields['email'] = email;
+      request.fields['password'] = password;
+
+      if (bio != null) {
+        request.fields['bio'] = bio;
+      }
+
+      if (profileImagePath != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'profile_picture',
+          profileImagePath,
+        ));
+      }
+
+      var response = await request.send();
+
+      if (response.statusCode == 201) {
+        return null; // Registration successful
+      } else if (response.statusCode == 400) {
+        final responseBody = await response.stream.bytesToString();
+        final Map<String, dynamic> responseData = jsonDecode(responseBody);
+        if (responseData.containsKey('error')) {
+          return responseData['error'].toString();
+        }
+        return 'Unknown error occurred';
+      } else {
+        throw Exception('Unexpected error: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // Login function to get tokens
+  Future<bool> login(String username, String password) async {
+    const String url = "$baseApiUrl/token/";
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "username": username,
+          "password": password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _storage.write(key: "access_token", value: data["access"]);
+        await _storage.write(key: "refresh_token", value: data["refresh"]);
+        return true; // Login successful
+      } else {
+        return false; // Login failed
+      }
+    } catch (e) {
+      throw Exception("Failed to login: $e");
+    }
+  }
+
+  // Get stored access token
+  Future<String?> getAccessToken() async {
+    return await _storage.read(key: "access_token");
+  }
+
+  // Get stored refresh token
+  Future<String?> getRefreshToken() async {
+    return await _storage.read(key: "refresh_token");
+  }
+
+  // Refresh access token
+  Future<void> refreshAccessToken() async {
+    final String? refreshToken = await getRefreshToken();
+
+    if (refreshToken == null) {
+      throw Exception("No refresh token available");
+    }
+
+    const String url = "$baseApiUrl/token/refresh/";
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "refresh": refreshToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _storage.write(key: "access_token", value: data["access"]);
+      } else {
+        throw Exception("Failed to refresh token");
+      }
+    } catch (e) {
+      throw Exception("Token refresh error: $e");
+    }
+  }
+
+  // Logout by clearing all tokens
+  Future<void> logout() async {
+    await _storage.delete(key: "access_token");
+    await _storage.delete(key: "refresh_token");
   }
 }
