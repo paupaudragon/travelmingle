@@ -9,7 +9,7 @@ from .views import (
     LikeListCreateView, LikeDetailView,
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
-    NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView
+    NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView

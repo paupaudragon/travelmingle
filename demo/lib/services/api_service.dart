@@ -3,8 +3,13 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   // Fetch posts
   Future<List<Post>> fetchPosts() async {
@@ -170,5 +175,80 @@ class ApiService {
     } catch (e) {
       throw Exception('Error: $e');
     }
+  }
+
+  // Login function to get tokens
+  Future<bool> login(String username, String password) async {
+    const String url = "$baseApiUrl/token/";
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "username": username,
+          "password": password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _storage.write(key: "access_token", value: data["access"]);
+        await _storage.write(key: "refresh_token", value: data["refresh"]);
+        return true; // Login successful
+      } else {
+        return false; // Login failed
+      }
+    } catch (e) {
+      throw Exception("Failed to login: $e");
+    }
+  }
+
+  // Get stored access token
+  Future<String?> getAccessToken() async {
+    return await _storage.read(key: "access_token");
+  }
+
+  // Get stored refresh token
+  Future<String?> getRefreshToken() async {
+    return await _storage.read(key: "refresh_token");
+  }
+
+  // Refresh access token
+  Future<void> refreshAccessToken() async {
+    final String? refreshToken = await getRefreshToken();
+
+    if (refreshToken == null) {
+      throw Exception("No refresh token available");
+    }
+
+    const String url = "$baseApiUrl/token/refresh/";
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "refresh": refreshToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _storage.write(key: "access_token", value: data["access"]);
+      } else {
+        throw Exception("Failed to refresh token");
+      }
+    } catch (e) {
+      throw Exception("Token refresh error: $e");
+    }
+  }
+
+  // Logout by clearing all tokens
+  Future<void> logout() async {
+    await _storage.delete(key: "access_token");
+    await _storage.delete(key: "refresh_token");
   }
 }
