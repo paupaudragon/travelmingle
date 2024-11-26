@@ -5,6 +5,8 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from ..models import Posts
 from ..serializers import PostSerializer
 
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import AccessToken
 
 class PostListCreateView(ListCreateAPIView):
     queryset = Posts.objects.select_related('user').all()
@@ -23,7 +25,16 @@ class PostListCreateView(ListCreateAPIView):
         operation_description="Retrieve a list of all posts with their associated user details.",
         responses={200: PostSerializer(many=True)},
     )
+    # def get(self, request, *args, **kwargs):
+    #     return super().get(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
+        token = request.headers.get("Authorization", "").split("Bearer ")[-1]
+        try:
+            decoded = AccessToken(token)
+            print("Decoded Token:", decoded)
+        except TokenError as e:
+            print("Token Error:", e)
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
@@ -34,6 +45,10 @@ class PostListCreateView(ListCreateAPIView):
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        # Automatically associate the logged-in user with the post
+        serializer.save(user=self.request.user)   
 
 
 class PostDetailView(RetrieveUpdateDestroyAPIView):

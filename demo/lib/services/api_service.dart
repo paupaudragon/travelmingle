@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:demo/models/comment_model.dart';
 import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 
@@ -15,17 +16,33 @@ class ApiService {
   Future<List<Post>> fetchPosts() async {
     final String url = "$baseApiUrl/posts/";
 
+    // Get the access token from secure storage
+    String? token = await getAccessToken();
+
+    print('Fetching posts from: $url'); // Debugging URL
+    print('Access Token: $token'); // Debugging token
+
     try {
-      // Make the GET request
-      final response = await http.get(Uri.parse(url));
+      // Make the GET request with Authorization header
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          if (token != null) "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       // Check if the response status code indicates success
       if (response.statusCode == 200) {
         // Decode the JSON response
         List<dynamic> data = json.decode(response.body);
 
-        // Log the response body for debugging purposes
-        print('API Response: ${response.body}');
+        // // Log the response body for debugging purposes
+        // print('Response status: ${response.statusCode}');
+        // print('API Response: ${response.body}');
 
         // Map the JSON data to a list of Post objects
         List<Post> posts = data.map((json) => Post.fromJson(json)).toList();
@@ -49,29 +66,72 @@ class ApiService {
     }
   }
 
+  Future<List<Comment>> fetchComments(int postId) async {
+    final String url = "$baseApiUrl/posts/$postId/comments/";
+
+    // Get the access token from secure storage
+    String? token = await getAccessToken();
+
+    print('Fetching comments from: $url'); // Debugging URL
+    print('Access Token: $token'); // Debugging token
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          if (token != null) "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+
+        // Map the JSON data to a list of Comment objects
+        return data.map((json) => Comment.fromJson(json)).toList();
+      } else {
+        throw Exception(
+            'Failed to load comments. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching comments: $e');
+      return [];
+    }
+  }
+
   // Add comment
   Future<http.Response> addComment({
     required int postId,
-    required int userId,
     required String content,
-    int? parentId,
   }) async {
     final String url = "$baseApiUrl/comments/";
 
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse(url),
-    );
-
-    request.fields['post'] = postId.toString();
-    request.fields['user'] = userId.toString();
-    request.fields['content'] = content;
-    if (parentId != null) {
-      request.fields['parent'] = parentId.toString();
+    String? token = await getAccessToken();
+    if (token == null) {
+      throw Exception("User is not authenticated. No token found.");
     }
 
-    final response = await request.send();
-    return http.Response.fromStream(response);
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "post": postId,
+          "content": content,
+        }),
+      );
+
+      return response;
+    } catch (e) {
+      print("Error adding comment: $e");
+      rethrow;
+    }
   }
 
   // Update likes for a post
@@ -207,7 +267,29 @@ class ApiService {
 
   // Get stored access token
   Future<String?> getAccessToken() async {
-    return await _storage.read(key: "access_token");
+    String? token = await _storage.read(key: "access_token");
+    if (token == null) {
+      print("No access token found.");
+      return null;
+    }
+
+    // Decode token to check expiration
+    final parts = token.split('.');
+    if (parts.length == 3) {
+      final payload = jsonDecode(
+          utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      final exp = payload["exp"];
+      final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      if (exp != null && exp < currentTime) {
+        print("Access token expired, refreshing...");
+        await refreshAccessToken();
+        token = await _storage.read(key: "access_token");
+      }
+    }
+
+    print("Retrieved access token: $token");
+    return token;
   }
 
   // Get stored refresh token
@@ -250,5 +332,43 @@ class ApiService {
   Future<void> logout() async {
     await _storage.delete(key: "access_token");
     await _storage.delete(key: "refresh_token");
+    print("Tokens cleared successfully.");
+  }
+
+  // Get user Info
+  Future<Map<String, dynamic>?> getUserInfo() async {
+    final String url = "$baseApiUrl/users/me/";
+
+    // Get the access token from secure storage
+    String? token = await getAccessToken();
+
+    if (token == null) {
+      print("User is not authenticated.");
+      return null;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Return the parsed user info as a map
+        return json.decode(response.body);
+      } else {
+        print("Failed to fetch user info: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print("Error fetching user info: $e");
+      return null;
+    }
   }
 }

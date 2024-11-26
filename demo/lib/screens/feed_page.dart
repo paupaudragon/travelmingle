@@ -1,3 +1,4 @@
+import 'package:demo/screens/login_page.dart';
 import 'package:flutter/material.dart';
 import '../widgets/header.dart'; // Import Header
 import '../widgets/footer.dart'; // Import Footer
@@ -23,6 +24,28 @@ class _FeedPageState extends State<FeedPage> {
     fetchPosts();
   }
 
+  void onPostTap(Post post) async {
+    // Fetch and print user info
+    final apiService = ApiService();
+    final userInfo = await apiService.getUserInfo();
+
+    if (userInfo != null) {
+      print("User Info:");
+      print("Username: ${userInfo['username']}");
+      print("Email: ${userInfo['email']}");
+    } else {
+      print("Failed to fetch user info.");
+    }
+
+    //Optionally, navigate to a detailed post page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoginPage(),
+      ),
+    );
+  }
+
   Future<void> fetchPosts() async {
     final apiService = ApiService();
     final fetchedPosts = await apiService.fetchPosts();
@@ -34,9 +57,20 @@ class _FeedPageState extends State<FeedPage> {
     });
   }
 
-  void requireLogin(BuildContext context) {
-    if (!isLoggedIn) {
+  void requireLogin(BuildContext context, {Function? onSuccess}) async {
+    final apiService = ApiService();
+    final token = await apiService.getAccessToken();
+
+    if (token == null) {
       Navigator.pushNamed(context, '/login'); // Redirect to Login Page
+    } else {
+      setState(() {
+        isLoggedIn = true; // Update login state
+      });
+
+      if (onSuccess != null) {
+        onSuccess(); // Execute the success callback
+      }
     }
   }
 
@@ -69,7 +103,7 @@ class _FeedPageState extends State<FeedPage> {
               itemBuilder: (context, index) {
                 final post = posts[index];
                 return GestureDetector(
-                  onTap: () => requireLogin(context), // Trigger login on tap
+                  onTap: () => onPostTap(post), // Trigger login on tap
                   child: PostCard(post: post),
                 );
               },

@@ -21,6 +21,17 @@ class _LoginPageState extends State<LoginPage> {
     final String username = _emailController.text.trim();
     final String password = _passwordController.text;
 
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill out all fields')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+    
     try {
       final bool success = await ApiService().login(username, password);
       if (success) {

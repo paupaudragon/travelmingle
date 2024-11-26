@@ -1,4 +1,4 @@
-from .user_views import UserListCreateView, UserDetailView
+from .user_views import UserListCreateView, UserDetailView, UserInfoView
 from .post_views import PostListCreateView, PostDetailView
 from .comment_views import CommentListCreateView, CommentDetailView
 from .like_views import LikeListCreateView, LikeDetailView

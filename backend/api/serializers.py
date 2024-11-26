@@ -69,6 +69,11 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_likes_count(self, obj):
         return obj.comment_likes.count()
 
+    ###
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

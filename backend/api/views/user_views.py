@@ -3,6 +3,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from ..models import Users
 from ..serializers import UserSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 
 class UserListCreateView(ListCreateAPIView):
@@ -46,3 +49,19 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+class UserInfoView(APIView):
+    """
+    Retrieve the currently authenticated user's information.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+ 

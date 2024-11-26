@@ -10,6 +10,7 @@ from .views import (
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
+    UserInfoView,
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -60,4 +61,6 @@ urlpatterns = [
     path('notifications/<int:pk>/mark-read/',
          MarkNotificationAsReadView.as_view(), name='notification-mark-read'),
     # Only for development
+
+     path('users/me/', UserInfoView.as_view(), name='user-info'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
