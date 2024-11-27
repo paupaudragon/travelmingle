@@ -339,6 +339,8 @@ class ApiService {
   Future<Map<String, dynamic>?> getUserInfo() async {
     final String url = "$baseApiUrl/users/me/";
 
+    print("Getting user info is called ");
+
     // Get the access token from secure storage
     String? token = await getAccessToken();
 

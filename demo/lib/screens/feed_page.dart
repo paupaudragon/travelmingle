@@ -1,4 +1,5 @@
 import 'package:demo/screens/login_page.dart';
+import 'package:demo/screens/post_page.dart';
 import 'package:flutter/material.dart';
 import '../widgets/header.dart'; // Import Header
 import '../widgets/footer.dart'; // Import Footer
@@ -41,7 +42,7 @@ class _FeedPageState extends State<FeedPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LoginPage(),
+        builder: (context) => PostPage(post: post),
       ),
     );
   }
@@ -103,7 +104,7 @@ class _FeedPageState extends State<FeedPage> {
               itemBuilder: (context, index) {
                 final post = posts[index];
                 return GestureDetector(
-                  onTap: () => onPostTap(post), // Trigger login on tap
+                  onTap: () => onPostTap(post),
                   child: PostCard(post: post),
                 );
               },

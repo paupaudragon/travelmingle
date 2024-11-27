@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute: '/auth-check', // Set your initial route
+      initialRoute: '/login', // Set your initial route
       routes: {
         '/auth-check': (context) => const AuthCheck(),
         '/feed': (context) => const FeedPage(), // Home route
