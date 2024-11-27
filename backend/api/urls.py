@@ -10,11 +10,10 @@ from .views import (
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
-    UserInfoView,
+    UserInfoView, ToggleLikeView, PostCommentsView,
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
 
 urlpatterns = [
 
@@ -31,11 +30,19 @@ urlpatterns = [
     path('posts/', PostListCreateView.as_view(), name='post-list-create'),
     path('posts/<int:pk>/', PostDetailView.as_view(), name='post-detail'),
 
+#Added this lines
+     path('posts/<int:post_id>/comments/', PostCommentsView.as_view(), name='post-comments'),
+     path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),
+     path('posts/<int:post_id>/save/', ToggleLikeView.as_view(), name='post-save'),
+
     # Comment Endpoints
     path('comments/', CommentListCreateView.as_view(),
          name='comment-list-create'),
     path('comments/<int:pk>/',
          CommentDetailView.as_view(), name='comment-detail'),
+         
+#Added this lines
+     path('comments/<int:comment_id>/like/', ToggleLikeView.as_view(), name='comment-like'),
 
     # Like Endpoints
     path('likes/', LikeListCreateView.as_view(), name='like-list-create'),

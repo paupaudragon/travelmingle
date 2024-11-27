@@ -1,16 +1,30 @@
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from ..models import Posts
+
+#Serializer
 from ..serializers import PostSerializer
 
+#Authentication lib
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.generics import RetrieveAPIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+
+#Always import new models
+from ..models import Posts, Likes, Comments
 
 class PostListCreateView(ListCreateAPIView):
     queryset = Posts.objects.select_related('user').all()
     serializer_class = PostSerializer
+
+    def get_serializer_context(self):
+        """Pass request context for SerializerMethodField to work."""
+        return {'request': self.request}
 
     def get_permissions(self):
         """
@@ -58,6 +72,11 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     # Require authentication for all methods in this class
     permission_classes = [IsAuthenticated]
 
+
+    def get_serializer_context(self):
+        """Pass request context for SerializerMethodField to work."""
+        return {'request': self.request}
+
     @swagger_auto_schema(
         operation_summary="Retrieve a post",
         operation_description="Retrieve details of a specific post by ID, including its associated user and comments.",
@@ -82,3 +101,47 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
+
+class ToggleLikeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        post_id = kwargs.get('post_id')
+        comment_id = kwargs.get('comment_id')
+
+        if post_id and comment_id:
+            return Response({"error": "Provide either post_id or comment_id, not both."}, status=400)
+
+        if post_id:
+            try:
+                post = Posts.objects.get(id=post_id)
+                like, created = Likes.objects.get_or_create(user=user, post=post)
+                if not created:
+                    like.delete()  # Unlike
+                    is_liked = False
+                else:
+                    is_liked = True
+                likes_count = post.post_likes.count()
+            except Posts.DoesNotExist:
+                return Response({"error": "Post not found"}, status=404)
+
+        elif comment_id:
+            try:
+                comment = Comments.objects.get(id=comment_id)
+                like, created = Likes.objects.get_or_create(user=user, comment=comment)
+                if not created:
+                    like.delete()  # Unlike
+                    is_liked = False
+                else:
+                    is_liked = True
+                likes_count = comment.comment_likes.count()
+            except Comments.DoesNotExist:
+                return Response({"error": "Comment not found"}, status=404)
+        else:
+            return Response({"error": "Invalid request, provide post_id or comment_id"}, status=400)
+
+        return Response({'is_liked': is_liked, 'likes_count': likes_count}, status=200)
+
+
+

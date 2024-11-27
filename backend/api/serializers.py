@@ -53,13 +53,21 @@ class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     replies = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Comments
         fields = ['id', 'post', 'user', 'content', 'created_at', 'updated_at',
-                  'reply_to', 'replies', 'likes_count', 'mentioned_users']
+                  'reply_to', 'replies', 'likes_count', 'mentioned_users', 'is_liked',]
         extra_kwargs = {
             'reply_to': {'required': False},
+        }
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "username": obj.user.username,
+            "profile_picture_url": obj.user.profile_picture.url if obj.user.profile_picture else None,
         }
 
     def get_replies(self, obj):
@@ -70,6 +78,13 @@ class CommentSerializer(serializers.ModelSerializer):
         return obj.comment_likes.count()
 
     ###
+    def get_is_liked(self, obj):
+        """Check if the logged-in user liked the comment."""
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            return obj.comment_likes.filter(user=request.user).exists()
+        return False
+
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
@@ -81,12 +96,14 @@ class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.SerializerMethodField()
     collected_count = serializers.SerializerMethodField()
     detailed_comments = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+    is_saved = serializers.SerializerMethodField()
 
     class Meta:
         model = Posts
         fields = ['id', 'user', 'title', 'content', 'location', 'created_at',
                   'updated_at', 'status', 'visibility', 'images', 'likes_count',
-                  'collected_count', 'detailed_comments']
+                  'collected_count', 'detailed_comments', 'is_liked', 'is_saved',]
 
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""
@@ -102,6 +119,20 @@ class PostSerializer(serializers.ModelSerializer):
             reply_to=None)  # Fetch only top-level comments
         return CommentSerializer(comments, many=True).data
 
+    ##   
+    def get_is_liked(self, obj):
+        """Check if the logged-in user liked the post."""
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            return obj.post_likes.filter(user=request.user).exists()
+        return False
+
+    def get_is_saved(self, obj):
+        """Check if the logged-in user saved the post."""
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            return obj.collected_by.filter(user=request.user).exists()
+        return False
 
 class LikeSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

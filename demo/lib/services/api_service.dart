@@ -1,279 +1,68 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:demo/models/comment_model.dart';
-import 'package:http/http.dart' as http;
-import '../models/post_model.dart';
-
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/post_model.dart';
+import '../models/comment_model.dart';
 
 class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  String? _cachedToken;
 
-  // Fetch posts
-  Future<List<Post>> fetchPosts() async {
-    final String url = "$baseApiUrl/posts/";
-
-    // Get the access token from secure storage
-    String? token = await getAccessToken();
-
-    print('Fetching posts from: $url'); // Debugging URL
-    print('Access Token: $token'); // Debugging token
-
-    try {
-      // Make the GET request with Authorization header
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          if (token != null) "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
-        },
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      // Check if the response status code indicates success
-      if (response.statusCode == 200) {
-        // Decode the JSON response
-        List<dynamic> data = json.decode(response.body);
-
-        // // Log the response body for debugging purposes
-        // print('Response status: ${response.statusCode}');
-        // print('API Response: ${response.body}');
-
-        // Map the JSON data to a list of Post objects
-        List<Post> posts = data.map((json) => Post.fromJson(json)).toList();
-
-        // Log each post title and number of comments for debugging
-        for (var post in posts) {
-          print(
-              'Post: ${post.title}, Comments: ${post.detailedComments.length}');
-        }
-
-        return posts;
-      } else {
-        // Throw an exception if the server response is not successful
-        throw Exception(
-            'Failed to load posts. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      // Log the error and return an empty list
-      print('Error fetching posts: $e');
-      return [];
-    }
-  }
-
-  Future<List<Comment>> fetchComments(int postId) async {
-    final String url = "$baseApiUrl/posts/$postId/comments/";
-
-    // Get the access token from secure storage
-    String? token = await getAccessToken();
-
-    print('Fetching comments from: $url'); // Debugging URL
-    print('Access Token: $token'); // Debugging token
-
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          if (token != null) "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
-        },
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-
-        // Map the JSON data to a list of Comment objects
-        return data.map((json) => Comment.fromJson(json)).toList();
-      } else {
-        throw Exception(
-            'Failed to load comments. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching comments: $e');
-      return [];
-    }
-  }
-
-  // Add comment
-  Future<http.Response> addComment({
-    required int postId,
-    required String content,
+  // Centralized authenticated request handler
+  Future<http.Response> makeAuthenticatedRequest({
+    required String url,
+    required String method,
+    Map<String, String>? headers,
+    dynamic body,
   }) async {
-    final String url = "$baseApiUrl/comments/";
+    final String? token = await getAccessToken();
 
-    String? token = await getAccessToken();
     if (token == null) {
       throw Exception("User is not authenticated. No token found.");
     }
 
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "post": postId,
-          "content": content,
-        }),
-      );
+    // Prepare the headers
+    final Map<String, String> requestHeaders = {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+      ...?headers,
+    };
 
-      return response;
+    try {
+      switch (method.toUpperCase()) {
+        case 'GET':
+          return await http.get(Uri.parse(url), headers: requestHeaders);
+        case 'POST':
+          return await http.post(Uri.parse(url),
+              headers: requestHeaders, body: jsonEncode(body));
+        case 'PUT':
+          return await http.put(Uri.parse(url),
+              headers: requestHeaders, body: jsonEncode(body));
+        case 'PATCH':
+          return await http.patch(Uri.parse(url),
+              headers: requestHeaders, body: jsonEncode(body));
+        case 'DELETE':
+          return await http.delete(Uri.parse(url), headers: requestHeaders);
+        default:
+          throw Exception("Unsupported HTTP method: $method");
+      }
     } catch (e) {
-      print("Error adding comment: $e");
-      rethrow;
+      throw Exception("Error making authenticated request: $e");
     }
   }
 
-  // Update likes for a post
-  Future<void> updatePostLikes(int postId, bool isLiked) async {
-    final String url = "$baseApiUrl/posts/$postId/like/";
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'is_liked': isLiked}),
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to update likes');
-      }
-    } catch (e) {
-      print('Error updating likes: $e');
-    }
-  }
-
-  // Update saves for a post
-  Future<void> updatePostSaves(int postId, bool isSaved) async {
-    final String url = "$baseApiUrl/posts/$postId/save/";
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'is_saved': isSaved}),
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to update saves');
-      }
-    } catch (e) {
-      print('Error updating saves: $e');
-    }
-  }
-
-  // Update comments count
-  Future<void> updateCommentsCount(int postId, int newCount) async {
-    final String url = "$baseApiUrl/posts/$postId/comments_count/";
-
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'comments_count': newCount}),
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to update comments count');
-      }
-    } catch (e) {
-      print('Error updating comments count: $e');
-    }
-  }
-
-  // Register a new user
-  static Future<String?> registerAUser({
-    required String username,
-    required String email,
-    required String password,
-    String? bio,
-    String? profileImagePath,
-  }) async {
-    const String url = "$baseApiUrl/register/";
-
-    try {
-      var request = http.MultipartRequest('POST', Uri.parse(url));
-      request.fields['username'] = username;
-      request.fields['email'] = email;
-      request.fields['password'] = password;
-
-      if (bio != null) {
-        request.fields['bio'] = bio;
-      }
-
-      if (profileImagePath != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'profile_picture',
-          profileImagePath,
-        ));
-      }
-
-      var response = await request.send();
-
-      if (response.statusCode == 201) {
-        return null; // Registration successful
-      } else if (response.statusCode == 400) {
-        final responseBody = await response.stream.bytesToString();
-        final Map<String, dynamic> responseData = jsonDecode(responseBody);
-        if (responseData.containsKey('error')) {
-          return responseData['error'].toString();
-        }
-        return 'Unknown error occurred';
-      } else {
-        throw Exception('Unexpected error: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error: $e');
-    }
-  }
-
-  // Login function to get tokens
-  Future<bool> login(String username, String password) async {
-    const String url = "$baseApiUrl/token/";
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "username": username,
-          "password": password,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        await _storage.write(key: "access_token", value: data["access"]);
-        await _storage.write(key: "refresh_token", value: data["refresh"]);
-        return true; // Login successful
-      } else {
-        return false; // Login failed
-      }
-    } catch (e) {
-      throw Exception("Failed to login: $e");
-    }
-  }
-
-  // Get stored access token
+  // Token Management
   Future<String?> getAccessToken() async {
-    String? token = await _storage.read(key: "access_token");
-    if (token == null) {
-      print("No access token found.");
-      return null;
+    if (_cachedToken != null) {
+      return _cachedToken;
     }
 
-    // Decode token to check expiration
+    String? token = await _storage.read(key: "access_token");
+    if (token == null) return null;
+
+    // Decode and check expiration
     final parts = token.split('.');
     if (parts.length == 3) {
       final payload = jsonDecode(
@@ -282,95 +71,207 @@ class ApiService {
       final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       if (exp != null && exp < currentTime) {
-        print("Access token expired, refreshing...");
         await refreshAccessToken();
         token = await _storage.read(key: "access_token");
       }
     }
-
-    print("Retrieved access token: $token");
+    _cachedToken = token;
     return token;
   }
 
-  // Get stored refresh token
-  Future<String?> getRefreshToken() async {
-    return await _storage.read(key: "refresh_token");
-  }
-
-  // Refresh access token
   Future<void> refreshAccessToken() async {
-    final String? refreshToken = await getRefreshToken();
-
+    final String? refreshToken = await _storage.read(key: "refresh_token");
     if (refreshToken == null) {
       throw Exception("No refresh token available");
     }
 
     const String url = "$baseApiUrl/token/refresh/";
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "refresh": refreshToken,
-        }),
-      );
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"refresh": refreshToken}),
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        await _storage.write(key: "access_token", value: data["access"]);
-      } else {
-        throw Exception("Failed to refresh token");
-      }
-    } catch (e) {
-      throw Exception("Token refresh error: $e");
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await _storage.write(key: "access_token", value: data["access"]);
+      _cachedToken = data["access"];
+    } else {
+      throw Exception("Failed to refresh token: ${response.body}");
     }
   }
 
-  // Logout by clearing all tokens
   Future<void> logout() async {
     await _storage.delete(key: "access_token");
     await _storage.delete(key: "refresh_token");
-    print("Tokens cleared successfully.");
+    _cachedToken = null;
+    print("Logged out successfully.");
   }
 
-  // Get user Info
-  Future<Map<String, dynamic>?> getUserInfo() async {
-    final String url = "$baseApiUrl/users/me/";
+  // Posts
+  Future<List<Post>> fetchPosts() async {
+    final response = await makeAuthenticatedRequest(
+      url: "$baseApiUrl/posts/",
+      method: 'GET',
+    );
 
-    print("Getting user info is called ");
-
-    // Get the access token from secure storage
-    String? token = await getAccessToken();
-
-    if (token == null) {
-      print("User is not authenticated.");
-      return null;
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      print("Fetched Posts Response: $data"); // Log the full response
+      return data.map((json) => Post.fromJson(json)).toList();
+    } else {
+      print("Error fetching posts: ${response.body}");
+      throw Exception("Failed to fetch posts: ${response.body}");
     }
+  }
+
+  Future<Post> fetchPostDetail(int postId) async {
+    final String url = "$baseApiUrl/posts/$postId/";
 
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
-        },
+      // Make an authenticated GET request to fetch post details
+      final response = await makeAuthenticatedRequest(
+        url: url,
+        method: 'GET',
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
-        // Return the parsed user info as a map
-        return json.decode(response.body);
+        // Parse the response into a Post object
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        return Post.fromJson(jsonData);
       } else {
-        print("Failed to fetch user info: ${response.body}");
-        return null;
+        throw Exception(
+            'Failed to fetch post detail. Status code: ${response.statusCode}');
       }
     } catch (e) {
-      print("Error fetching user info: $e");
-      return null;
+      throw Exception("Error fetching post detail: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>> updatePostLikes(int postId) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/posts/$postId/like/',
+      method: 'POST',
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to update likes: ${response.body}");
+    }
+  }
+
+  Future<Map<String, dynamic>> updateCommentLikes(int commentId) async {
+    final response = await makeAuthenticatedRequest(
+      url: "$baseApiUrl/comments/$commentId/like/",
+      method: 'POST',
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to update likes: ${response.body}");
+    }
+  }
+
+  // Comments
+  Future<List<Comment>> fetchComments(int postId) async {
+    final response = await makeAuthenticatedRequest(
+      url: "$baseApiUrl/posts/$postId/comments/",
+      method: 'GET',
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => Comment.fromJson(json)).toList();
+    } else {
+      throw Exception("Failed to fetch comments: ${response.body}");
+    }
+  }
+
+  Future<void> addComment(
+      {required int postId, required String content}) async {
+    await makeAuthenticatedRequest(
+      url: "$baseApiUrl/comments/",
+      method: 'POST',
+      body: {"post": postId, "content": content},
+    );
+  }
+
+  // User Management
+  Future<bool> login(String username, String password) async {
+    const String url = "$baseApiUrl/token/";
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"username": username, "password": password}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await _storage.write(key: "access_token", value: data["access"]);
+      await _storage.write(key: "refresh_token", value: data["refresh"]);
+      _cachedToken = data["access"];
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserInfo() async {
+    final response = await makeAuthenticatedRequest(
+      url: "$baseApiUrl/users/me/",
+      method: 'GET',
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to fetch user info: ${response.body}");
+    }
+  }
+
+  static Future<String?> registerAUser({
+    required String username,
+    required String email,
+    required String password,
+    String? bio,
+    String? profileImagePath,
+  }) async {
+    const String url = "$baseApiUrl/register/";
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..fields['username'] = username
+      ..fields['email'] = email
+      ..fields['password'] = password;
+
+    if (bio != null) request.fields['bio'] = bio;
+    if (profileImagePath != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'profile_picture',
+        profileImagePath,
+      ));
+    }
+
+    final response = await request.send();
+    if (response.statusCode == 201) {
+      return null; // Registration successful
+    } else {
+      final responseBody = await response.stream.bytesToString();
+      final Map<String, dynamic> responseData = jsonDecode(responseBody);
+      return responseData['error'] ?? 'Unknown error occurred';
+    }
+  }
+
+  Future<void> updatePostSaves(int postId, bool isSaved) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/posts/$postId/save/',
+      method: 'POST',
+      body: {'is_saved': isSaved}, // Pass the save status in the request body
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to update saves: ${response.body}");
     }
   }
 }

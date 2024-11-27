@@ -12,10 +12,12 @@ class Post {
   final DateTime updatedAt;
   final String status;
   final String visibility;
-  final int likesCount;
   final int collectedCount;
   final List<Comment> detailedComments;
   final List<PostImage> images;
+  int likesCount;
+  bool isLiked; // New field
+  bool isSaved; // New field
 
   Post({
     required this.id,
@@ -31,6 +33,8 @@ class Post {
     required this.collectedCount,
     required this.detailedComments,
     required this.images,
+    required this.isLiked, // New field
+    required this.isSaved, // New field
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -46,12 +50,14 @@ class Post {
       visibility: json['visibility'],
       likesCount: json['likes_count'] ?? 0,
       collectedCount: json['collected_count'] ?? 0,
-      detailedComments: (json['detailed_comments'] as List)
+      detailedComments: (json['detailed_comments'] as List? ?? [])
           .map((comment) => Comment.fromJson(comment))
           .toList(),
-      images: (json['images'] as List)
+      images: (json['images'] as List? ?? [])
           .map((image) => PostImage.fromJson(image))
           .toList(),
+      isLiked: json['is_liked'] ?? false, // Parse from backend response
+      isSaved: json['is_saved'] ?? false, // Parse from backend response
     );
   }
 }

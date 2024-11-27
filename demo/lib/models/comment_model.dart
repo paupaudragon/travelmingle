@@ -9,8 +9,8 @@ class Comment {
   final DateTime updatedAt;
   final int? replyTo;
   final List<Comment> replies;
-  final int likesCount;
-  final List<int> mentionedUsers;
+  int likesCount;
+  bool isLiked; // New field
 
   Comment({
     required this.id,
@@ -22,7 +22,7 @@ class Comment {
     this.replyTo,
     required this.replies,
     required this.likesCount,
-    required this.mentionedUsers,
+    required this.isLiked, // New field
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -34,11 +34,11 @@ class Comment {
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       replyTo: json['reply_to'],
-      replies: (json['replies'] as List)
+      replies: (json['replies'] as List? ?? [])
           .map((reply) => Comment.fromJson(reply))
           .toList(),
       likesCount: json['likes_count'] ?? 0,
-      mentionedUsers: List<int>.from(json['mentioned_users'] ?? []),
+      isLiked: json['is_liked'] ?? false, // Parse from backend response
     );
   }
 }

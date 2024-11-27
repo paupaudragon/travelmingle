@@ -1,8 +1,9 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from ..models import Comments
 from ..serializers import CommentSerializer
+from rest_framework.permissions import IsAuthenticated
 
 
 class CommentListCreateView(ListCreateAPIView):
@@ -63,3 +64,11 @@ class CommentDetailView(RetrieveUpdateDestroyAPIView):
     )
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
+
+class PostCommentsView(ListAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        post_id = self.kwargs['post_id']
+        return Comments.objects.filter(post_id=post_id, reply_to=None)        
