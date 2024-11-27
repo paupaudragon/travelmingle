@@ -111,12 +111,27 @@ class _FeedPageState extends State<FeedPage> {
             ),
       bottomNavigationBar: Footer(
         onHomePressed: () => print("Home button pressed"),
-        onShopPressed: () => print("Shop button pressed"),
+        onLogoutPressed: () => handleLogout(context),
         onPlusPressed: () =>
             requireLogin(context), // Require login for + button
         onMessagesPressed: () => requireLogin(context),
         onMePressed: () => requireLogin(context),
       ),
     );
+  }
+
+  void handleLogout(BuildContext context) async {
+    try {
+      await ApiService().logout(); // Call the logout service
+      print("Logged out successfully.");
+      // Navigate to the login page after logout
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      print("Error during logout: $e");
+      // Optionally, show an error message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to log out. Please try again.")),
+      );
+    }
   }
 }

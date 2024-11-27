@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Footer extends StatelessWidget {
   final Function onHomePressed;
-  final Function onShopPressed;
+  final Function onLogoutPressed;
   final Function onPlusPressed;
   final Function onMessagesPressed;
   final Function onMePressed;
@@ -10,7 +10,7 @@ class Footer extends StatelessWidget {
   const Footer({
     Key? key,
     required this.onHomePressed,
-    required this.onShopPressed,
+    required this.onLogoutPressed,
     required this.onPlusPressed,
     required this.onMessagesPressed,
     required this.onMePressed,
@@ -31,9 +31,10 @@ class Footer extends StatelessWidget {
           ),
           // Shop Button
           IconButton(
-            icon: const Icon(Icons.shopping_bag, size: 28, color: Colors.black),
-            onPressed: () => onShopPressed(),
+            icon: const Icon(Icons.logout, size: 28, color: Colors.black),
+            onPressed: () => onLogoutPressed(),
           ),
+
           // "+" Button (Square Design)
           GestureDetector(
             onTap: () => onPlusPressed(),
@@ -43,7 +44,8 @@ class Footer extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Colors.orange, // Background color of the "+" button
-                borderRadius: BorderRadius.circular(8), // Rounded corners for square button
+                borderRadius: BorderRadius.circular(
+                    8), // Rounded corners for square button
               ),
               child: const Icon(Icons.add, size: 28, color: Colors.white),
             ),
