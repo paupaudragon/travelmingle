@@ -143,7 +143,7 @@ class Comments(models.Model):
         Users, on_delete=models.CASCADE, related_name="comments")
     # Every comment belongs to a post
     post = models.ForeignKey(Posts, on_delete=models.CASCADE)
-    content = models.TextField()  # The comment content, which may include @mentions
+    content = models.TextField(blank=True, null=True)  # The comment content, which may include @mentions
     mentioned_users = models.ManyToManyField(  # Users mentioned in the comment
         Users,
         related_name="mentioned_in",
@@ -157,6 +157,11 @@ class Comments(models.Model):
         on_delete=models.CASCADE,
         related_name="replies",
         help_text="The comment this comment is replying to",
+    )
+    comment_image = models.ImageField(
+        upload_to='comment_images/',
+        null=True,
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

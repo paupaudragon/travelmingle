@@ -4,13 +4,14 @@ class Comment {
   final int id;
   final int postId;
   final User user;
-  final String content;
+  final String? content;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int? replyTo;
   final List<Comment> replies;
   int likesCount;
   bool isLiked; // New field
+  final String? commentPictureUrl; // New field
 
   Comment({
     required this.id,
@@ -23,6 +24,7 @@ class Comment {
     required this.replies,
     required this.likesCount,
     required this.isLiked, // New field
+    this.commentPictureUrl, // New field
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class Comment {
           .toList(),
       likesCount: json['likes_count'] ?? 0,
       isLiked: json['is_liked'] ?? false, // Parse from backend response
+      commentPictureUrl: json['comment_image_url'], // Map the new field
     );
   }
 }

@@ -34,13 +34,13 @@ class Header extends StatelessWidget {
           // Follow, Explore, Nearby Buttons
           Row(
             children: [
-              TextButton(
-                onPressed: () => onFollowPressed(),
-                child: const Text(
-                  "Follow",
-                  style: TextStyle(color: Colors.black, fontSize: 16),
-                ),
-              ),
+              // TextButton(
+              //   onPressed: () => onFollowPressed(),
+              //   child: const Text(
+              //     "Follow",
+              //     style: TextStyle(color: Colors.black, fontSize: 16),
+              //   ),
+              // ),
               TextButton(
                 onPressed: () => onExplorePressed(),
                 child: const Text(
@@ -50,13 +50,13 @@ class Header extends StatelessWidget {
                       fontSize: 16), // Highlighted as active
                 ),
               ),
-              TextButton(
-                onPressed: () => onNearbyPressed(),
-                child: const Text(
-                  "Nearby",
-                  style: TextStyle(color: Colors.black, fontSize: 16),
-                ),
-              ),
+              // TextButton(
+              //   onPressed: () => onNearbyPressed(),
+              //   child: const Text(
+              //     "Nearby",
+              //     style: TextStyle(color: Colors.black, fontSize: 16),
+              //   ),
+              // ),
             ],
           ),
           // Search and Create User Icons
@@ -66,11 +66,11 @@ class Header extends StatelessWidget {
                 icon: const Icon(Icons.search, size: 28, color: Colors.black),
                 onPressed: () => onSearchPressed(),
               ),
-              IconButton(
-                icon: const Icon(Icons.person_add,
-                    size: 28, color: Colors.black), // "Create User" Icon
-                onPressed: () => onCreateUserPressed(), // Trigger callback
-              ),
+              // IconButton(
+              //   icon: const Icon(Icons.person_add,
+              //       size: 28, color: Colors.black), // "Create User" Icon
+              //   onPressed: () => onCreateUserPressed(), // Trigger callback
+              // ),
             ],
           ),
         ],

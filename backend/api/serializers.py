@@ -55,14 +55,34 @@ class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
+    comment_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Comments
         fields = ['id', 'post', 'user', 'content', 'created_at', 'updated_at',
-                  'reply_to', 'replies', 'likes_count', 'mentioned_users', 'is_liked',]
+                  'reply_to', 'replies', 'likes_count', 'mentioned_users', 'is_liked',
+                  'comment_image', 'comment_image_url',]
         extra_kwargs = {
             'reply_to': {'required': False},
+            'content': {'required': False},
+            'comment_image': {'write_only': True, 'required': False},
         }
+
+    def validate(self, data):
+        # Ensure at least one of `content` or `comment_image` is provided
+        if not data.get('content') and not data.get('comment_image'):
+            raise serializers.ValidationError("At least one of 'content' or 'comment_image' must be provided.")
+        return data
+
+    def get_comment_image_url(self, obj):
+        # First check if user has uploaded a picture
+        if obj.comment_image:  # If user has uploaded a picture
+            request = self.context.get('request')
+            if request:
+                # Return full URL of uploaded picture
+                return request.build_absolute_uri(obj.comment_image.url)
+            return obj.comment_image.url  # Return relative URL of uploaded picture
+
 
     def get_user(self, obj):
         return {
@@ -96,6 +116,8 @@ class CommentSerializer(serializers.ModelSerializer):
         return Comments.objects.filter(post_id=post_id, reply_to=None).prefetch_related(
             Prefetch('comments_set', queryset=Comments.objects.all())
     )
+
+   
 
 
 class PostSerializer(serializers.ModelSerializer):

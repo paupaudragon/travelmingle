@@ -27,7 +27,7 @@ class CommentTile extends StatelessWidget {
               comment.user.username,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(comment.content),
+            subtitle: Text(comment.content!),
           ),
           const SizedBox(height: 8),
           Row(

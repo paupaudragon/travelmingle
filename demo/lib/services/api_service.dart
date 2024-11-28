@@ -191,25 +191,57 @@ class ApiService {
 
   Future<Comment> addComment({
     required int postId,
-    required String content,
+    String? content,
     int? replyTo,
+    String? imagePath,
   }) async {
-    final response = await makeAuthenticatedRequest(
-      url: "$baseApiUrl/comments/",
-      method: 'POST',
-      body: {
-        "post": postId,
-        "content": content,
-        "reply_to": replyTo,
-      },
-    );
+    final String url = "$baseApiUrl/comments/";
 
-    if (response.statusCode == 201) {
-      // Parse and return the newly created comment
-      final jsonData = jsonDecode(response.body);
-      return Comment.fromJson(jsonData);
+    if (imagePath != null) {
+      print("Image path provided: $imagePath");
+
+      // Send as multipart/form-data
+      final request = http.MultipartRequest('POST', Uri.parse(url))
+        ..fields['post'] = postId.toString()
+        ..headers['Authorization'] = 'Bearer ${await getAccessToken()}';
+
+      if (content != null && content.isNotEmpty) {
+        request.fields['content'] = content;
+      }
+      if (replyTo != null) {
+        request.fields['reply_to'] = replyTo.toString();
+      }
+
+      request.files.add(await http.MultipartFile.fromPath(
+        'comment_image',
+        imagePath,
+      ));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        return Comment.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception("Failed to add comment with image: ${response.body}");
+      }
     } else {
-      throw Exception("Failed to add comment: ${response.body}");
+      // Send as JSON
+      final response = await makeAuthenticatedRequest(
+        url: url,
+        method: 'POST',
+        body: {
+          'post': postId.toString(),
+          if (content != null) 'content': content,
+          if (replyTo != null) 'reply_to': replyTo.toString(),
+        },
+      );
+
+      if (response.statusCode == 201) {
+        return Comment.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception("Failed to add comment: ${response.body}");
+      }
     }
   }
 

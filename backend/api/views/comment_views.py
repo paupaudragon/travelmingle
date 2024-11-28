@@ -5,6 +5,14 @@ from ..models import Comments
 from ..serializers import CommentSerializer
 from rest_framework.permissions import IsAuthenticated
 
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.response import Response
+from rest_framework import status
+
+import logging
+
+# Create a logger instance
+logger = logging.getLogger(__name__)
 
 class CommentListCreateView(ListCreateAPIView):
     """
@@ -12,6 +20,7 @@ class CommentListCreateView(ListCreateAPIView):
     """
     queryset = Comments.objects.select_related('user', 'post').all()
     serializer_class = CommentSerializer
+    parser_classes = (JSONParser, MultiPartParser, FormParser)
 
     @swagger_auto_schema(
         operation_summary="List all comments",
@@ -29,8 +38,30 @@ class CommentListCreateView(ListCreateAPIView):
         request_body=CommentSerializer,
         responses={201: CommentSerializer}
     )
+
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+
+        logger.debug(f"Received request with content type: {request.content_type}")
+        print(f"Received request with content type: {request.content_type}")  # For immediate console output
+
+        # Check Content-Type
+        if request.content_type == 'application/json':
+            # JSON payload (text-only comment)
+            return super().post(request, *args, **kwargs)
+        elif request.content_type.startswith('multipart/form-data'):
+            # Multipart payload (image or mixed content)
+            serializer = self.get_serializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Log unrecognized Content-Type
+            return Response(
+                {"detail": f"Unsupported media type: {request.content_type}"},
+                status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            )
+        
 
 
 class CommentDetailView(RetrieveUpdateDestroyAPIView):

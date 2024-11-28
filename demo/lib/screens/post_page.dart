@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../models/comment_model.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
+
+import 'package:image_picker/image_picker.dart';
 
 class PostPage extends StatefulWidget {
   final int postId;
@@ -25,6 +29,9 @@ class _PostPageState extends State<PostPage> {
   int? activeReplyToCommentId;
   String? replyingToUsername;
 
+  // Image comments
+  File? _commentImage; // To store the selected image for the comment
+
   // Controller for the PageView
   final PageController _pageController = PageController();
 
@@ -44,6 +51,22 @@ class _PostPageState extends State<PostPage> {
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickCommentImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _commentImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _removeCommentImage() {
+    setState(() {
+      _commentImage = null;
+    });
   }
 
   String formatDate(DateTime date) {
@@ -120,8 +143,6 @@ class _PostPageState extends State<PostPage> {
     });
   }
 
-  void pickImage() {}
-
   void activateReplyTo(int commentId, String username) {
     setState(() {
       activeReplyToCommentId = commentId;
@@ -157,31 +178,48 @@ class _PostPageState extends State<PostPage> {
     return null; // Not found
   }
 
-  void addComment(int postId) async {
-    final commentContent = _commentController.text.trim();
-    if (commentContent.isEmpty) return;
+  // bool isAddingComment = false;
 
-    final prefixedContent = replyingToUsername != null
-        ? '@$replyingToUsername $commentContent'
-        : commentContent;
+  void resetCommentInput() {
+    setState(() {
+      _commentController.clear(); // Clear the text input
+      _removeCommentImage(); // Clear the selected image
+      activeReplyToCommentId = null; // Clear reply-to state
+      replyingToUsername = null; // Clear the replying username
+    });
+  }
+
+  Future<void> addComment(int postId) async {
+    final commentContent = _commentController.text.trim();
+    if (commentContent.isEmpty && _commentImage == null) return;
+
+    // Disable the comment button to prevent multiple submissions
+    // setState(() {
+    //   isAddingComment = true;
+    // });
 
     try {
-      // Call the API to add the comment
-      await apiService.addComment(
+      final newComment = await apiService.addComment(
         postId: postId,
-        content: prefixedContent,
+        content: commentContent,
         replyTo: activeReplyToCommentId, // Pass replyTo for nested replies
+        imagePath: _commentImage?.path, // Pass the selected image's path
       );
 
-      // Clear the input field and cancel reply mode
-      _commentController.clear();
-      cancelReply();
+      // Reset the input fields after a successful comment
+      resetCommentInput();
 
-      // Refresh the comments by re-fetching from the backend
+      // Refresh comments
       setState(() {
-        commentsFuture = fetchComments().then((comments) {
-          commentsCache = comments; // Update the local cache
-          return comments;
+        commentsCache = commentsCache ?? [];
+        commentsCache!.insert(0, newComment); // Add the new comment at the top
+      });
+
+      // Refresh the comments from the server in the background
+      commentsFuture = fetchComments();
+      commentsFuture.then((comments) {
+        setState(() {
+          commentsCache = comments;
         });
       });
     } catch (e) {
@@ -311,6 +349,17 @@ class _PostPageState extends State<PostPage> {
   }
 
   Widget buildCommentsSection() {
+    if (commentsCache != null && commentsCache!.isNotEmpty) {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: commentsCache!.length,
+        itemBuilder: (context, index) {
+          return buildCommentTree(commentsCache![index]);
+        },
+      );
+    }
+
     return FutureBuilder<List<Comment>>(
       future: commentsFuture,
       builder: (context, snapshot) {
@@ -374,11 +423,22 @@ class _PostPageState extends State<PostPage> {
                       const SizedBox(
                           height: 2), // Small space between username and text
                       // Comment text
-                      Text(
-                        comment.content,
-                        style:
-                            const TextStyle(fontSize: 14, color: Colors.black),
-                      ),
+                      if (comment.content != null &&
+                          comment.content!.isNotEmpty)
+                        Text(
+                          comment.content!,
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.black),
+                        ),
+                      if (comment.commentPictureUrl != null)
+                        const SizedBox(height: 8),
+                      if (comment.commentPictureUrl != null)
+                        Image.network(
+                          comment.commentPictureUrl!,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                        ),
                       const SizedBox(
                           height: 2), // Space between text and metadata
                       // Date and Reply Row
@@ -481,6 +541,7 @@ class _PostPageState extends State<PostPage> {
               ),
             ),
           Row(
+            //Comment box
             children: [
               Expanded(
                 child: TextField(
@@ -499,12 +560,38 @@ class _PostPageState extends State<PostPage> {
                   ),
                 ),
               ),
+              //Image picker
+              IconButton(
+                icon: const Icon(Icons.photo),
+                onPressed: _pickCommentImage,
+              ),
+              //Add comment
+              // Add comment button
               IconButton(
                 icon: const Icon(Icons.send),
                 onPressed: () => addComment(widget.postId),
               ),
             ],
           ),
+          if (_commentImage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  Image.file(
+                    _commentImage!,
+                    height: 100,
+                    width: 100,
+                    fit: BoxFit.cover,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    onPressed: _removeCommentImage,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
