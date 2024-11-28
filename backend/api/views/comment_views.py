@@ -45,7 +45,7 @@ class CommentListCreateView(ListCreateAPIView):
         print(f"Received request with content type: {request.content_type}")  # For immediate console output
 
         # Check Content-Type
-        if request.content_type == 'application/json':
+        if request.content_type.startswith('application/json'):
             # JSON payload (text-only comment)
             return super().post(request, *args, **kwargs)
         elif request.content_type.startswith('multipart/form-data'):

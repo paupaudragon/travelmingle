@@ -594,8 +594,7 @@ class _PostPageState extends State<PostPage> {
   Widget buildCommentInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(
-            255, 255, 249, 249), // Slightly darker background
+        color: const Color(0xFFF0F0F0), // Slightly darker background
         borderRadius: BorderRadius.circular(16), // Round the container
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -604,8 +603,7 @@ class _PostPageState extends State<PostPage> {
           if (activeReplyToCommentId != null)
             Container(
               decoration: BoxDecoration(
-                color: const Color.fromARGB(
-                    168, 214, 214, 214), // Darker reply box color
+                color: const Color(0xFFD6D6D6), // Darker reply box color
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -640,8 +638,7 @@ class _PostPageState extends State<PostPage> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: const Color.fromARGB(
-                        167, 232, 232, 232), // Light gray for input box
+                    fillColor: const Color(0xFFE8E8E8), // Light gray for input box
                   ),
                 ),
               ),
