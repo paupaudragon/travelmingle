@@ -361,12 +361,11 @@ class Follow(models.Model):
     follower = models.ForeignKey(
         Users, on_delete=models.CASCADE, related_name='following_relationships')
     following = models.ForeignKey(
-        Users, on_delete=models.CASCADE, related_name='follfollowing_relationships')
+        Users, on_delete=models.CASCADE, related_name='follower_relationships')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'follows'
-        # Prevent duplicate follows
         unique_together = ('follower', 'following')
         indexes = [
             models.Index(fields=['follower']),

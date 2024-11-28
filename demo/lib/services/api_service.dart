@@ -411,16 +411,72 @@ class ApiService {
   }
 
   Future<List<User>> fetchUserFollowing(int userId) async {
+    try {
+      print(
+          'Making request to: $baseApiUrl/users/$userId/following/'); // Debug URL
+      final response = await makeAuthenticatedRequest(
+        url: '$baseApiUrl/users/$userId/following/',
+        method: 'GET',
+      );
+
+      print('Response status: ${response.statusCode}'); // Debug status
+      print('Raw response body: ${response.body}'); // Debug response
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        // Print the parsed data
+        print('Parsed data: $data');
+
+        // Make sure User.fromJson can handle both URL formats
+        return data.map((json) {
+          // If the profile picture URL doesn't have the base URL, add it
+          if (json['profile_picture_url'] != null &&
+              !json['profile_picture_url'].toString().startsWith('http')) {
+            json['profile_picture_url'] =
+                '${ApiService.baseApiUrl}${json['profile_picture_url']}';
+          }
+          return User.fromJson(json);
+        }).toList();
+      } else {
+        throw Exception('Failed to fetch following users: ${response.body}');
+      }
+    } catch (e) {
+      print('Error in fetchUserFollowing: $e'); // Debug error
+      rethrow; // Use rethrow to preserve the stack trace
+    }
+  }
+
+  // Add this to api_service.dart
+  Future<Map<String, dynamic>> getUserProfile(int userId) async {
     final response = await makeAuthenticatedRequest(
-      url: '$baseApiUrl/users/$userId/following/',
+      url: "$baseApiUrl/users/$userId/",
       method: 'GET',
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => User.fromJson(json)).toList();
+      return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to fetch following users');
+      throw Exception("Failed to fetch user profile: ${response.body}");
+    }
+  }
+
+  Future<Map<String, List<User>>> fetchFollowData(int userId) async {
+    try {
+      print('Fetching following for user $userId'); // Debug print
+      final following = await fetchUserFollowing(userId);
+      print('Following response: $following'); // Debug print
+
+      print('Fetching followers for user $userId'); // Debug print
+      final followers = await fetchUserFollowers(userId);
+      print('Followers response: $followers'); // Debug print
+
+      return {
+        'following': following,
+        'followers': followers,
+      };
+    } catch (e) {
+      print('Original error: $e'); // Debug print
+      throw Exception('Error fetching follow data: $e');
     }
   }
 }

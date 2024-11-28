@@ -11,7 +11,8 @@ from .views import (
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
-    UserInfoView, ToggleLikeView, PostCommentsView, FollowView, FollowListView
+    UserInfoView, ToggleLikeView, PostCommentsView,
+    FollowView, UserFollowingListView, UserFollowersListView
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -77,8 +78,8 @@ urlpatterns = [
     path('users/<int:user_id>/follow/',
          FollowView.as_view(), name='follow-user'),
 
-    path('api/users/<int:user_id>/followers/', FollowListView.as_view(),
-         {'list_type': 'followers'}, name='user-followers'),
-    path('api/users/<int:user_id>/following/', FollowListView.as_view(),
-         {'list_type': 'following'}, name='user-following'),
+    path('users/<int:user_id>/following/',
+         UserFollowingListView.as_view(), name='user-following'),
+    path('users/<int:user_id>/followers/',
+         UserFollowersListView.as_view(), name='user-followers'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

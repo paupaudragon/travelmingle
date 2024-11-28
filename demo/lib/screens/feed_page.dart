@@ -1,5 +1,5 @@
-import 'package:demo/screens/login_page.dart';
 import 'package:demo/screens/post_page.dart';
+import 'package:demo/screens/profile_page.dart';
 import 'package:flutter/material.dart';
 import '../widgets/header.dart'; // Import Header
 import '../widgets/footer.dart'; // Import Footer
@@ -180,7 +180,12 @@ class _FeedPageState extends State<FeedPage> {
         onPlusPressed: () =>
             requireLogin(context), // Require login for + button
         onMessagesPressed: () => requireLogin(context),
-        onMePressed: () => requireLogin(context),
+        onMePressed: () => requireLogin(context, onSuccess: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfilePage()),
+          );
+        }),
       ),
     );
   }
