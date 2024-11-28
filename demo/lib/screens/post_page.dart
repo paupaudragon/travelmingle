@@ -343,7 +343,7 @@ class _PostPageState extends State<PostPage> {
           ),
           onPressed: () => toggleSave(post),
         ),
-        Text("${post.likesCount}"),
+        Text("0"),
       ],
     );
   }
@@ -517,20 +517,26 @@ class _PostPageState extends State<PostPage> {
 
   Widget buildCommentInput() {
     return Container(
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F0F0), // Slightly darker background
+        borderRadius: BorderRadius.circular(16), // Round the container
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
           if (activeReplyToCommentId != null)
             Container(
-              color: Colors.grey[200],
+              decoration: BoxDecoration(
+                color: const Color(0xFFD6D6D6), // Darker reply box color
+                borderRadius: BorderRadius.circular(16),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      'Replying to @$replyingToUsername',
-                      style: TextStyle(color: Colors.grey[600]),
+                      '@$replyingToUsername',
+                      style: TextStyle(color: Colors.grey[900]), //Reply text
                     ),
                   ),
                   IconButton(
@@ -550,13 +556,13 @@ class _PostPageState extends State<PostPage> {
                   decoration: InputDecoration(
                     hintText: activeReplyToCommentId == null
                         ? "Say something..."
-                        : "Reply to @$replyingToUsername...",
+                        : "Replying...",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: const Color.fromARGB(135, 245, 245, 245),
+                    fillColor: const Color(0xFFE8E8E8), // Light gray for input box
                   ),
                 ),
               ),
