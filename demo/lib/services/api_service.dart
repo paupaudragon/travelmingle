@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:demo/models/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/post_model.dart';
@@ -9,6 +10,19 @@ class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String? _cachedToken;
+
+  var _currentUserId;
+
+  int? get currentUserId => _currentUserId;
+
+  // Add method to get auth headers
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final token = await getAccessToken();
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+  }
 
   // Centralized authenticated request handler
   Future<http.Response> makeAuthenticatedRequest({
@@ -104,7 +118,9 @@ class ApiService {
   Future<void> logout() async {
     await _storage.delete(key: "access_token");
     await _storage.delete(key: "refresh_token");
+    await _storage.delete(key: "current_user_id");
     _cachedToken = null;
+    _currentUserId = null;
     print("Logged out successfully.");
   }
 
@@ -195,7 +211,7 @@ class ApiService {
     int? replyTo,
     String? imagePath,
   }) async {
-    final String url = "$baseApiUrl/comments/";
+    const String url = "$baseApiUrl/comments/";
 
     if (imagePath != null) {
       print("Image path provided: $imagePath");
@@ -260,9 +276,44 @@ class ApiService {
       await _storage.write(key: "access_token", value: data["access"]);
       await _storage.write(key: "refresh_token", value: data["refresh"]);
       _cachedToken = data["access"];
+
+      // Fetch and store user info after successful login
+      try {
+        final userInfo = await getUserInfo();
+        if (userInfo != null) {
+          _currentUserId = userInfo['id'];
+          await _storage.write(
+              key: "current_user_id", value: _currentUserId.toString());
+        }
+      } catch (e) {
+        print("Error fetching user info after login: $e");
+      }
+
       return true;
     } else {
       return false;
+    }
+  }
+
+  Future<void> initializeCurrentUser() async {
+    if (_currentUserId == null) {
+      // Try to get from storage first
+      final storedId = await _storage.read(key: "current_user_id");
+      if (storedId != null) {
+        _currentUserId = int.parse(storedId);
+      } else {
+        // If not in storage, try to fetch from API
+        try {
+          final userInfo = await getUserInfo();
+          if (userInfo != null) {
+            _currentUserId = userInfo['id'];
+            await _storage.write(
+                key: "current_user_id", value: _currentUserId.toString());
+          }
+        } catch (e) {
+          print("Error initializing current user: $e");
+        }
+      }
     }
   }
 
@@ -319,6 +370,113 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception("Failed to update saves: ${response.body}");
+    }
+  }
+
+  // In ApiService class
+  Future<Map<String, dynamic>> followUser(int userId) async {
+    try {
+      final response = await makeAuthenticatedRequest(
+        url: '$baseApiUrl/users/$userId/follow/',
+        method: 'POST',
+        body: {}, // Add empty body to ensure proper POST request
+      );
+
+      print("Follow response status: ${response.statusCode}"); // Debug print
+      print("Follow response body: ${response.body}"); // Debug print
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to follow user: ${response.body}');
+      }
+    } catch (e) {
+      print("Follow error: $e"); // Debug print
+      rethrow;
+    }
+  }
+
+  Future<List<User>> fetchUserFollowers(int userId) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/users/$userId/followers/',
+      method: 'GET',
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => User.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch followers');
+    }
+  }
+
+  Future<List<User>> fetchUserFollowing(int userId) async {
+    try {
+      print(
+          'Making request to: $baseApiUrl/users/$userId/following/'); // Debug URL
+      final response = await makeAuthenticatedRequest(
+        url: '$baseApiUrl/users/$userId/following/',
+        method: 'GET',
+      );
+
+      print('Response status: ${response.statusCode}'); // Debug status
+      print('Raw response body: ${response.body}'); // Debug response
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        // Print the parsed data
+        print('Parsed data: $data');
+
+        // Make sure User.fromJson can handle both URL formats
+        return data.map((json) {
+          // If the profile picture URL doesn't have the base URL, add it
+          if (json['profile_picture_url'] != null &&
+              !json['profile_picture_url'].toString().startsWith('http')) {
+            json['profile_picture_url'] =
+                '${ApiService.baseApiUrl}${json['profile_picture_url']}';
+          }
+          return User.fromJson(json);
+        }).toList();
+      } else {
+        throw Exception('Failed to fetch following users: ${response.body}');
+      }
+    } catch (e) {
+      print('Error in fetchUserFollowing: $e'); // Debug error
+      rethrow; // Use rethrow to preserve the stack trace
+    }
+  }
+
+  // Add this to api_service.dart
+  Future<Map<String, dynamic>> getUserProfile(int userId) async {
+    final response = await makeAuthenticatedRequest(
+      url: "$baseApiUrl/users/$userId/",
+      method: 'GET',
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to fetch user profile: ${response.body}");
+    }
+  }
+
+  Future<Map<String, List<User>>> fetchFollowData(int userId) async {
+    try {
+      print('Fetching following for user $userId'); // Debug print
+      final following = await fetchUserFollowing(userId);
+      print('Following response: $following'); // Debug print
+
+      print('Fetching followers for user $userId'); // Debug print
+      final followers = await fetchUserFollowers(userId);
+      print('Followers response: $followers'); // Debug print
+
+      return {
+        'following': following,
+        'followers': followers,
+      };
+    } catch (e) {
+      print('Original error: $e'); // Debug print
+      throw Exception('Error fetching follow data: $e');
     }
   }
 }

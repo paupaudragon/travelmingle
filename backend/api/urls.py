@@ -2,6 +2,7 @@ from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
 
+
 from .views import (
     UserListCreateView, UserDetailView,
     PostListCreateView, PostDetailView,
@@ -11,6 +12,7 @@ from .views import (
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView,
+    FollowView, UserFollowingListView, UserFollowersListView
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -30,19 +32,21 @@ urlpatterns = [
     path('posts/', PostListCreateView.as_view(), name='post-list-create'),
     path('posts/<int:pk>/', PostDetailView.as_view(), name='post-detail'),
 
-#Added this lines
-     path('posts/<int:post_id>/comments/', PostCommentsView.as_view(), name='post-comments'),
-     path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),
-     path('posts/<int:post_id>/save/', ToggleLikeView.as_view(), name='post-save'),
+    # Added this lines
+    path('posts/<int:post_id>/comments/',
+         PostCommentsView.as_view(), name='post-comments'),
+    path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),
+    path('posts/<int:post_id>/save/', ToggleLikeView.as_view(), name='post-save'),
 
     # Comment Endpoints
     path('comments/', CommentListCreateView.as_view(),
          name='comment-list-create'),
     path('comments/<int:pk>/',
          CommentDetailView.as_view(), name='comment-detail'),
-         
-#Added this lines
-     path('comments/<int:comment_id>/like/', ToggleLikeView.as_view(), name='comment-like'),
+
+    # Added this lines
+    path('comments/<int:comment_id>/like/',
+         ToggleLikeView.as_view(), name='comment-like'),
 
     # Like Endpoints
     path('likes/', LikeListCreateView.as_view(), name='like-list-create'),
@@ -69,5 +73,13 @@ urlpatterns = [
          MarkNotificationAsReadView.as_view(), name='notification-mark-read'),
     # Only for development
 
-     path('users/me/', UserInfoView.as_view(), name='user-info'),
+    path('users/me/', UserInfoView.as_view(), name='user-info'),
+
+    path('users/<int:user_id>/follow/',
+         FollowView.as_view(), name='follow-user'),
+
+    path('users/<int:user_id>/following/',
+         UserFollowingListView.as_view(), name='user-following'),
+    path('users/<int:user_id>/followers/',
+         UserFollowersListView.as_view(), name='user-followers'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

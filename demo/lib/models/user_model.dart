@@ -6,6 +6,7 @@ class User {
   final String profilePictureUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  bool isFollowing;
 
   User({
     required this.id,
@@ -15,6 +16,7 @@ class User {
     required this.profilePictureUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.isFollowing = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class User {
       profilePictureUrl: json['profile_picture_url'] ?? '',
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
+      isFollowing: json['is_following'] ?? false,
     );
   }
 }

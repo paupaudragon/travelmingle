@@ -15,10 +15,17 @@ class Users(AbstractUser):
     )
     # Automatically set when created
     created_at = models.DateTimeField(auto_now_add=True)
-    # Automatically updated on save
     updated_at = models.DateTimeField(auto_now=True)
 
     REQUIRED_FIELDS = ['email']
+
+    following = models.ManyToManyField(
+        'self',
+        through='Follow',
+        through_fields=('follower', 'following'),
+        symmetrical=False,
+        related_name='followers_set'
+    )
 
     class Meta:
         db_table = 'users'
@@ -143,7 +150,8 @@ class Comments(models.Model):
         Users, on_delete=models.CASCADE, related_name="comments")
     # Every comment belongs to a post
     post = models.ForeignKey(Posts, on_delete=models.CASCADE)
-    content = models.TextField(blank=True, null=True)  # The comment content, which may include @mentions
+    # The comment content, which may include @mentions
+    content = models.TextField(blank=True, null=True)
     mentioned_users = models.ManyToManyField(  # Users mentioned in the comment
         Users,
         related_name="mentioned_in",
@@ -347,3 +355,22 @@ class Notifications(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.username}: {self.notification_type}"
+
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        Users, on_delete=models.CASCADE, related_name='following_relationships')
+    following = models.ForeignKey(
+        Users, on_delete=models.CASCADE, related_name='follower_relationships')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'follows'
+        unique_together = ('follower', 'following')
+        indexes = [
+            models.Index(fields=['follower']),
+            models.Index(fields=['following']),
+        ]
+
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
