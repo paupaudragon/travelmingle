@@ -1,17 +1,26 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import Users, Posts, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
+from .models import Follow, Users, Posts, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
 
 from django.db.models import Prefetch
+
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     profile_picture_url = serializers.SerializerMethodField()
 
+    followers_count = serializers.IntegerField(
+        read_only=True, source='follower_relationships.count')
+    following_count = serializers.IntegerField(
+        read_only=True, source='following_relationships.count')
+    is_following = serializers.BooleanField(read_only=True, default=False)
+
     class Meta:
         model = Users
         fields = ['id', 'username', 'email', 'password', 'bio',
-                  'profile_picture', 'profile_picture_url', 'created_at', 'updated_at']
+                  'profile_picture', 'profile_picture_url', 'created_at',
+                  'updated_at', 'followers_count', 'following_count',
+                  'is_following']
         extra_kwargs = {
             'profile_picture': {'write_only': True, 'required': False},
             'bio': {'required': False},
@@ -37,11 +46,33 @@ class UserSerializer(serializers.ModelSerializer):
         # Return relative URL of default picture
         return '/media/profile_pictures/default.png'
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            data['is_following'] = Follow.objects.filter(
+                follower=request.user,
+                following=instance
+            ).exists()
+        return data
+
     def create(self, validated_data):
         # Hash the password before saving
         validated_data['password'] = make_password(
             validated_data.get('password'))
         return super().create(validated_data)
+
+    def get_followers_count(self, obj):
+        return obj.followers.count()
+
+    def get_following_count(self, obj):
+        return obj.following.count()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Follow.objects.filter(follower=request.user, following=obj).exists()
+        return False
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -71,7 +102,8 @@ class CommentSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # Ensure at least one of `content` or `comment_image` is provided
         if not data.get('content') and not data.get('comment_image'):
-            raise serializers.ValidationError("At least one of 'content' or 'comment_image' must be provided.")
+            raise serializers.ValidationError(
+                "At least one of 'content' or 'comment_image' must be provided.")
         return data
 
     def get_comment_image_url(self, obj):
@@ -83,7 +115,6 @@ class CommentSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.comment_image.url)
             return obj.comment_image.url  # Return relative URL of uploaded picture
 
-
     def get_user(self, obj):
         return {
             "id": obj.user.id,
@@ -93,7 +124,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_replies(self, obj):
         # Preload replies for all comments in the view using prefetch_related
-        replies  = Comments.objects.filter(reply_to=obj)
+        replies = Comments.objects.filter(reply_to=obj)
         return CommentSerializer(replies, many=True, context=self.context).data
 
     def get_likes_count(self, obj):
@@ -115,9 +146,7 @@ class CommentSerializer(serializers.ModelSerializer):
         # Prefetch replies for all comments in one query
         return Comments.objects.filter(post_id=post_id, reply_to=None).prefetch_related(
             Prefetch('comments_set', queryset=Comments.objects.all())
-    )
-
-   
+        )
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -149,7 +178,7 @@ class PostSerializer(serializers.ModelSerializer):
             reply_to=None)  # Fetch only top-level comments
         return CommentSerializer(comments, many=True).data
 
-    ##   
+    ##
     def get_is_liked(self, obj):
         """Check if the logged-in user liked the post."""
         request = self.context.get('request', None)
@@ -163,6 +192,7 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.collected_by.filter(user=request.user).exists()
         return False
+
 
 class LikeSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -220,3 +250,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = ['id', 'recipient', 'sender', 'post', 'comment',
                   'notification_type', 'message', 'is_read', 'created_at']
         read_only_fields = ['notification_type', 'message']
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ['id', 'follower', 'following', 'created_at']
+        read_only_fields = ['created_at']
