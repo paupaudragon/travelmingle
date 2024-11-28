@@ -39,28 +39,6 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  // void onPostTap(Post post) async {
-  //   // Fetch and print user info
-
-  //   final userInfo = await apiService.getUserInfo();
-
-  //   if (userInfo != null) {
-  //     print("User Info:");
-  //     print("Username: ${userInfo['username']}");
-  //     print("Email: ${userInfo['email']}");
-  //   } else {
-  //     print("Failed to fetch user info.");
-  //   }
-
-  //   //Optionally, navigate to a detailed post page
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => PostPage(post: post),
-  //     ),
-  //   );
-  // }
-
   // Fetch posts from API
   Future<void> fetchPosts() async {
     try {

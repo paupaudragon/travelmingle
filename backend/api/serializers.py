@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import Users, Posts, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
 
+from django.db.models import Prefetch
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
@@ -71,8 +72,9 @@ class CommentSerializer(serializers.ModelSerializer):
         }
 
     def get_replies(self, obj):
-        replies = Comments.objects.filter(reply_to=obj)
-        return CommentSerializer(replies, many=True).data
+        # Preload replies for all comments in the view using prefetch_related
+        replies  = Comments.objects.filter(reply_to=obj)
+        return CommentSerializer(replies, many=True, context=self.context).data
 
     def get_likes_count(self, obj):
         return obj.comment_likes.count()
@@ -88,6 +90,12 @@ class CommentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+    def get_comments_queryset(post_id):
+        # Prefetch replies for all comments in one query
+        return Comments.objects.filter(post_id=post_id, reply_to=None).prefetch_related(
+            Prefetch('comments_set', queryset=Comments.objects.all())
+    )
 
 
 class PostSerializer(serializers.ModelSerializer):

@@ -189,13 +189,28 @@ class ApiService {
     }
   }
 
-  Future<void> addComment(
-      {required int postId, required String content}) async {
-    await makeAuthenticatedRequest(
+  Future<Comment> addComment({
+    required int postId,
+    required String content,
+    int? replyTo,
+  }) async {
+    final response = await makeAuthenticatedRequest(
       url: "$baseApiUrl/comments/",
       method: 'POST',
-      body: {"post": postId, "content": content},
+      body: {
+        "post": postId,
+        "content": content,
+        "reply_to": replyTo,
+      },
     );
+
+    if (response.statusCode == 201) {
+      // Parse and return the newly created comment
+      final jsonData = jsonDecode(response.body);
+      return Comment.fromJson(jsonData);
+    } else {
+      throw Exception("Failed to add comment: ${response.body}");
+    }
   }
 
   // User Management

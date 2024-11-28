@@ -30,11 +30,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.18.0 # Added this line
+  intl: ^0.18.0
   http: ^1.1.0
   flutter_secure_storage: 9.2.2
-  provider: ^6.0.5 # Added this line
-  
+  provider: ^6.0.5
+
+  #This is for Swipeable Image
+  smooth_page_indicator: ^1.0.0
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
