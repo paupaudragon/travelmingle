@@ -239,22 +239,98 @@ class _PostPageState extends State<PostPage> {
               backgroundImage: NetworkImage(post.user.profilePictureUrl),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.user.username,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    post.user.username,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+            // Follow button
+            FutureBuilder<Map<String, dynamic>?>(
+              future: apiService.getUserInfo(),
+              builder: (context, userSnapshot) {
+                if (!userSnapshot.hasData) return const SizedBox();
+                final currentUserId = userSnapshot.data!['id'];
+                if (currentUserId == post.user.id) return const SizedBox();
+
+                return SizedBox(
+                  height: 36,
+                  child: OutlinedButton(
+                    onPressed: post.user.isFollowing
+                        ? null
+                        : () => _handleFollowPress(post.user.id),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: post.user.isFollowing
+                          ? Colors.grey[200]
+                          : Colors.white,
+                      side: BorderSide(
+                        color:
+                            post.user.isFollowing ? Colors.grey : Colors.blue,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: Text(
+                      post.user.isFollowing ? 'Following' : 'Follow',
+                      style: TextStyle(
+                        color: post.user.isFollowing
+                            ? Colors.grey[700]
+                            : Colors.blue,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _handleFollowPress(int userId) async {
+    try {
+      print("Attempting to follow user: $userId"); // Debug print
+      final response = await apiService.followUser(userId);
+      print("Follow response: $response"); // Debug print
+
+      setState(() {
+        postFuture = postFuture.then((post) {
+          post.user.isFollowing = response['is_following'];
+          return post;
+        });
+      });
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              response['is_following'] ? 'Following user' : 'Unfollowed user'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print("Follow error in handler: $e"); // Debug print
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Failed to update follow status: $e'), // Added error message
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget buildPostContent(Post post) {
@@ -518,7 +594,8 @@ class _PostPageState extends State<PostPage> {
   Widget buildCommentInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 249, 249), // Slightly darker background
+        color: const Color.fromARGB(
+            255, 255, 249, 249), // Slightly darker background
         borderRadius: BorderRadius.circular(16), // Round the container
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -527,7 +604,8 @@ class _PostPageState extends State<PostPage> {
           if (activeReplyToCommentId != null)
             Container(
               decoration: BoxDecoration(
-                color: const Color.fromARGB(168, 214, 214, 214), // Darker reply box color
+                color: const Color.fromARGB(
+                    168, 214, 214, 214), // Darker reply box color
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -562,7 +640,8 @@ class _PostPageState extends State<PostPage> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: const Color.fromARGB(167, 232, 232, 232), // Light gray for input box
+                    fillColor: const Color.fromARGB(
+                        167, 232, 232, 232), // Light gray for input box
                   ),
                 ),
               ),

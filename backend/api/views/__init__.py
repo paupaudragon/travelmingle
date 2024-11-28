@@ -8,3 +8,4 @@ from .register_views import RegisterView
 from .login_views import LoginView
 from .post_views import ToggleLikeView
 from .follow_views import FollowView
+from .follow_list_views import FollowListView

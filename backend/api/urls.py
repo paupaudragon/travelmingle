@@ -2,6 +2,7 @@ from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
 
+
 from .views import (
     UserListCreateView, UserDetailView,
     PostListCreateView, PostDetailView,
@@ -10,7 +11,7 @@ from .views import (
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
-    UserInfoView, ToggleLikeView, PostCommentsView, FollowView
+    UserInfoView, ToggleLikeView, PostCommentsView, FollowView, FollowListView
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -75,4 +76,9 @@ urlpatterns = [
 
     path('users/<int:user_id>/follow/',
          FollowView.as_view(), name='follow-user'),
+
+    path('api/users/<int:user_id>/followers/', FollowListView.as_view(),
+         {'list_type': 'followers'}, name='user-followers'),
+    path('api/users/<int:user_id>/following/', FollowListView.as_view(),
+         {'list_type': 'following'}, name='user-following'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

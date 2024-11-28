@@ -5,7 +5,11 @@ import 'screens/feed_page.dart';
 import 'screens/register_page.dart';
 import 'screens/login_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final apiService = ApiService();
+  await apiService.initializeCurrentUser();
+  runApp(MyApp());
   runApp(const MyApp());
 }
 
