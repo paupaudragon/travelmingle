@@ -227,7 +227,7 @@ class ApiService {
       if (replyTo != null) {
         request.fields['reply_to'] = replyTo.toString();
       }
-
+      print('commentImagePath: $imagePath');
       request.files.add(await http.MultipartFile.fromPath(
         'comment_image',
         imagePath,
@@ -477,6 +477,57 @@ class ApiService {
     } catch (e) {
       print('Original error: $e'); // Debug print
       throw Exception('Error fetching follow data: $e');
+    }
+  }
+
+  Future<void> createPost(String title, String content, String? imagePath) async {
+    const String url = "$baseApiUrl/posts/";
+    // get current user information
+    final userInfo = await getUserInfo();
+    if (userInfo == null) {
+      throw Exception('User not logged in');
+    }
+
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+      ..headers['Authorization'] = 'Bearer ${await getAccessToken()}'
+      ..fields['user'] = jsonEncode(userInfo)
+      ..fields['title'] = title
+      ..fields['content'] = content;
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 201) {
+      var postId = jsonDecode(response.body)['id'];
+      print('Post created successfully: ${jsonDecode(response.body)['id']}');
+
+      if (imagePath != null) {
+        createImage(postId, imagePath);
+      }
+    } else {
+      throw Exception('Failed to create post: ${response.reasonPhrase}');
+    }
+  }
+
+  Future<void> createImage(int postId, String imagePath) async {
+    print('creating image');
+    String url = "$baseApiUrl/posts/$postId/images/";
+    final request = http.MultipartRequest('POST', Uri.parse(url))
+    ..headers['Authorization'] = 'Bearer ${await getAccessToken()}'
+    ..fields['post'] = postId.toString();
+
+    request.files.add(await http.MultipartFile.fromPath(
+      'image',
+      imagePath,
+    ));
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 201) {
+      print('success upload image: ${response.reasonPhrase}');
+    } else {
+      throw Exception('Failed to create post: ${response.reasonPhrase}');
     }
   }
 }

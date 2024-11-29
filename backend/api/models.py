@@ -113,9 +113,9 @@ class PostImages(models.Model):
         Posts, on_delete=models.CASCADE, related_name="images")
     # Store the URL/path of the image
     image = models.ImageField(
-        upload_to="post_images/",
-        validators=[FileExtensionValidator(
-            allowed_extensions=["jpg", "jpeg", "png"])]
+        upload_to="postImages/",
+        null=True,
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

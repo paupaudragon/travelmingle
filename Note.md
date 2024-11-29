@@ -55,6 +55,7 @@ python manage.py runserver
 terminal 2
 
 ```
+cd demo
 flutter clean
 flutter pub get
 flutter run

@@ -6,6 +6,7 @@ import '../widgets/footer.dart'; // Import Footer
 import '../services/api_service.dart';
 import '../models/post_model.dart';
 import '../widgets/post_card.dart';
+import 'create_post.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -177,8 +178,14 @@ class _FeedPageState extends State<FeedPage> {
       bottomNavigationBar: Footer(
         onHomePressed: () => print("Home button pressed"),
         onLogoutPressed: () => handleLogout(context),
-        onPlusPressed: () =>
+        onPlusPressed: () => {
             requireLogin(context), // Require login for + button
+            // Navigate to CreatePost Page
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CreatePostPage()),
+            ),
+        },
         onMessagesPressed: () => requireLogin(context),
         onMePressed: () => requireLogin(context, onSuccess: () {
           Navigator.push(
