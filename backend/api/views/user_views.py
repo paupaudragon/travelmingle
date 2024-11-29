@@ -1,3 +1,4 @@
+from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -50,10 +51,6 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
 
-    def get(self, request):
-        user = request.user
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
 
 class UserInfoView(APIView):
     """
@@ -64,4 +61,3 @@ class UserInfoView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
- 

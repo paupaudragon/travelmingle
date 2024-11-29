@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:demo/screens/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../models/comment_model.dart';
@@ -233,67 +234,88 @@ class _PostPageState extends State<PostPage> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Text("Post Details");
         final post = snapshot.data!;
-        return Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(post.user.profilePictureUrl),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    post.user.username,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Follow button
-            FutureBuilder<Map<String, dynamic>?>(
-              future: apiService.getUserInfo(),
-              builder: (context, userSnapshot) {
-                if (!userSnapshot.hasData) return const SizedBox();
-                final currentUserId = userSnapshot.data!['id'];
-                if (currentUserId == post.user.id) return const SizedBox();
 
-                return SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: post.user.isFollowing
-                        ? null
-                        : () => _handleFollowPress(post.user.id),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: post.user.isFollowing
-                          ? Colors.grey[200]
-                          : Colors.white,
-                      side: BorderSide(
-                        color:
-                            post.user.isFollowing ? Colors.grey : Colors.blue,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: apiService.getUserInfo(),
+          builder: (context, userSnapshot) {
+            final isCurrentUser = userSnapshot.hasData &&
+                userSnapshot.data!['id'] == post.user.id;
+
+            return Row(
+              children: [
+                // Make avatar and username clickable
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfilePage(
+                            userId: isCurrentUser ? null : post.user.id,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundImage:
+                              NetworkImage(post.user.profilePictureUrl),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                post.user.username,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      post.user.isFollowing ? 'Following' : 'Follow',
-                      style: TextStyle(
-                        color: post.user.isFollowing
-                            ? Colors.grey[700]
-                            : Colors.blue,
-                        fontSize: 14,
+                  ),
+                ),
+                // Only show follow button for other users
+                if (!isCurrentUser && userSnapshot.hasData)
+                  SizedBox(
+                    height: 36,
+                    child: OutlinedButton(
+                      onPressed: post.user.isFollowing
+                          ? null
+                          : () => _handleFollowPress(post.user.id),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: post.user.isFollowing
+                            ? Colors.grey[200]
+                            : Colors.white,
+                        side: BorderSide(
+                          color:
+                              post.user.isFollowing ? Colors.grey : Colors.blue,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: Text(
+                        post.user.isFollowing ? 'Following' : 'Follow',
+                        style: TextStyle(
+                          color: post.user.isFollowing
+                              ? Colors.grey[700]
+                              : Colors.blue,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
@@ -638,7 +660,8 @@ class _PostPageState extends State<PostPage> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFE8E8E8), // Light gray for input box
+                    fillColor:
+                        const Color(0xFFE8E8E8), // Light gray for input box
                   ),
                 ),
               ),

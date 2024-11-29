@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
+import '../screens/profile_page.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
-  final VoidCallback? onLikePressed; // Callback for like button
+  final VoidCallback? onLikePressed;
 
   const PostCard({
     super.key,
@@ -14,40 +15,50 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.all(4.0), // Reduced margin for a tighter layout
+      margin: const EdgeInsets.all(4.0),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Author Info
-          Padding(
-            padding: const EdgeInsets.all(4.0), // Reduced padding
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(post.user.profilePictureUrl),
-                  radius: 20,
+          // Author Info with navigation
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfilePage(userId: post.user.id),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    post.user.username,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14, // Slightly smaller font
-                    ),
-                    overflow: TextOverflow.ellipsis,
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(post.user.profilePictureUrl),
+                    radius: 20,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      post.user.username,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
           // Cover Photo
           if (post.images.isNotEmpty)
             AspectRatio(
-              aspectRatio: 16 / 9, // Standard aspect ratio for photos
+              aspectRatio: 16 / 9,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
@@ -61,7 +72,7 @@ class PostCard extends StatelessWidget {
 
           // Title Preview and Like Count
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0), // Reduced horizontal padding
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,7 +84,7 @@ class PostCard extends StatelessWidget {
                       : 'No Title',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16, // Slightly smaller font size
+                    fontSize: 16,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -91,7 +102,7 @@ class PostCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${post.likesCount}',
-                      style: const TextStyle(fontSize: 14), // Smaller text size
+                      style: const TextStyle(fontSize: 14),
                     ),
                   ],
                 ),
