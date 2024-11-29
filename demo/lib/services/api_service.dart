@@ -561,46 +561,4 @@ class ApiService {
       throw Exception('Failed to create post: $e');
     }
   }
-
-  // Future<void> _uploadPostImage(int postId, String imagePath) async {
-  //   final String url = "$baseApiUrl/posts/$postId/images/";
-
-  //   try {
-  //     final request = http.MultipartRequest('POST', Uri.parse(url));
-
-  //     // Add authorization header
-  //     request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
-
-  //     // Add the post ID in the form fields
-  //     request.fields['post'] = postId.toString();
-
-  //     // Add the image file
-  //     final file = File(imagePath);
-  //     final fileStream = http.ByteStream(file.openRead());
-  //     final length = await file.length();
-
-  //     final multipartFile = http.MultipartFile(
-  //       'image', // This should match your backend's expected field name
-  //       fileStream,
-  //       length,
-  //       filename: imagePath.split('/').last,
-  //     );
-
-  //     request.files.add(multipartFile);
-
-  //     // Send the request
-  //     final streamedResponse = await request.send();
-  //     final response = await http.Response.fromStream(streamedResponse);
-
-  //     if (response.statusCode != 201) {
-  //       print('Image upload response: ${response.body}');
-  //       throw Exception('Failed to upload image: ${response.body}');
-  //     }
-
-  //     print('Image uploaded successfully for post $postId');
-  //   } catch (e) {
-  //     print('Error uploading image: $e');
-  //     throw Exception('Failed to upload image: $e');
-  //   }
-  // }
 }
