@@ -31,8 +31,6 @@ urlpatterns = [
     # Post Endpoints
     path('posts/', PostListCreateView.as_view(), name='post-list-create'),
     path('posts/<int:pk>/', PostDetailView.as_view(), name='post-detail'),
-
-    # Added this lines
     path('posts/<int:post_id>/comments/',
          PostCommentsView.as_view(), name='post-comments'),
     path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),

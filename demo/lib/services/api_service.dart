@@ -519,59 +519,85 @@ class ApiService {
     }
   }
 
-  // Add this as an alternative way to follow/unfollow (if needed)
-  Future<Map<String, dynamic>> toggleFollowUser(int userId) async {
-    return followUser(userId); // Reuse your existing followUser method
-  }
-
-  Future<void> createPost(String title, String content, String? imagePath) async {
+  Future<void> createPost(
+      String title, String content, String? imagePath) async {
     const String url = "$baseApiUrl/posts/";
-    // get current user information
-    final userInfo = await getUserInfo();
-    if (userInfo == null) {
-      throw Exception('User not logged in');
-    }
 
-    final request = http.MultipartRequest('POST', Uri.parse(url))
-      ..headers['Authorization'] = 'Bearer ${await getAccessToken()}'
-      ..fields['user'] = jsonEncode(userInfo)
-      ..fields['title'] = title
-      ..fields['content'] = content;
+    try {
+      // Create multipart request
+      final request = http.MultipartRequest('POST', Uri.parse(url));
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      // Add auth header (without content-type)
+      request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
-    if (response.statusCode == 201) {
-      var postId = jsonDecode(response.body)['id'];
-      print('Post created successfully: ${jsonDecode(response.body)['id']}');
+      // Add text fields
+      request.fields['title'] = title;
+      request.fields['content'] = content;
+      request.fields['status'] = 'published';
+      request.fields['visibility'] = 'public';
 
+      // Add image if provided
       if (imagePath != null) {
-        createImage(postId, imagePath);
+        request.files.add(await http.MultipartFile.fromPath(
+          'image',
+          imagePath,
+        ));
       }
-    } else {
-      throw Exception('Failed to create post: ${response.reasonPhrase}');
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 201) {
+        throw Exception('Failed to create post: ${response.body}');
+      }
+
+      print('Post created successfully: ${response.body}');
+    } catch (e) {
+      print('Error creating post: $e');
+      throw Exception('Failed to create post: $e');
     }
   }
 
-  Future<void> createImage(int postId, String imagePath) async {
-    print('creating image');
-    String url = "$baseApiUrl/posts/$postId/images/";
-    final request = http.MultipartRequest('POST', Uri.parse(url))
-    ..headers['Authorization'] = 'Bearer ${await getAccessToken()}'
-    ..fields['post'] = postId.toString();
+  Future<void> _uploadPostImage(int postId, String imagePath) async {
+    final String url = "$baseApiUrl/posts/$postId/images/";
 
-    request.files.add(await http.MultipartFile.fromPath(
-      'image',
-      imagePath,
-    ));
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse(url));
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
-    if (response.statusCode == 201) {
-      print('success upload image: ${response.reasonPhrase}');
-    } else {
-      throw Exception('Failed to create post: ${response.reasonPhrase}');
+      // Add the post ID in the form fields
+      request.fields['post'] = postId.toString();
+
+      // Add the image file
+      final file = File(imagePath);
+      final fileStream = http.ByteStream(file.openRead());
+      final length = await file.length();
+
+      final multipartFile = http.MultipartFile(
+        'image', // This should match your backend's expected field name
+        fileStream,
+        length,
+        filename: imagePath.split('/').last,
+      );
+
+      request.files.add(multipartFile);
+
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 201) {
+        print('Image upload response: ${response.body}');
+        throw Exception('Failed to upload image: ${response.body}');
+      }
+
+      print('Image uploaded successfully for post $postId');
+    } catch (e) {
+      print('Error uploading image: $e');
+      throw Exception('Failed to upload image: $e');
     }
   }
 }

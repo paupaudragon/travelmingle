@@ -2,10 +2,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-#Serializer
+# Serializer
 from ..serializers import PostSerializer
 
-#Authentication lib
+# Authentication lib
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -15,54 +15,54 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
-#Always import new models
-from ..models import Posts, Likes, Comments
+# Always import new models
+from ..models import PostImages, Posts, Likes, Comments
 
-class PostListCreateView(ListCreateAPIView):
-    queryset = Posts.objects.select_related('user').all()
-    serializer_class = PostSerializer
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
-    def get_serializer_context(self):
-        """Pass request context for SerializerMethodField to work."""
-        return {'request': self.request}
 
-    def get_permissions(self):
-        """
-        Set permissions dynamically: AllowAny for GET and IsAuthenticated for POST.
-        """
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated()]
+class PostListCreateView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        operation_summary="List all posts",
-        operation_description="Retrieve a list of all posts with their associated user details.",
-        responses={200: PostSerializer(many=True)},
-    )
-    # def get(self, request, *args, **kwargs):
-    #     return super().get(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        token = request.headers.get("Authorization", "").split("Bearer ")[-1]
+    def post(self, request):
         try:
-            decoded = AccessToken(token)
-            print("Decoded Token:", decoded)
-        except TokenError as e:
-            print("Token Error:", e)
-        return super().get(request, *args, **kwargs)
+            # Create the post first
+            post = Posts.objects.create(
+                user=request.user,
+                title=request.data.get('title'),
+                content=request.data.get('content'),
+                status=request.data.get('status', 'published'),
+                visibility=request.data.get('visibility', 'public')
+            )
 
-    @swagger_auto_schema(
-        operation_summary="Create a new post",
-        operation_description="Create a new post by providing the user ID, title, content, and optional visibility or status.",
-        request_body=PostSerializer,
-        responses={201: PostSerializer},
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+            # Handle multiple images
+            images = request.FILES.getlist('image')
+            for image in images:
+                PostImages.objects.create(
+                    post=post,
+                    image=image  # This will automatically save to postImages/ directory
+                )
 
-    def perform_create(self, serializer):
-        # Automatically associate the logged-in user with the post
-        serializer.save(user=self.request.user)   
+            # Return the created post with all its data
+            serializer = PostSerializer(post, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def get(self, request):
+        posts = Posts.objects.all().order_by('-created_at')
+        serializer = PostSerializer(
+            posts, many=True, context={'request': request})
+        return Response(serializer.data)
 
 
 class PostDetailView(RetrieveUpdateDestroyAPIView):
@@ -71,7 +71,6 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
 
     # Require authentication for all methods in this class
     permission_classes = [IsAuthenticated]
-
 
     def get_serializer_context(self):
         """Pass request context for SerializerMethodField to work."""
@@ -102,6 +101,7 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
 
+
 class ToggleLikeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -116,7 +116,8 @@ class ToggleLikeView(APIView):
         if post_id:
             try:
                 post = Posts.objects.get(id=post_id)
-                like, created = Likes.objects.get_or_create(user=user, post=post)
+                like, created = Likes.objects.get_or_create(
+                    user=user, post=post)
                 if not created:
                     like.delete()  # Unlike
                     is_liked = False
@@ -129,7 +130,8 @@ class ToggleLikeView(APIView):
         elif comment_id:
             try:
                 comment = Comments.objects.get(id=comment_id)
-                like, created = Likes.objects.get_or_create(user=user, comment=comment)
+                like, created = Likes.objects.get_or_create(
+                    user=user, comment=comment)
                 if not created:
                     like.delete()  # Unlike
                     is_liked = False
@@ -142,6 +144,3 @@ class ToggleLikeView(APIView):
             return Response({"error": "Invalid request, provide post_id or comment_id"}, status=400)
 
         return Response({'is_liked': is_liked, 'likes_count': likes_count}, status=200)
-
-
-
