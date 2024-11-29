@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/user_model.dart';
+import '../screens/profile_page.dart'; // Add this import
 
 class UserListItem extends StatelessWidget {
   final User user;
@@ -90,10 +91,11 @@ class _FollowListPageState extends State<FollowListPage>
   }
 
   void navigateToProfile(int userId) {
-    Navigator.pushNamed(
+    Navigator.push(
       context,
-      '/profile',
-      arguments: userId,
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(userId: userId),
+      ),
     );
   }
 

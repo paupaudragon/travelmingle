@@ -330,6 +330,23 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>?> getUserProfileById(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseApiUrl/users/$userId'),
+        headers: await _getAuthHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      throw Exception('Failed to fetch user profile');
+    } catch (e) {
+      print("Error getting user profile: $e");
+      throw Exception('Failed to fetch user profile');
+    }
+  }
+
   static Future<String?> registerAUser({
     required String username,
     required String email,
@@ -478,5 +495,32 @@ class ApiService {
       print('Original error: $e'); // Debug print
       throw Exception('Error fetching follow data: $e');
     }
+  }
+
+  // Add this method to check follow status
+  Future<Map<String, dynamic>> checkFollowStatus(int userId) async {
+    try {
+      final response = await makeAuthenticatedRequest(
+        url: '$baseApiUrl/users/$userId/',
+        method: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'is_following': data['is_following'] ?? false,
+        };
+      } else {
+        throw Exception('Failed to check follow status: ${response.body}');
+      }
+    } catch (e) {
+      print('Error checking follow status: $e');
+      rethrow;
+    }
+  }
+
+  // Add this as an alternative way to follow/unfollow (if needed)
+  Future<Map<String, dynamic>> toggleFollowUser(int userId) async {
+    return followUser(userId); // Reuse your existing followUser method
   }
 }

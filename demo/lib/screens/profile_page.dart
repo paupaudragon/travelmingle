@@ -1,8 +1,9 @@
-import 'package:demo/screens/user_list_page.dart';
+import 'package:demo/screens/post_page.dart';
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
 import '../widgets/post_card.dart';
+import 'user_list_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final int? userId; // Add userId parameter, null means current user
@@ -20,15 +21,20 @@ class _ProfilePageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   late TabController _tabController;
-
   Map<String, dynamic>? userInfo;
   List<Post> allPosts = [];
   bool isLoading = true;
+  String? error;
+  bool? isFollowing;
+  bool isUpdatingFollow = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: widget.userId == null ? 3 : 1,
+      vsync: this,
+    );
     fetchUserData();
   }
 
@@ -38,29 +44,110 @@ class _ProfilePageState extends State<ProfilePage>
     super.dispose();
   }
 
+  void navigateToProfile(int userId) {
+    if (userId != widget.userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: userId),
+        ),
+      );
+    }
+  }
+
+  void navigateToPost(int postId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostPage(postId: postId),
+      ),
+    );
+  }
+
   Future<void> fetchUserData() async {
     try {
-      Map<String, dynamic>? userData;
+      setState(() {
+        isLoading = true;
+        error = null;
+      });
 
+      Map<String, dynamic>? userData;
       if (widget.userId == null) {
-        // Fetch current user's profile
         userData = await _apiService.getUserInfo();
       } else {
-        userData = await _apiService.getUserProfile(widget.userId!);
+        userData = await _apiService.getUserProfileById(widget.userId!);
+        // Get follow status directly from the profile response
+        if (mounted) {
+          setState(() {
+            isFollowing = userData?['is_following'] ?? false;
+          });
+        }
       }
 
       final posts = await _apiService.fetchPosts();
 
-      setState(() {
-        userInfo = userData;
-        allPosts = posts;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          userInfo = userData;
+          allPosts = posts;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print("Error fetching user data: $e");
+      if (mounted) {
+        setState(() {
+          error = "Failed to load profile";
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> toggleFollow() async {
+    if (isUpdatingFollow || widget.userId == null) return;
+
+    try {
       setState(() {
-        isLoading = false;
+        isUpdatingFollow = true;
       });
+
+      final result = await _apiService.followUser(widget.userId!);
+
+      if (mounted) {
+        setState(() {
+          isFollowing = result['is_following'];
+          if (userInfo != null) {
+            userInfo!['followers_count'] = result['followers_count'];
+          }
+          isUpdatingFollow = false;
+        });
+
+        // Show feedback to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                isFollowing == true ? 'Following user' : 'Unfollowed user'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error toggling follow status: $e");
+      if (mounted) {
+        setState(() {
+          isUpdatingFollow = false;
+        });
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update follow status: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -70,19 +157,33 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   List<Post> getSavedPosts() {
-    // Only show saved posts for the current user
     if (widget.userId != null) return [];
     return allPosts.where((post) => post.isSaved).toList();
   }
 
   List<Post> getLikedPosts() {
-    // Only show liked posts for the current user
     if (widget.userId != null) return [];
     return allPosts.where((post) => post.isLiked).toList();
   }
 
   Widget _buildProfileHeader() {
     if (userInfo == null) return const SizedBox.shrink();
+
+    String? profilePictureUrl = userInfo!['profile_picture_url'];
+    String? finalUrl;
+
+    if (profilePictureUrl != null && profilePictureUrl.isNotEmpty) {
+      if (!profilePictureUrl.startsWith('http')) {
+        if (profilePictureUrl.startsWith('/media')) {
+          finalUrl =
+              ApiService.baseApiUrl.replaceAll('/api', '') + profilePictureUrl;
+        } else {
+          finalUrl = ApiService.baseApiUrl + profilePictureUrl;
+        }
+      } else {
+        finalUrl = profilePictureUrl;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -92,11 +193,9 @@ class _ProfilePageState extends State<ProfilePage>
             children: [
               CircleAvatar(
                 radius: 40,
-                backgroundImage: userInfo!['profile_picture_url'] != null
-                    ? NetworkImage(
-                        '${ApiService.baseApiUrl}${userInfo!['profile_picture_url']}')
-                    : null,
-                child: userInfo!['profile_picture_url'] == null
+                backgroundImage:
+                    finalUrl != null ? NetworkImage(finalUrl) : null,
+                child: finalUrl == null
                     ? const Icon(Icons.person, size: 40)
                     : null,
               ),
@@ -105,12 +204,48 @@ class _ProfilePageState extends State<ProfilePage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      userInfo!['username'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            userInfo!['username'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (widget.userId != null) ...[
+                          const SizedBox(width: 8),
+                          isUpdatingFollow
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : ElevatedButton(
+                                  onPressed: toggleFollow,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isFollowing == true
+                                        ? Colors.grey[300]
+                                        : Theme.of(context).primaryColor,
+                                    foregroundColor: isFollowing == true
+                                        ? Colors.black
+                                        : Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    isFollowing == true
+                                        ? 'Following'
+                                        : 'Follow',
+                                  ),
+                                ),
+                        ],
+                      ],
                     ),
                     if (userInfo!['bio'] != null &&
                         userInfo!['bio'].isNotEmpty) ...[
@@ -121,7 +256,6 @@ class _ProfilePageState extends State<ProfilePage>
                     Row(
                       children: [
                         InkWell(
-                          // Following count
                           onTap: () {
                             if (userInfo != null && userInfo!['id'] != null) {
                               Navigator.push(
@@ -148,14 +282,12 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                         const SizedBox(width: 16),
                         InkWell(
-                          // Followers count
                           onTap: () {
                             if (userInfo != null && userInfo!['id'] != null) {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => FollowListPage(
-                                    // Use FollowListPage, not UserListItem
                                     userId: userInfo!['id'],
                                     initialTabIndex: 1,
                                   ),
@@ -174,8 +306,8 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ),
                         ),
-                      ], // <-- End of Row children
-                    ), // <-- End of Row
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -201,13 +333,7 @@ class _ProfilePageState extends State<ProfilePage>
             itemBuilder: (context, index) {
               final post = posts[index];
               return GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/post',
-                    arguments: post.id,
-                  );
-                },
+                onTap: () => navigateToPost(post.id),
                 child: PostCard(
                   post: post,
                   onLikePressed: () async {
@@ -235,29 +361,39 @@ class _ProfilePageState extends State<ProfilePage>
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildProfileHeader(),
-                TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Posts'),
-                    Tab(text: 'Collects'),
-                    Tab(text: 'Likes'),
+          : error != null
+              ? Center(child: Text(error!))
+              : Column(
+                  children: [
+                    _buildProfileHeader(),
+                    TabBar(
+                      controller: _tabController,
+                      tabs: widget.userId == null
+                          ? const [
+                              Tab(text: 'Posts'),
+                              Tab(text: 'Collects'),
+                              Tab(text: 'Likes'),
+                            ]
+                          : const [
+                              Tab(text: 'Posts'),
+                            ],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: widget.userId == null
+                            ? [
+                                _buildPostGrid(getUserPosts()),
+                                _buildPostGrid(getSavedPosts()),
+                                _buildPostGrid(getLikedPosts()),
+                              ]
+                            : [
+                                _buildPostGrid(getUserPosts()),
+                              ],
+                      ),
+                    ),
                   ],
                 ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildPostGrid(getUserPosts()),
-                      _buildPostGrid(getSavedPosts()),
-                      _buildPostGrid(getLikedPosts()),
-                    ],
-                  ),
-                ),
-              ],
-            ),
     );
   }
 }
