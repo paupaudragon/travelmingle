@@ -519,15 +519,16 @@ class ApiService {
     }
   }
 
+// In api_service.dart
   Future<void> createPost(
-      String title, String content, String? imagePath) async {
+      String title, String content, List<String>? imagePaths) async {
     const String url = "$baseApiUrl/posts/";
 
     try {
       // Create multipart request
       final request = http.MultipartRequest('POST', Uri.parse(url));
 
-      // Add auth header (without content-type)
+      // Add auth header
       request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
       // Add text fields
@@ -536,12 +537,14 @@ class ApiService {
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
 
-      // Add image if provided
-      if (imagePath != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'image',
-          imagePath,
-        ));
+      // Add multiple images if provided
+      if (imagePaths != null) {
+        for (String path in imagePaths) {
+          request.files.add(await http.MultipartFile.fromPath(
+            'image', // Keep the field name 'image' as expected by your backend
+            path,
+          ));
+        }
       }
 
       // Send request
@@ -559,45 +562,45 @@ class ApiService {
     }
   }
 
-  Future<void> _uploadPostImage(int postId, String imagePath) async {
-    final String url = "$baseApiUrl/posts/$postId/images/";
+  // Future<void> _uploadPostImage(int postId, String imagePath) async {
+  //   final String url = "$baseApiUrl/posts/$postId/images/";
 
-    try {
-      final request = http.MultipartRequest('POST', Uri.parse(url));
+  //   try {
+  //     final request = http.MultipartRequest('POST', Uri.parse(url));
 
-      // Add authorization header
-      request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
+  //     // Add authorization header
+  //     request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
-      // Add the post ID in the form fields
-      request.fields['post'] = postId.toString();
+  //     // Add the post ID in the form fields
+  //     request.fields['post'] = postId.toString();
 
-      // Add the image file
-      final file = File(imagePath);
-      final fileStream = http.ByteStream(file.openRead());
-      final length = await file.length();
+  //     // Add the image file
+  //     final file = File(imagePath);
+  //     final fileStream = http.ByteStream(file.openRead());
+  //     final length = await file.length();
 
-      final multipartFile = http.MultipartFile(
-        'image', // This should match your backend's expected field name
-        fileStream,
-        length,
-        filename: imagePath.split('/').last,
-      );
+  //     final multipartFile = http.MultipartFile(
+  //       'image', // This should match your backend's expected field name
+  //       fileStream,
+  //       length,
+  //       filename: imagePath.split('/').last,
+  //     );
 
-      request.files.add(multipartFile);
+  //     request.files.add(multipartFile);
 
-      // Send the request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+  //     // Send the request
+  //     final streamedResponse = await request.send();
+  //     final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode != 201) {
-        print('Image upload response: ${response.body}');
-        throw Exception('Failed to upload image: ${response.body}');
-      }
+  //     if (response.statusCode != 201) {
+  //       print('Image upload response: ${response.body}');
+  //       throw Exception('Failed to upload image: ${response.body}');
+  //     }
 
-      print('Image uploaded successfully for post $postId');
-    } catch (e) {
-      print('Error uploading image: $e');
-      throw Exception('Failed to upload image: $e');
-    }
-  }
+  //     print('Image uploaded successfully for post $postId');
+  //   } catch (e) {
+  //     print('Error uploading image: $e');
+  //     throw Exception('Failed to upload image: $e');
+  //   }
+  // }
 }

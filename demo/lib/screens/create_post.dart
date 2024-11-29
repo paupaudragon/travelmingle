@@ -1,4 +1,3 @@
-// create_post.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -12,7 +11,7 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-  File? _image;
+  List<File> _images = []; // Changed to list of images
   final ApiService apiService = ApiService();
   bool _isLoading = false;
 
@@ -20,14 +19,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 85, // Add image quality compression
+      imageQuality: 85,
     );
 
     if (pickedFile != null) {
       setState(() {
-        _image = File(pickedFile.path);
+        _images.add(File(pickedFile.path));
       });
     }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _images.removeAt(index);
+    });
   }
 
   Future<void> _submitPost() async {
@@ -46,16 +51,14 @@ class _CreatePostPageState extends State<CreatePostPage> {
       await apiService.createPost(
         _titleController.text,
         _contentController.text,
-        _image?.path,
+        _images.map((file) => file.path).toList(), // Pass list of image paths
       );
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Post created successfully!')),
       );
 
-      // Navigate back
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating post: $e')),
@@ -113,52 +116,80 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              // Selected Images Preview
+              if (_images.isNotEmpty)
+                Container(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _images.length,
+                    itemBuilder: (context, index) {
+                      return Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.file(
+                                _images[index],
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 5,
+                            right: 13,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+
+              // Add Image Button
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
                   width: double.infinity,
-                  height: 150,
+                  height: 100,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: _image == null
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.add_photo_alternate,
-                                size: 50, color: Colors.grey),
-                            SizedBox(height: 8),
-                            Text('Add Image',
-                                style: TextStyle(color: Colors.grey)),
-                          ],
-                        )
-                      : Stack(
-                          children: [
-                            Image.file(
-                              _image!,
-                              width: double.infinity,
-                              height: 150,
-                              fit: BoxFit.cover,
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: IconButton(
-                                icon: const Icon(Icons.close,
-                                    color: Colors.white),
-                                onPressed: () {
-                                  setState(() {
-                                    _image = null;
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add_photo_alternate,
+                          size: 40, color: Colors.grey),
+                      SizedBox(height: 8),
+                      Text('Add Images', style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
                 ),
               ),
+
               const SizedBox(height: 16),
               TextField(
                 controller: _titleController,
