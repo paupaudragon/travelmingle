@@ -1,9 +1,10 @@
 import 'package:demo/screens/post_page.dart';
+import 'package:demo/screens/recap_page.dart';
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
 import '../widgets/post_card.dart';
-import 'user_list_page.dart';
+import '../widgets/user_list_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final int? userId; // Add userId parameter, null means current user
@@ -164,6 +165,122 @@ class _ProfilePageState extends State<ProfilePage>
   List<Post> getLikedPosts() {
     if (widget.userId != null) return [];
     return allPosts.where((post) => post.isLiked).toList();
+  }
+
+  void _openMenuDrawer() {
+    showDialog(
+      context: context,
+      barrierDismissible: true, // Allow dismissal when tapping outside
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.pop(context); // Close when tapping outside
+              },
+              child: Stack(
+                children: [
+                  // Transparent background
+                  Container(color: Colors.transparent),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      height: MediaQuery.of(context).size.height,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16.0),
+                          bottomLeft: Radius.circular(16.0),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(-5, 0),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent, // Use transparent Material
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.history),
+                              title: const Text('Recap'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _showReacapPage();
+                              },
+                            ),
+                            // ListTile(
+                            //   leading: const Icon(Icons.insights),
+                            //   title: const Text('Analytics'),
+                            //   onTap: () {
+                            //     Navigator.pop(context);
+                            //     _showAnalyticsPage();
+                            //   },
+                            // ),
+                            ListTile(
+                              leading: const Icon(Icons.logout),
+                              title: const Text('Log Out'),
+                              onTap: () {
+                                // Navigator.pop(context);
+                                _logOutUser(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showReacapPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecapPage(
+          posts: getUserPosts(),
+          navigateToPost: navigateToPost,
+        ),
+      ),
+    );
+  }
+
+  void _showAnalyticsPage() {
+    // // Navigate to an analytics page or display analytics
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //       builder: (context) =>
+    //           AnalyticsPage()), // Replace with your Analytics Page
+    // );
+  }
+
+  void _logOutUser(BuildContext context) async {
+    try {
+      await ApiService().logout(); // Call the logout service
+      print("Logged out successfully.");
+      // Navigate to the login page after logout
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      print("Error during logout: $e");
+      // Optionally, show an error message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to log out. Please try again.")),
+      );
+    }
   }
 
   Widget _buildProfileHeader() {
@@ -336,17 +453,17 @@ class _ProfilePageState extends State<ProfilePage>
                 onTap: () => navigateToPost(post.id),
                 child: PostCard(
                   post: post,
-                  onLikePressed: () async {
-                    try {
-                      final result = await _apiService.updatePostLikes(post.id);
-                      setState(() {
-                        post.isLiked = result['is_liked'];
-                        post.likesCount = result['likes_count'];
-                      });
-                    } catch (e) {
-                      print("Error toggling like: $e");
-                    }
-                  },
+                  // onLikePressed: () async {
+                  //   try {
+                  //     final result = await _apiService.updatePostLikes(post.id);
+                  //     setState(() {
+                  //       post.isLiked = result['is_liked'];
+                  //       post.likesCount = result['likes_count'];
+                  //     });
+                  //   } catch (e) {
+                  //     print("Error toggling like: $e");
+                  //   }
+                  // },
                 ),
               );
             },
@@ -358,6 +475,14 @@ class _ProfilePageState extends State<ProfilePage>
     return Scaffold(
       appBar: AppBar(
         title: Text(userInfo?['username'] ?? 'Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              _openMenuDrawer(); //contain Anaylytic button and Log Out button
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

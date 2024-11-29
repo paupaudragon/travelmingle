@@ -29,11 +29,11 @@ class Footer extends StatelessWidget {
             icon: const Icon(Icons.home, size: 28, color: Colors.black),
             onPressed: () => onHomePressed(),
           ),
-          // Shop Button
-          IconButton(
-            icon: const Icon(Icons.logout, size: 28, color: Colors.black),
-            onPressed: () => onLogoutPressed(),
-          ),
+          // // Log Out Button
+          // IconButton(
+          //   icon: const Icon(Icons.logout, size: 28, color: Colors.black),
+          //   onPressed: () => onLogoutPressed(),
+          // ),
 
           // "+" Button (Square Design)
           GestureDetector(
