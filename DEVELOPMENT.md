@@ -94,7 +94,7 @@ INSTALLED_APPS = [
 This is where you should check for `pip install`. Please use AI here to help you to identify what libraried you need to install. For the current code above, we need to run:
 
 ```
-
+pip install django-environ
 pip install django
 pip install djangorestframework
 pip install drf-yasg
@@ -107,7 +107,7 @@ pip install psycopg2 or pip install psycopg2-binary
 for Python 3.13:
 
 ```
-
+pip install django-environ
 pip install django
 pip install djangorestframework
 pip install drf-yasg
@@ -134,10 +134,10 @@ psql -U postgres
 
 You will be prompted to type password, please type the password you set up earlier when you were instlling postgres. Once you correctly log in your local postgres:
 
-![postgres log in](image-6.png)
+![postgres log in](.note_files/image-6.png)
 
 After you see this screen, check what databases you have by typing `\l`, and you will see:
-![databases](image-7.png)
+![databases](.note_files/image-7.png)
 
 You won't have `travelmingle` on there. Let's create one now:
 
@@ -155,26 +155,27 @@ Verify you have created a database called `travelmingle`:
 
 ```
 
-### - Connect your django backend to your local postgres database
+### Set DB info locally
 
-Go to `root/backend/backend` `settings,py`, find this block of code:
+Create file named `.env` in `root/backend` and add this block of code:
 
-```
-
-DATABASES = {
-'default': {
-'ENGINE': 'django.db.backends.postgresql',
-'NAME': 'travelmingle',
-'USER': 'yourusername',
-'PASSWORD': 'yourpassword',
-'HOST': 'localhost',
-'PORT': '5432',
-}
-}
-
+```.env
+# Database configuration
+DB_NAME=travelmingle
+DB_USER=someUser
+DB_PASSWORD=somePassword
+DB_HOST=localhost
+DB_PORT=5432
 ```
 
 Replace your postgres username, password and port number in the code. Default username is `postgres`. You should see all these three values while setting up your postgres for the first time. Also, you can find those infor by `\conninfo`
+
+### Test
+```cmd
+cd backend
+python manage.py dbshell
+```
+If the connection is successful, Django will apply the migrations or indicate that everything is up-to-date. If there’s an issue with the credentials, you’ll see an error message.
 
 ### - Automate table creations with Django
 

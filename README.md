@@ -136,13 +136,13 @@ pip install psycopg2-binary
 ### Run frontend Flutter and Android Studio
 
 1. ctrl+Shift+P in vscode: "Flutter Lauch Emulator", and choose the default emulator(first one):
-   ![emulator](image-3.png)
+   ![emulator](.note_files/image-3.png)
 2. open a new terminal. You should have two open now, one for Django server, one for flutter.
 3. In new terminal, cd demo
 4. flutter run
 5. wait for a while, you should see the emulator like this down below. Make sure you see the "Hello from Django!".
 
-   ![emulator](image-4.png)
+   ![emulator](.note_files/image-4.png)
 
 ## Developer notes:
 
@@ -246,7 +246,7 @@ Notice only `development` branch is create from `main`. All the other branches s
 ```
 
 It should look like:
-![dump tables to RDS](image-5.png)
+![dump tables to RDS](.note_files/image-5.png)
 
 ## Integrate with your tools
 
