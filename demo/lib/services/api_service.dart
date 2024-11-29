@@ -521,8 +521,9 @@ class ApiService {
 
 // In api_service.dart
   Future<void> createPost(
-      String title, String content, List<String>? imagePaths) async {
+      String title, String content, String location, List<String>? imagePaths) async {
     const String url = "$baseApiUrl/posts/";
+    print('location: $location');
 
     try {
       // Create multipart request
@@ -536,6 +537,9 @@ class ApiService {
       request.fields['content'] = content;
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
+
+      // Add location field
+      request.fields['location'] = location;
 
       // Add multiple images if provided
       if (imagePaths != null) {

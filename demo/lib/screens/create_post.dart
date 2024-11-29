@@ -11,6 +11,7 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
   List<File> _images = []; // Changed to list of images
   final ApiService apiService = ApiService();
   bool _isLoading = false;
@@ -36,7 +37,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> _submitPost() async {
-    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
+    if (_titleController.text.isEmpty || _contentController.text.isEmpty || _locationController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all required fields')),
       );
@@ -51,6 +52,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       await apiService.createPost(
         _titleController.text,
         _contentController.text,
+        _locationController.text,
         _images.map((file) => file.path).toList(), // Pass list of image paths
       );
 
@@ -202,7 +204,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 1),
               TextField(
                 controller: _contentController,
                 decoration: const InputDecoration(
@@ -211,6 +213,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   alignLabelWithHint: true,
                 ),
                 maxLines: 5,
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _locationController,
+                decoration: const InputDecoration(
+                  labelText: 'Mark location',
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: UnderlineInputBorder(
+                    borderSide:
+                        BorderSide(color: Color.fromARGB(76, 118, 118, 118)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -223,6 +237,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 }
