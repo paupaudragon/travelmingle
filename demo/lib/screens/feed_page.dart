@@ -1,11 +1,12 @@
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:flutter/material.dart';
-import '../widgets/header.dart'; // Import Header
-import '../widgets/footer.dart'; // Import Footer
+import '../widgets/header.dart';
+import '../widgets/footer.dart';
 import '../services/api_service.dart';
 import '../models/post_model.dart';
 import '../widgets/post_card.dart';
+import 'create_post.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -18,16 +19,36 @@ class _FeedPageState extends State<FeedPage> {
   final ApiService _apiService = ApiService();
   List<Post> posts = [];
   bool isLoading = true;
-  bool isLoggedIn = false; // Track user login state
+  bool isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     checkLoginStatus();
     fetchPosts();
+    _loadPosts();
   }
 
-  // Check login status
+  Future<void> _loadPosts() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final fetchedPosts = await _apiService.fetchPosts();
+
+      setState(() {
+        posts = fetchedPosts;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      print('Error loading posts: $e');
+    }
+  }
+
   Future<void> checkLoginStatus() async {
     final token = await _apiService.getAccessToken();
     setState(() {
@@ -39,7 +60,6 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  // Fetch posts from API
   Future<void> fetchPosts() async {
     try {
       final fetchedPosts = await _apiService.fetchPosts();
@@ -55,7 +75,6 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  // Toggle like for a post
   void toggleLike(Post post) async {
     try {
       final result = await _apiService.updatePostLikes(post.id);
@@ -68,7 +87,6 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  // Navigate to post details
   void navigateToPostDetail(Post post) async {
     await Navigator.push(
       context,
@@ -79,7 +97,7 @@ class _FeedPageState extends State<FeedPage> {
             setState(() {
               final index = posts.indexWhere((p) => p.id == updatedPost.id);
               if (index != -1) {
-                posts[index] = updatedPost; // Update the post in FeedPage
+                posts[index] = updatedPost;
               }
             });
           },
@@ -90,13 +108,11 @@ class _FeedPageState extends State<FeedPage> {
 
   void handleLogout(BuildContext context) async {
     try {
-      await ApiService().logout(); // Call the logout service
+      await ApiService().logout();
       print("Logged out successfully.");
-      // Navigate to the login page after logout
       Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       print("Error during logout: $e");
-      // Optionally, show an error message to the user
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to log out. Please try again.")),
       );
@@ -108,15 +124,27 @@ class _FeedPageState extends State<FeedPage> {
     final token = await apiService.getAccessToken();
 
     if (token == null) {
-      Navigator.pushNamed(context, '/login'); // Redirect to Login Page
+      Navigator.pushNamed(context, '/login');
     } else {
       setState(() {
-        isLoggedIn = true; // Update login state
+        isLoggedIn = true;
       });
 
       if (onSuccess != null) {
-        onSuccess(); // Execute the success callback
+        onSuccess();
       }
+    }
+  }
+
+  // New method to handle create post navigation
+  Future<void> _navigateToCreatePost() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CreatePostPage()),
+    );
+
+    if (result == true) {
+      await _loadPosts();
     }
   }
 
@@ -132,14 +160,12 @@ class _FeedPageState extends State<FeedPage> {
           onMenuPressed: () => requireLogin(context),
           onSearchPressed: () => requireLogin(context),
           onCreateUserPressed: () {
-            Navigator.pushNamed(
-                context, '/register'); // Navigate to Register Page
+            Navigator.pushNamed(context, '/register');
           },
         ),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Use LayoutBuilder to dynamically set childAspectRatio
           final childAspectRatio =
               constraints.maxWidth / (constraints.maxHeight / 1.5);
 
@@ -152,12 +178,10 @@ class _FeedPageState extends State<FeedPage> {
                       child: GridView.builder(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2, // Display two items per row
-                          crossAxisSpacing:
-                              4.0, // Reduced spacing between columns
-                          mainAxisSpacing: 4.0, // Reduced spacing between rows
-                          childAspectRatio:
-                              0.8, // Adjust aspect ratio to make cards taller
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 4.0,
+                          mainAxisSpacing: 4.0,
+                          childAspectRatio: 0.8,
                         ),
                         itemCount: posts.length,
                         itemBuilder: (context, index) {
@@ -177,8 +201,10 @@ class _FeedPageState extends State<FeedPage> {
       bottomNavigationBar: Footer(
         onHomePressed: () => print("Home button pressed"),
         onLogoutPressed: () => handleLogout(context),
-        onPlusPressed: () =>
-            requireLogin(context), // Require login for + button
+        onPlusPressed: () {
+          requireLogin(context);
+          _navigateToCreatePost(); // Use the new method
+        },
         onMessagesPressed: () => requireLogin(context),
         onMePressed: () => requireLogin(context, onSuccess: () {
           Navigator.push(

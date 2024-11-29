@@ -39,23 +39,6 @@ class Users(AbstractUser):
 
 
 class Posts(models.Model):
-    """
-    Posts model representing a user's post in the application.
-    Attributes:
-        id (BigAutoField): Primary key for the post.
-        user (ForeignKey): Reference to the user who created the post.
-        title (CharField): Title of the post, optional.
-        content (TextField): Content of the post, optional.
-        created_at (DateTimeField): Timestamp when the post was created.
-        updated_at (DateTimeField): Timestamp when the post was last updated.
-        status (CharField): Status of the post, either 'draft' or 'published'.
-        visibility (CharField): Visibility of the post, either 'public', 'private', or 'friends'.
-    Meta:
-        db_table (str): Name of the database table.
-        indexes (list): List of indexes for the model.
-    Methods:
-        __str__: Returns a string representation of the post.
-    """
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
         Users, on_delete=models.CASCADE, related_name="posts")
@@ -113,9 +96,9 @@ class PostImages(models.Model):
         Posts, on_delete=models.CASCADE, related_name="images")
     # Store the URL/path of the image
     image = models.ImageField(
-        upload_to="post_images/",
-        validators=[FileExtensionValidator(
-            allowed_extensions=["jpg", "jpeg", "png"])]
+        upload_to="postImages/",
+        null=True,
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

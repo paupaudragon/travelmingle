@@ -227,7 +227,7 @@ class ApiService {
       if (replyTo != null) {
         request.fields['reply_to'] = replyTo.toString();
       }
-
+      print('commentImagePath: $imagePath');
       request.files.add(await http.MultipartFile.fromPath(
         'comment_image',
         imagePath,
@@ -519,8 +519,50 @@ class ApiService {
     }
   }
 
-  // Add this as an alternative way to follow/unfollow (if needed)
-  Future<Map<String, dynamic>> toggleFollowUser(int userId) async {
-    return followUser(userId); // Reuse your existing followUser method
+// In api_service.dart
+  Future<void> createPost(
+      String title, String content, String location, List<String>? imagePaths) async {
+    const String url = "$baseApiUrl/posts/";
+    print('location: $location');
+
+    try {
+      // Create multipart request
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+
+      // Add auth header
+      request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
+
+      // Add text fields
+      request.fields['title'] = title;
+      request.fields['content'] = content;
+      request.fields['status'] = 'published';
+      request.fields['visibility'] = 'public';
+
+      // Add location field
+      request.fields['location'] = location;
+
+      // Add multiple images if provided
+      if (imagePaths != null) {
+        for (String path in imagePaths) {
+          request.files.add(await http.MultipartFile.fromPath(
+            'image', // Keep the field name 'image' as expected by your backend
+            path,
+          ));
+        }
+      }
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 201) {
+        throw Exception('Failed to create post: ${response.body}');
+      }
+
+      print('Post created successfully: ${response.body}');
+    } catch (e) {
+      print('Error creating post: $e');
+      throw Exception('Failed to create post: $e');
+    }
   }
 }
