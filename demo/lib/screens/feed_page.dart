@@ -15,7 +15,7 @@ class FeedPage extends StatefulWidget {
   State<FeedPage> createState() => _FeedPageState();
 }
 
-class _FeedPageState extends State<FeedPage> {
+class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
   List<Post> posts = [];
   bool isLoading = true;
@@ -24,12 +24,27 @@ class _FeedPageState extends State<FeedPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     checkLoginStatus();
-    fetchPosts();
     _loadPosts();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadPosts();
+    }
+  }
+
   Future<void> _loadPosts() async {
+    if (!mounted) return;
+
     try {
       setState(() {
         isLoading = true;
@@ -37,11 +52,15 @@ class _FeedPageState extends State<FeedPage> {
 
       final fetchedPosts = await _apiService.fetchPosts();
 
+      if (!mounted) return;
+
       setState(() {
         posts = fetchedPosts;
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         isLoading = false;
       });
@@ -51,6 +70,8 @@ class _FeedPageState extends State<FeedPage> {
 
   Future<void> checkLoginStatus() async {
     final token = await _apiService.getAccessToken();
+    if (!mounted) return;
+
     setState(() {
       isLoggedIn = token != null;
     });
@@ -60,24 +81,11 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  Future<void> fetchPosts() async {
-    try {
-      final fetchedPosts = await _apiService.fetchPosts();
-      setState(() {
-        posts = fetchedPosts;
-        isLoading = false;
-      });
-    } catch (e) {
-      print("Error fetching posts: $e");
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
   void toggleLike(Post post) async {
     try {
       final result = await _apiService.updatePostLikes(post.id);
+      if (!mounted) return;
+
       setState(() {
         post.isLiked = result['is_liked'];
         post.likesCount = result['likes_count'];
@@ -94,6 +102,7 @@ class _FeedPageState extends State<FeedPage> {
         builder: (context) => PostPage(
           postId: post.id,
           onPostUpdated: (updatedPost) {
+            if (!mounted) return;
             setState(() {
               final index = posts.indexWhere((p) => p.id == updatedPost.id);
               if (index != -1) {
@@ -103,7 +112,7 @@ class _FeedPageState extends State<FeedPage> {
           },
         ),
       ),
-    );
+    ).then((_) => _loadPosts()); // Refresh when returning from post detail
   }
 
   void handleLogout(BuildContext context) async {
@@ -126,6 +135,7 @@ class _FeedPageState extends State<FeedPage> {
     if (token == null) {
       Navigator.pushNamed(context, '/login');
     } else {
+      if (!mounted) return;
       setState(() {
         isLoggedIn = true;
       });
@@ -136,16 +146,11 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  // New method to handle create post navigation
   Future<void> _navigateToCreatePost() async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => CreatePostPage()),
-    );
-
-    if (result == true) {
-      await _loadPosts();
-    }
+    ).then((_) => _loadPosts()); // Refresh when returning from create post
   }
 
   @override
@@ -166,9 +171,6 @@ class _FeedPageState extends State<FeedPage> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final childAspectRatio =
-              constraints.maxWidth / (constraints.maxHeight / 1.5);
-
           return isLoading
               ? const Center(child: CircularProgressIndicator())
               : posts.isEmpty
@@ -199,18 +201,20 @@ class _FeedPageState extends State<FeedPage> {
         },
       ),
       bottomNavigationBar: Footer(
-        onHomePressed: () => print("Home button pressed"),
+        onHomePressed: () {
+          _loadPosts(); // Refresh when home is pressed
+        },
         onLogoutPressed: () => handleLogout(context),
         onPlusPressed: () {
           requireLogin(context);
-          _navigateToCreatePost(); // Use the new method
+          _navigateToCreatePost();
         },
         onMessagesPressed: () => requireLogin(context),
         onMePressed: () => requireLogin(context, onSuccess: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ProfilePage()),
-          );
+          ).then((_) => _loadPosts()); // Refresh when returning from profile
         }),
       ),
     );

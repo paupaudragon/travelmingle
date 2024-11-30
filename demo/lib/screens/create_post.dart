@@ -37,7 +37,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> _submitPost() async {
-    if (_titleController.text.isEmpty || _contentController.text.isEmpty || _locationController.text.isEmpty) {
+    if (_titleController.text.isEmpty ||
+        _contentController.text.isEmpty ||
+        _locationController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all required fields')),
       );
@@ -86,8 +88,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
               child: TextButton(
                 onPressed: _isLoading ? null : _submitPost,
                 style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(Colors.orange),
-                  shape: MaterialStateProperty.all(
+                  backgroundColor: WidgetStateProperty.all(Colors.orange),
+                  shape: WidgetStateProperty.all(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
