@@ -12,10 +12,10 @@ class Post {
   final DateTime updatedAt;
   final String status;
   final String visibility;
-  final int collectedCount;
   final List<Comment> detailedComments;
   final List<PostImage> images;
   int likesCount;
+  int savesCount;
   bool isLiked; // New field
   bool isSaved; // New field
 
@@ -30,7 +30,7 @@ class Post {
     required this.status,
     required this.visibility,
     required this.likesCount,
-    required this.collectedCount,
+    required this.savesCount,
     required this.detailedComments,
     required this.images,
     required this.isLiked, // New field
@@ -49,7 +49,7 @@ class Post {
       status: json['status'],
       visibility: json['visibility'],
       likesCount: json['likes_count'] ?? 0,
-      collectedCount: json['collected_count'] ?? 0,
+      savesCount: json['saves_count'] ?? 0,
       detailedComments: (json['detailed_comments'] as List? ?? [])
           .map((comment) => Comment.fromJson(comment))
           .toList(),

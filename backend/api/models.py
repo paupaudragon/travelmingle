@@ -261,10 +261,11 @@ class Collects(models.Model):
     """
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
-        Users, on_delete=models.CASCADE, related_name="collections"
+        Users, on_delete=models.CASCADE, related_name="collecter"
     )  # The user who collected the post
     post = models.ForeignKey(
-        Posts, on_delete=models.CASCADE, related_name="collected_by"
+        Posts, on_delete=models.CASCADE, 
+        blank=True, null=True, related_name="post_saves"
     )  # The collected post
     folder = models.ForeignKey(
         CollectionFolders, on_delete=models.CASCADE, related_name="collections", null=True, blank=True

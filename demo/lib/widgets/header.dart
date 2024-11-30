@@ -21,59 +21,19 @@ class Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF5F5F5), // Off-white background color
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left Menu Icon
-          IconButton(
-            icon: const Icon(Icons.menu, size: 28, color: Colors.black),
-            onPressed: () => onMenuPressed(),
+      color: const Color.fromARGB(255, 244, 240, 240), // Off-white background color
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      child: Center(
+        child: TextButton(
+          onPressed: () => onExplorePressed(),
+          child: const Text(
+            "Explore",
+            style: TextStyle(
+              color: Colors.orange,
+              fontSize: 20, // Highlighted as active
+            ),
           ),
-          // Follow, Explore, Nearby Buttons
-          Row(
-            children: [
-              // TextButton(
-              //   onPressed: () => onFollowPressed(),
-              //   child: const Text(
-              //     "Follow",
-              //     style: TextStyle(color: Colors.black, fontSize: 16),
-              //   ),
-              // ),
-              TextButton(
-                onPressed: () => onExplorePressed(),
-                child: const Text(
-                  "Explore",
-                  style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 16), // Highlighted as active
-                ),
-              ),
-              // TextButton(
-              //   onPressed: () => onNearbyPressed(),
-              //   child: const Text(
-              //     "Nearby",
-              //     style: TextStyle(color: Colors.black, fontSize: 16),
-              //   ),
-              // ),
-            ],
-          ),
-          // Search and Create User Icons
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.search, size: 28, color: Colors.black),
-                onPressed: () => onSearchPressed(),
-              ),
-              // IconButton(
-              //   icon: const Icon(Icons.person_add,
-              //       size: 28, color: Colors.black), // "Create User" Icon
-              //   onPressed: () => onCreateUserPressed(), // Trigger callback
-              // ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

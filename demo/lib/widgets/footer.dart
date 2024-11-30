@@ -51,10 +51,10 @@ class Footer extends StatelessWidget {
             ),
           ),
           // Messages Button
-          IconButton(
-            icon: const Icon(Icons.message, size: 28, color: Colors.black),
-            onPressed: () => onMessagesPressed(),
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.message, size: 28, color: Colors.black),
+          //   onPressed: () => onMessagesPressed(),
+          // ),
           // Me Button
           IconButton(
             icon: const Icon(Icons.person, size: 28, color: Colors.black),

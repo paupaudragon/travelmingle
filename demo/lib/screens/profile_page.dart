@@ -60,7 +60,20 @@ class _ProfilePageState extends State<ProfilePage>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PostPage(postId: postId),
+        builder: (context) => PostPage(
+          postId: postId,
+          onPostUpdated: (updatedPost) {
+            // Update the state of the saved posts list
+            setState(() {
+              // Update the specific post in `allPosts`
+              final index =
+                  allPosts.indexWhere((post) => post.id == updatedPost.id);
+              if (index != -1) {
+                allPosts[index] = updatedPost;
+              }
+            });
+          },
+        ),
       ),
     );
   }
@@ -435,6 +448,18 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
+  void toggleLike(Post post) async {
+    try {
+      final result = await _apiService.updatePostLikes(post.id);
+      setState(() {
+        post.isLiked = result['is_liked'];
+        post.likesCount = result['likes_count'];
+      });
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
   Widget _buildPostGrid(List<Post> posts) {
     return posts.isEmpty
         ? const Center(child: Text('No posts to display'))
@@ -453,17 +478,7 @@ class _ProfilePageState extends State<ProfilePage>
                 onTap: () => navigateToPost(post.id),
                 child: PostCard(
                   post: post,
-                  // onLikePressed: () async {
-                  //   try {
-                  //     final result = await _apiService.updatePostLikes(post.id);
-                  //     setState(() {
-                  //       post.isLiked = result['is_liked'];
-                  //       post.likesCount = result['likes_count'];
-                  //     });
-                  //   } catch (e) {
-                  //     print("Error toggling like: $e");
-                  //   }
-                  // },
+                  onLikePressed: () => toggleLike(post),
                 ),
               );
             },
@@ -474,7 +489,9 @@ class _ProfilePageState extends State<ProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(userInfo?['username'] ?? 'Profile'),
+        title: Text(
+          'Profile', //userInfo?['username'] ??
+          ),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),

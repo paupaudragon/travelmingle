@@ -56,6 +56,7 @@ class _FollowListPageState extends State<FollowListPage>
   List<User> following = [];
   List<User> followers = [];
   bool isLoading = true;
+  String? username; // Variable to store the username
 
   @override
   void initState() {
@@ -76,8 +77,14 @@ class _FollowListPageState extends State<FollowListPage>
 
   Future<void> _loadData() async {
     try {
+      final userInfo = await _apiService.getUserProfileById(widget.userId);
+      if (userInfo == null) {
+        throw Exception('User info is null');
+      }
       final data = await _apiService.fetchFollowData(widget.userId);
       setState(() {
+        username =
+            userInfo['username'] as String?; // Safely access the username
         following = data['following'] ?? [];
         followers = data['followers'] ?? [];
         isLoading = false;
@@ -103,12 +110,26 @@ class _FollowListPageState extends State<FollowListPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Followers & Following'),
+        title: Text(
+          username ?? 'Follows',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ), // Display username or fallback
+        centerTitle: true, // Center the title
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: 'Following (${following.length})'),
-            Tab(text: 'Followers (${followers.length})'),
+            Tab(
+              child: Text(
+                'Following (${following.length})',
+                style: const TextStyle(color: Colors.blue), // Blue text
+              ),
+            ),
+            Tab(
+              child: Text(
+                'Followers (${followers.length})',
+                style: const TextStyle(color: Colors.blue), // Blue text
+              ),
+            ),
           ],
         ),
       ),

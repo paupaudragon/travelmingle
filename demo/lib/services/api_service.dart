@@ -177,6 +177,19 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> updatePostSaves(int postId) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/posts/$postId/save/',
+      method: 'POST',
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to update saves: ${response.body}");
+    }
+  }
+
   Future<Map<String, dynamic>> updateCommentLikes(int commentId) async {
     final response = await makeAuthenticatedRequest(
       url: "$baseApiUrl/comments/$commentId/like/",
@@ -378,18 +391,6 @@ class ApiService {
     }
   }
 
-  Future<void> updatePostSaves(int postId, bool isSaved) async {
-    final response = await makeAuthenticatedRequest(
-      url: '$baseApiUrl/posts/$postId/save/',
-      method: 'POST',
-      body: {'is_saved': isSaved}, // Pass the save status in the request body
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception("Failed to update saves: ${response.body}");
-    }
-  }
-
   // In ApiService class
   Future<Map<String, dynamic>> followUser(int userId) async {
     try {
@@ -520,8 +521,8 @@ class ApiService {
   }
 
 // In api_service.dart
-  Future<void> createPost(
-      String title, String content, String location, List<String>? imagePaths) async {
+  Future<void> createPost(String title, String content, String location,
+      List<String>? imagePaths) async {
     const String url = "$baseApiUrl/posts/";
     print('location: $location');
 

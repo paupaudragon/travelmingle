@@ -16,7 +16,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 # Always import new models
-from ..models import PostImages, Posts, Likes, Comments
+from ..models import PostImages, Posts, Likes, Comments, Collects, CollectionFolders
 
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -144,3 +144,41 @@ class ToggleLikeView(APIView):
             return Response({"error": "Invalid request, provide post_id or comment_id"}, status=400)
 
         return Response({'is_liked': is_liked, 'likes_count': likes_count}, status=200)
+
+class ToggleSaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id):
+        user = request.user
+        
+        # Safely access request data
+        folder_name = request.data.get('folder_name') if hasattr(request, 'data') and request.data else 'Default'
+
+        try:
+            # Check if the post exists
+            post = Posts.objects.get(id=post_id)
+        except Posts.DoesNotExist:
+            return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get or create a folder for the user
+        folder, _ = CollectionFolders.objects.get_or_create(user=user, name=folder_name)
+
+        # Check if the post is already saved in this folder
+        collect = Collects.objects.filter(user=user, post=post, folder=folder).first()
+
+        if collect:
+            # If the collect already exists, delete it (unsave the post)
+            collect.delete()
+            is_saved = False
+        else:
+            # If the collect doesn't exist, create it (save the post)
+            Collects.objects.create(user=user, post=post, folder=folder)
+            is_saved = True
+
+        # Count the total number of users who have saved this post
+        saves_count = Collects.objects.filter(post=post).count()
+
+        return Response(
+            {"is_saved": is_saved, "saves_count": saves_count},
+            status=status.HTTP_200_OK
+        )

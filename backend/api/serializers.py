@@ -153,7 +153,7 @@ class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
-    collected_count = serializers.SerializerMethodField()
+    saves_count = serializers.SerializerMethodField()
     detailed_comments = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     is_saved = serializers.SerializerMethodField()
@@ -162,15 +162,15 @@ class PostSerializer(serializers.ModelSerializer):
         model = Posts
         fields = ['id', 'user', 'title', 'content', 'location', 'created_at',
                   'updated_at', 'status', 'visibility', 'images', 'likes_count',
-                  'collected_count', 'detailed_comments', 'is_liked', 'is_saved',]
+                  'saves_count', 'detailed_comments', 'is_liked', 'is_saved',]
 
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""
         return obj.post_likes.count()
 
-    def get_collected_count(self, obj):
+    def get_saves_count(self, obj):
         """Calculate and return the total count of collections for the post."""
-        return Collects.objects.filter(post=obj).count()
+        return obj.post_saves.count()
 
     def get_detailed_comments(self, obj):
         """Generate and return a detailed JSON of comments with their replies and likes."""
@@ -190,7 +190,7 @@ class PostSerializer(serializers.ModelSerializer):
         """Check if the logged-in user saved the post."""
         request = self.context.get('request', None)
         if request and request.user.is_authenticated:
-            return obj.collected_by.filter(user=request.user).exists()
+            return obj.post_saves.filter(user=request.user).exists()
         return False
 
 

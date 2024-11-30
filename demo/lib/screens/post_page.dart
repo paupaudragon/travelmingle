@@ -2,12 +2,11 @@ import 'dart:io';
 
 import 'package:demo/screens/profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../models/comment_model.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
-
-import 'package:image_picker/image_picker.dart';
 
 class PostPage extends StatefulWidget {
   final int postId;
@@ -110,6 +109,22 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
+    void togglePostSave(Post post) async {
+    try {
+      final response = await apiService.updatePostSaves(post.id);
+      print("Response from API: $response"); // Log the response for debugging
+      setState(() {
+        post.isSaved = response['is_saved'];
+        post.savesCount = response['saves_count'];
+      });
+      if (widget.onPostUpdated != null) {
+        widget.onPostUpdated!(post); // Notify FeedPage of the updated post
+      }
+    } catch (e) {
+      print("Error toggling post save: $e");
+    }
+  }
+
   void toggleCommentLike(Comment comment) async {
     try {
       final response = await apiService.updateCommentLikes(comment.id);
@@ -122,21 +137,7 @@ class _PostPageState extends State<PostPage> {
       print("Error toggling comment like: $e");
     }
   }
-
-  void toggleSave(Post post) async {
-    setState(() {
-      post.isSaved = !post.isSaved; // Optimistic UI update
-    });
-
-    try {
-      await apiService.updatePostSaves(post.id, post.isSaved);
-    } catch (e) {
-      print("Error toggling save: $e");
-      setState(() {
-        post.isSaved = !post.isSaved; // Revert if there's an error
-      });
-    }
-  }
+  
 
   void toggleExpand(int commentId) {
     setState(() {
@@ -439,9 +440,9 @@ class _PostPageState extends State<PostPage> {
                 ? const Color.fromARGB(255, 255, 193, 7)
                 : Colors.grey,
           ),
-          onPressed: () => toggleSave(post),
+          onPressed: () => togglePostSave(post),
         ),
-        Text("0"),
+        Text("${post.savesCount}"),
       ],
     );
   }

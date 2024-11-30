@@ -6,6 +6,6 @@ from .collection_views import CollectionFolderListCreateView, CollectionFolderDe
 from .notification_views import NotificationListView, NotificationDetailView, MarkNotificationAsReadView
 from .register_views import RegisterView
 from .login_views import LoginView
-from .post_views import ToggleLikeView
+from .post_views import ToggleLikeView, ToggleSaveView
 from .follow_views import FollowView
 from .user_follow_list_views import UserFollowingListView, UserFollowersListView

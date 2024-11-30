@@ -11,7 +11,7 @@ from .views import (
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
-    UserInfoView, ToggleLikeView, PostCommentsView,
+    UserInfoView, ToggleLikeView, PostCommentsView,ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView
 )
 
@@ -34,7 +34,7 @@ urlpatterns = [
     path('posts/<int:post_id>/comments/',
          PostCommentsView.as_view(), name='post-comments'),
     path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),
-    path('posts/<int:post_id>/save/', ToggleLikeView.as_view(), name='post-save'),
+    path('posts/<int:post_id>/save/', ToggleSaveView.as_view(), name='post-save'),
 
     # Comment Endpoints
     path('comments/', CommentListCreateView.as_view(),
