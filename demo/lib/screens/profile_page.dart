@@ -19,7 +19,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   late TabController _tabController;
   Map<String, dynamic>? userInfo;
@@ -28,15 +28,47 @@ class _ProfilePageState extends State<ProfilePage>
   String? error;
   bool? isFollowing;
   bool isUpdatingFollow = false;
+  int? currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: widget.userId == null ? 3 : 1,
-      vsync: this,
-    );
-    fetchUserData();
+    _tabController = TabController(length: 3, vsync: this);
+    _initializeUserData();
+  }
+
+  Future<void> _initializeUserData() async {
+    try {
+      // First get current user's ID
+      final currentUserInfo = await _apiService.getUserInfo();
+      if (mounted && currentUserInfo != null && currentUserInfo['id'] != null) {
+        setState(() {
+          currentUserId = currentUserInfo['id'];
+        });
+      }
+
+      // Then fetch the profile data
+      await fetchUserData();
+
+      // Update tab controller based on whether this is the current user's profile
+      final bool isCurrentUser =
+          widget.userId == null || widget.userId == currentUserId;
+      if (_tabController.length != (isCurrentUser ? 3 : 1)) {
+        _tabController.dispose();
+        _tabController = TabController(
+          length: isCurrentUser ? 3 : 1,
+          vsync: this,
+        );
+      }
+    } catch (e) {
+      print("Error initializing user data: $e");
+      if (mounted) {
+        setState(() {
+          error = "Failed to load profile";
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -153,7 +185,6 @@ class _ProfilePageState extends State<ProfilePage>
           isUpdatingFollow = false;
         });
 
-        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update follow status: $e'),
@@ -171,25 +202,29 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   List<Post> getSavedPosts() {
-    if (widget.userId != null) return [];
+    final bool isCurrentUser =
+        widget.userId == null || widget.userId == currentUserId;
+    if (!isCurrentUser) return [];
     return allPosts.where((post) => post.isSaved).toList();
   }
 
   List<Post> getLikedPosts() {
-    if (widget.userId != null) return [];
+    final bool isCurrentUser =
+        widget.userId == null || widget.userId == currentUserId;
+    if (!isCurrentUser) return [];
     return allPosts.where((post) => post.isLiked).toList();
   }
 
   void _openMenuDrawer() {
     showDialog(
       context: context,
-      barrierDismissible: true, // Allow dismissal when tapping outside
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return GestureDetector(
               onTap: () {
-                Navigator.pop(context); // Close when tapping outside
+                Navigator.pop(context);
               },
               child: Stack(
                 children: [
@@ -217,7 +252,7 @@ class _ProfilePageState extends State<ProfilePage>
                         ],
                       ),
                       child: Material(
-                        color: Colors.transparent, // Use transparent Material
+                        color: Colors.transparent,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
@@ -229,19 +264,10 @@ class _ProfilePageState extends State<ProfilePage>
                                 _showReacapPage();
                               },
                             ),
-                            // ListTile(
-                            //   leading: const Icon(Icons.insights),
-                            //   title: const Text('Analytics'),
-                            //   onTap: () {
-                            //     Navigator.pop(context);
-                            //     _showAnalyticsPage();
-                            //   },
-                            // ),
                             ListTile(
                               leading: const Icon(Icons.logout),
                               title: const Text('Log Out'),
                               onTap: () {
-                                // Navigator.pop(context);
                                 _logOutUser(context);
                               },
                             ),
@@ -271,21 +297,10 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  void _showAnalyticsPage() {
-    // // Navigate to an analytics page or display analytics
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //       builder: (context) =>
-    //           AnalyticsPage()), // Replace with your Analytics Page
-    // );
-  }
-
   void _logOutUser(BuildContext context) async {
     try {
-      await ApiService().logout(); // Call the logout service
+      await ApiService().logout();
       print("Logged out successfully.");
-      // Navigate to the login page after logout
       Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       print("Error during logout: $e");
@@ -345,7 +360,8 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ),
                         ),
-                        if (widget.userId != null) ...[
+                        if (widget.userId != null &&
+                            widget.userId != currentUserId) ...[
                           const SizedBox(width: 8),
                           isUpdatingFollow
                               ? const SizedBox(
@@ -487,18 +503,20 @@ class _ProfilePageState extends State<ProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    final bool isCurrentUser =
+        widget.userId == null || widget.userId == currentUserId;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Profile', //userInfo?['username'] ??
-          ),
+        title: const Text('Profile'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              _openMenuDrawer(); //contain Anaylytic button and Log Out button
-            },
-          ),
+          if (isCurrentUser)
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                _openMenuDrawer();
+              },
+            ),
         ],
       ),
       body: isLoading
@@ -510,7 +528,7 @@ class _ProfilePageState extends State<ProfilePage>
                     _buildProfileHeader(),
                     TabBar(
                       controller: _tabController,
-                      tabs: widget.userId == null
+                      tabs: isCurrentUser
                           ? const [
                               Tab(text: 'Posts'),
                               Tab(text: 'Collects'),
@@ -523,7 +541,7 @@ class _ProfilePageState extends State<ProfilePage>
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
-                        children: widget.userId == null
+                        children: isCurrentUser
                             ? [
                                 _buildPostGrid(getUserPosts()),
                                 _buildPostGrid(getSavedPosts()),
