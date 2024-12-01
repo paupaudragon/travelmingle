@@ -1,4 +1,3 @@
-import 'package:demo/screens/post_page.dart';
 import 'package:demo/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'screens/feed_page.dart';
