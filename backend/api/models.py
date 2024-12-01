@@ -45,8 +45,7 @@ class Posts(models.Model):
     title = models.CharField(max_length=255, blank=True, null=True)
     content = models.TextField(blank=True, null=True)
 
-    location = models.CharField(
-        max_length=255, blank=True, null=True)  # forced
+    location = models.CharField(max_length=255)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -264,7 +263,7 @@ class Collects(models.Model):
         Users, on_delete=models.CASCADE, related_name="collecter"
     )  # The user who collected the post
     post = models.ForeignKey(
-        Posts, on_delete=models.CASCADE, 
+        Posts, on_delete=models.CASCADE,
         blank=True, null=True, related_name="post_saves"
     )  # The collected post
     folder = models.ForeignKey(

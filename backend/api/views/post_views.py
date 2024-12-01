@@ -29,13 +29,77 @@ class PostListCreateView(APIView):
     parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_summary="Create a new post",
+        operation_description="Create a new post with title, content, images, location, and other metadata",
+        manual_parameters=[
+            openapi.Parameter(
+                'title',
+                openapi.IN_FORM,
+                description="Post title",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'content',
+                openapi.IN_FORM,
+                description="Post content",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'image',
+                openapi.IN_FORM,
+                description="Post images (multiple files allowed)",
+                type=openapi.TYPE_FILE,
+                required=False
+            ),
+            openapi.Parameter(
+                'location',
+                openapi.IN_FORM,
+                description="Post location",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'status',
+                openapi.IN_FORM,
+                description="Post status (published/draft)",
+                type=openapi.TYPE_STRING,
+                default='published',
+                required=False
+            ),
+            openapi.Parameter(
+                'visibility',
+                openapi.IN_FORM,
+                description="Post visibility (public/private)",
+                type=openapi.TYPE_STRING,
+                default='public',
+                required=False
+            ),
+        ],
+        responses={
+            201: PostSerializer,
+            400: "Bad Request",
+            401: "Unauthorized"
+        }
+    )
     def post(self, request):
         try:
-            # Create the post first
+            # Check if location is provided
+            location = request.data.get('location')
+            if not location:
+                return Response(
+                    {'error': 'Location is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create the post with location
             post = Posts.objects.create(
                 user=request.user,
                 title=request.data.get('title'),
                 content=request.data.get('content'),
+                location=location,  # Add location field
                 status=request.data.get('status', 'published'),
                 visibility=request.data.get('visibility', 'public')
             )
@@ -45,7 +109,7 @@ class PostListCreateView(APIView):
             for image in images:
                 PostImages.objects.create(
                     post=post,
-                    image=image  # This will automatically save to postImages/ directory
+                    image=image
                 )
 
             # Return the created post with all its data
@@ -58,6 +122,14 @@ class PostListCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    @swagger_auto_schema(
+        operation_summary="List all posts",
+        operation_description="Retrieve a list of all posts ordered by creation date",
+        responses={
+            200: PostSerializer(many=True),
+            401: "Unauthorized"
+        }
+    )
     def get(self, request):
         posts = Posts.objects.all().order_by('-created_at')
         serializer = PostSerializer(
@@ -145,14 +217,16 @@ class ToggleLikeView(APIView):
 
         return Response({'is_liked': is_liked, 'likes_count': likes_count}, status=200)
 
+
 class ToggleSaveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, post_id):
         user = request.user
-        
+
         # Safely access request data
-        folder_name = request.data.get('folder_name') if hasattr(request, 'data') and request.data else 'Default'
+        folder_name = request.data.get('folder_name') if hasattr(
+            request, 'data') and request.data else 'Default'
 
         try:
             # Check if the post exists
@@ -161,10 +235,12 @@ class ToggleSaveView(APIView):
             return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Get or create a folder for the user
-        folder, _ = CollectionFolders.objects.get_or_create(user=user, name=folder_name)
+        folder, _ = CollectionFolders.objects.get_or_create(
+            user=user, name=folder_name)
 
         # Check if the post is already saved in this folder
-        collect = Collects.objects.filter(user=user, post=post, folder=folder).first()
+        collect = Collects.objects.filter(
+            user=user, post=post, folder=folder).first()
 
         if collect:
             # If the collect already exists, delete it (unsave the post)
