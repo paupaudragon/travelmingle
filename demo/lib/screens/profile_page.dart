@@ -29,6 +29,7 @@ class _ProfilePageState extends State<ProfilePage>
   String? error;
   bool? isFollowing;
   bool isUpdatingFollow = false;
+  int? currentUserId;
 
   final RefreshController _refreshController = RefreshController();
 
@@ -38,11 +39,42 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: widget.userId == null ? 3 : 1,
-      vsync: this,
-    );
-    fetchUserData();
+    _tabController = TabController(length: 3, vsync: this);
+    _initializeUserData();
+  }
+
+  Future<void> _initializeUserData() async {
+    try {
+      // First get current user's ID
+      final currentUserInfo = await _apiService.getUserInfo();
+      if (mounted && currentUserInfo != null && currentUserInfo['id'] != null) {
+        setState(() {
+          currentUserId = currentUserInfo['id'];
+        });
+      }
+
+      // Then fetch the profile data
+      await fetchUserData();
+
+      // Update tab controller based on whether this is the current user's profile
+      final bool isCurrentUser =
+          widget.userId == null || widget.userId == currentUserId;
+      if (_tabController.length != (isCurrentUser ? 3 : 1)) {
+        _tabController.dispose();
+        _tabController = TabController(
+          length: isCurrentUser ? 3 : 1,
+          vsync: this,
+        );
+      }
+    } catch (e) {
+      print("Error initializing user data: $e");
+      if (mounted) {
+        setState(() {
+          error = "Failed to load profile";
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -183,12 +215,16 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   List<Post> getSavedPosts() {
-    if (widget.userId != null) return [];
+    final bool isCurrentUser =
+        widget.userId == null || widget.userId == currentUserId;
+    if (!isCurrentUser) return [];
     return allPosts.where((post) => post.isSaved).toList();
   }
 
   List<Post> getLikedPosts() {
-    if (widget.userId != null) return [];
+    final bool isCurrentUser =
+        widget.userId == null || widget.userId == currentUserId;
+    if (!isCurrentUser) return [];
     return allPosts.where((post) => post.isLiked).toList();
   }
 
@@ -335,7 +371,8 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ),
                         ),
-                        if (widget.userId != null) ...[
+                        if (widget.userId != null &&
+                            widget.userId != currentUserId) ...[
                           const SizedBox(width: 8),
                           isUpdatingFollow
                               ? const SizedBox(
