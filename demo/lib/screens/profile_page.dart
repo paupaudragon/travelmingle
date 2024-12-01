@@ -7,6 +7,9 @@ import '../models/post_model.dart';
 import '../services/api_service.dart';
 import '../widgets/post_card.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 class ProfilePage extends StatefulWidget {
   final int? userId;
 
@@ -20,8 +23,9 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
+  final RefreshController _refreshController = RefreshController();
   late TabController _tabController;
   Map<String, dynamic>? userInfo;
   List<Post> allPosts = [];
@@ -31,50 +35,11 @@ class _ProfilePageState extends State<ProfilePage>
   bool isUpdatingFollow = false;
   int? currentUserId;
 
-  final RefreshController _refreshController = RefreshController();
-
-  @override
-  bool get wantKeepAlive => true;
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _initializeUserData();
-  }
-
-  Future<void> _initializeUserData() async {
-    try {
-      // First get current user's ID
-      final currentUserInfo = await _apiService.getUserInfo();
-      if (mounted && currentUserInfo != null && currentUserInfo['id'] != null) {
-        setState(() {
-          currentUserId = currentUserInfo['id'];
-        });
-      }
-
-      // Then fetch the profile data
-      await fetchUserData();
-
-      // Update tab controller based on whether this is the current user's profile
-      final bool isCurrentUser =
-          widget.userId == null || widget.userId == currentUserId;
-      if (_tabController.length != (isCurrentUser ? 3 : 1)) {
-        _tabController.dispose();
-        _tabController = TabController(
-          length: isCurrentUser ? 3 : 1,
-          vsync: this,
-        );
-      }
-    } catch (e) {
-      print("Error initializing user data: $e");
-      if (mounted) {
-        setState(() {
-          error = "Failed to load profile";
-          isLoading = false;
-        });
-      }
-    }
   }
 
   @override
@@ -84,11 +49,6 @@ class _ProfilePageState extends State<ProfilePage>
     super.dispose();
   }
 
-  Future<void> _onRefresh() async {
-    await fetchUserData();
-    _refreshController.refreshCompleted();
-  }
-
   void navigateToProfile(int userId) {
     if (userId != widget.userId) {
       Navigator.push(
@@ -96,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage>
         MaterialPageRoute(
           builder: (context) => ProfilePage(userId: userId),
         ),
-      );
+      ).then((_) => _onRefresh());
     }
   }
 
@@ -107,7 +67,9 @@ class _ProfilePageState extends State<ProfilePage>
         builder: (context) => PostPage(
           postId: postId,
           onPostUpdated: (updatedPost) {
+            // Update the state of the saved posts list
             setState(() {
+              // Update the specific post in `allPosts`
               final index =
                   allPosts.indexWhere((post) => post.id == updatedPost.id);
               if (index != -1) {
@@ -117,15 +79,10 @@ class _ProfilePageState extends State<ProfilePage>
           },
         ),
       ),
-    ).then((_) {
-      // Refresh the data when returning from the post page
-      fetchUserData();
-    });
+    );
   }
 
   Future<void> fetchUserData() async {
-    if (!mounted) return;
-
     try {
       setState(() {
         isLoading = true;
@@ -137,6 +94,7 @@ class _ProfilePageState extends State<ProfilePage>
         userData = await _apiService.getUserInfo();
       } else {
         userData = await _apiService.getUserProfileById(widget.userId!);
+        // Get follow status directly from the profile response
         if (mounted) {
           setState(() {
             isFollowing = userData?['is_following'] ?? false;
@@ -183,6 +141,7 @@ class _ProfilePageState extends State<ProfilePage>
           isUpdatingFollow = false;
         });
 
+        // Show feedback to user
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -241,6 +200,7 @@ class _ProfilePageState extends State<ProfilePage>
               },
               child: Stack(
                 children: [
+                  // Transparent background
                   Container(color: Colors.transparent),
                   Align(
                     alignment: Alignment.centerRight,
@@ -273,7 +233,7 @@ class _ProfilePageState extends State<ProfilePage>
                               title: const Text('Recap'),
                               onTap: () {
                                 Navigator.pop(context);
-                                _showRecapPage();
+                                _showReacapPage();
                               },
                             ),
                             ListTile(
@@ -297,7 +257,7 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  void _showRecapPage() {
+  void _showReacapPage() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -306,7 +266,7 @@ class _ProfilePageState extends State<ProfilePage>
           navigateToPost: navigateToPost,
         ),
       ),
-    );
+    ).then((_) => _onRefresh());
   }
 
   void _logOutUser(BuildContext context) async {
@@ -316,6 +276,7 @@ class _ProfilePageState extends State<ProfilePage>
       Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       print("Error during logout: $e");
+      // Optionally, show an error message to the user
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to log out. Please try again.")),
       );
@@ -423,10 +384,7 @@ class _ProfilePageState extends State<ProfilePage>
                                     initialTabIndex: 0,
                                   ),
                                 ),
-                              ).then((_) {
-                                // Refresh data when returning from follow list
-                                fetchUserData();
-                              });
+                              ).then((_) => _onRefresh());
                             }
                           },
                           child: Padding(
@@ -452,10 +410,7 @@ class _ProfilePageState extends State<ProfilePage>
                                     initialTabIndex: 1,
                                   ),
                                 ),
-                              ).then((_) {
-                                // Refresh data when returning from follow list
-                                fetchUserData();
-                              });
+                              ).then((_) => _onRefresh());
                             }
                           },
                           child: Padding(
@@ -518,33 +473,105 @@ class _ProfilePageState extends State<ProfilePage>
           );
   }
 
+  Future<void> _handleRefresh() async {
+    try {
+      await _initializeUserData();
+    } catch (e) {
+      print("Error refreshing data: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to refresh. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _initializeUserData() async {
+    try {
+      // First get current user's ID
+      final currentUserInfo = await _apiService.getUserInfo();
+      if (mounted && currentUserInfo != null && currentUserInfo['id'] != null) {
+        setState(() {
+          currentUserId = currentUserInfo['id'];
+        });
+      }
+
+      // Then fetch the profile data
+      await fetchUserData();
+
+      // Update tab controller based on whether this is the current user's profile
+      final bool isCurrentUser =
+          widget.userId == null || widget.userId == currentUserId;
+      if (_tabController.length != (isCurrentUser ? 3 : 1)) {
+        _tabController.dispose();
+        _tabController = TabController(
+          length: isCurrentUser ? 3 : 1,
+          vsync: this,
+        );
+      }
+    } catch (e) {
+      print("Error initializing user data: $e");
+      if (mounted) {
+        setState(() {
+          error = "Failed to load profile";
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      await _initializeUserData();
+      _refreshController.refreshCompleted();
+    } catch (e) {
+      print("Error refreshing data: $e");
+      _refreshController.refreshFailed();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to refresh. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    final bool isCurrentUser =
+        widget.userId == null || widget.userId == currentUserId;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile'),
+        title: const Text('Profile'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: _openMenuDrawer,
-          ),
+          if (isCurrentUser)
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                _openMenuDrawer();
+              },
+            ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : error != null
-              ? Center(child: Text(error!))
-              : SmartRefresher(
-                  controller: _refreshController,
-                  onRefresh: _onRefresh,
-                  child: Column(
+      body: SmartRefresher(
+        controller: _refreshController,
+        onRefresh: _onRefresh,
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : error != null
+                ? Center(child: Text(error!))
+                : Column(
                     children: [
                       _buildProfileHeader(),
                       TabBar(
                         controller: _tabController,
-                        tabs: widget.userId == null
+                        tabs: isCurrentUser
                             ? const [
                                 Tab(text: 'Posts'),
                                 Tab(text: 'Collects'),
@@ -557,7 +584,7 @@ class _ProfilePageState extends State<ProfilePage>
                       Expanded(
                         child: TabBarView(
                           controller: _tabController,
-                          children: widget.userId == null
+                          children: isCurrentUser
                               ? [
                                   _buildPostGrid(getUserPosts()),
                                   _buildPostGrid(getSavedPosts()),
@@ -570,7 +597,7 @@ class _ProfilePageState extends State<ProfilePage>
                       ),
                     ],
                   ),
-                ),
+      ),
     );
   }
 }
