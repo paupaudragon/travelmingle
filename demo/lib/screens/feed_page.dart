@@ -1,6 +1,7 @@
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../widgets/header.dart';
 import '../widgets/footer.dart';
 import '../services/api_service.dart';
@@ -17,6 +18,7 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   final ApiService _apiService = ApiService();
+  final RefreshController _refreshController = RefreshController();
   List<Post> posts = [];
   bool isLoading = true;
   bool isLoggedIn = false;
@@ -32,6 +34,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _refreshController.dispose();
     super.dispose();
   }
 
@@ -39,6 +42,22 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _loadPosts();
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      final fetchedPosts = await _apiService.fetchPosts();
+
+      if (!mounted) return;
+
+      setState(() {
+        posts = fetchedPosts;
+      });
+      _refreshController.refreshCompleted();
+    } catch (e) {
+      print('Error refreshing posts: $e');
+      _refreshController.refreshFailed();
     }
   }
 
@@ -112,7 +131,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           },
         ),
       ),
-    ).then((_) => _loadPosts()); // Refresh when returning from post detail
+    ).then((_) => _onRefresh());
   }
 
   void handleLogout(BuildContext context) async {
@@ -150,7 +169,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => CreatePostPage()),
-    ).then((_) => _loadPosts()); // Refresh when returning from create post
+    ).then((_) => _onRefresh());
   }
 
   @override
@@ -175,35 +194,37 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
               ? const Center(child: CircularProgressIndicator())
               : posts.isEmpty
                   ? const Center(child: Text("No posts available."))
-                  : Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 4.0,
-                          mainAxisSpacing: 4.0,
-                          childAspectRatio: 0.8,
+                  : SmartRefresher(
+                      controller: _refreshController,
+                      onRefresh: _onRefresh,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 4.0,
+                            mainAxisSpacing: 4.0,
+                            childAspectRatio: 0.8,
+                          ),
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            final post = posts[index];
+                            return GestureDetector(
+                              onTap: () => navigateToPostDetail(post),
+                              child: PostCard(
+                                post: post,
+                                onLikePressed: () => toggleLike(post),
+                              ),
+                            );
+                          },
                         ),
-                        itemCount: posts.length,
-                        itemBuilder: (context, index) {
-                          final post = posts[index];
-                          return GestureDetector(
-                            onTap: () => navigateToPostDetail(post),
-                            child: PostCard(
-                              post: post,
-                              onLikePressed: () => toggleLike(post),
-                            ),
-                          );
-                        },
                       ),
                     );
         },
       ),
       bottomNavigationBar: Footer(
-        onHomePressed: () {
-          _loadPosts(); // Refresh when home is pressed
-        },
+        onHomePressed: () => _onRefresh(),
         onLogoutPressed: () => handleLogout(context),
         onPlusPressed: () {
           requireLogin(context);
@@ -214,7 +235,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ProfilePage()),
-          ).then((_) => _loadPosts()); // Refresh when returning from profile
+          ).then((_) => _onRefresh());
         }),
       ),
     );
