@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:demo/screens/post_page.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -17,11 +18,32 @@ class RecapPage extends StatelessWidget {
 
   final PageController _pageController = PageController();
 
+  // Dedicated ScreenshotControllers for each page
+  final ScreenshotController mostLikedController = ScreenshotController();
+  final ScreenshotController mostCommentedController = ScreenshotController();
+  final ScreenshotController mostSavedController = ScreenshotController();
+
   Post? getMostLikedPost() {
     if (posts.isEmpty) return null;
     int maxLikes =
         posts.map((post) => post.likesCount).reduce((a, b) => a > b ? a : b);
     return posts.firstWhere((post) => post.likesCount == maxLikes);
+  }
+
+  Post? getMostCommentedPost() {
+    if (posts.isEmpty) return null;
+    int maxComments = posts
+        .map((post) => post.detailedComments.length)
+        .reduce((a, b) => a > b ? a : b);
+    return posts
+        .firstWhere((post) => post.detailedComments.length == maxComments);
+  }
+
+  Post? getMostSavedPost() {
+    if (posts.isEmpty) return null; // Return null if the list is empty
+    int maxSaves =
+        posts.map((post) => post.savesCount).reduce((a, b) => a > b ? a : b);
+    return posts.firstWhere((post) => post.savesCount == maxSaves);
   }
 
   Future<void> shareRecap(
@@ -51,158 +73,225 @@ class RecapPage extends StatelessWidget {
     }
   }
 
-  Widget buildRecapContent(
-      BuildContext context, ScreenshotController controller) {
-    final Post? mostLikedPost = getMostLikedPost();
-    final int maxLikes = mostLikedPost?.likesCount ?? 0;
-
+  Widget buildRecapContent({
+    required BuildContext context,
+    required ScreenshotController controller,
+    required Post? post,
+    required String text,
+    required String textTail, // New parameter for dynamic tail text
+    required String metricValue,
+    required Color metricColor,
+    required Color backgroundColor,
+    required Color buttonColor,
+    required Color buttonTextColor,
+    required Color shareButtonColor,
+    required Color shareButtonTextColor,
+    required Function() onSharePressed,
+  }) {
     return Screenshot(
       controller: controller,
-      child: Column(
-        children: [
-          // Top Navigation Bar
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    Navigator.pop(context); // Go back to ProfilePage
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.home),
-                  onPressed: () {
-                    Navigator.pushNamed(
-                        context, '/feed'); // Navigate to FeedPage
-                  },
-                ),
-              ],
-            ),
-          ),
-          // Content Area
-          if (mostLikedPost != null)
+      child: Container(
+        color: backgroundColor,
+        child: Column(
+          children: [
             Padding(
-              padding: const EdgeInsets.only(
-                  top: 32.0), // Adjustable padding from the nav bar
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Centered horizontally PostCard
-                  GestureDetector(
-                    onTap: () => navigateToPost(mostLikedPost.id),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width *
-                          0.8, // Adjust width
-                      child: PostCard(post: mostLikedPost),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                  const SizedBox(
-                      height: 16), // Padding between the card and text
-                  // Likes Information
-                  RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      text: "Your most popular post got ",
-                      style: const TextStyle(
-                        fontSize: 46,
-                        fontFamily: 'Roboto',
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: "$maxLikes",
-                          style: const TextStyle(
-                            color: Colors.pinkAccent,
-                            fontSize: 46,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const TextSpan(text: " likes"),
-                      ],
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.home),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/feed');
+                    },
                   ),
                 ],
               ),
-            )
-          else
-            const Expanded(
-              child: Center(
-                child: Text(
-                  "No posts available",
-                  style: TextStyle(fontSize: 16, color: Colors.black),
+            ),
+            if (post != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 32.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => PostPage(postId: post.id)),
+                      ),
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.8,
+                        child: PostCard(post: post),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        text: text,
+                        style: const TextStyle(
+                          fontSize: 46,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: metricValue,
+                            style: TextStyle(
+                              color: metricColor,
+                              fontSize: 46,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: " $textTail", // Append tail text dynamically
+                            style: const TextStyle(
+                              fontSize: 46,
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              )
+            else
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    "No posts available",
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+              ),
+            // Share Button
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: shareButtonColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 12.0,
+                  ),
+                ),
+                onPressed: onSharePressed,
+                icon: Icon(Icons.share_rounded, color: shareButtonTextColor),
+                label: Text(
+                  "Share",
+                  style: TextStyle(
+                    color: shareButtonTextColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final mostLikedPost = getMostLikedPost();
+    final mostCommentedPost = getMostCommentedPost();
+    final mostSavedPost = getMostSavedPost();
+
     return Scaffold(
-      backgroundColor:
-          const Color.fromARGB(255, 82, 253, 244), // Cyan background
       body: Stack(
         children: [
           PageView(
             controller: _pageController,
-            scrollDirection: Axis.vertical, // Swipe up and down
+            scrollDirection: Axis.vertical,
             children: [
+              // First Recap: Most Liked Post
               buildRecapContent(
-                  context, ScreenshotController()), // Unique controller
+                context: context,
+                controller: mostLikedController, // Use dedicated controller
+                post: mostLikedPost,
+                text: "Your most popular post got ",
+                textTail: "likes", // Specify the tail text
+                metricValue: "${mostLikedPost?.likesCount ?? 0}",
+                metricColor: Colors.pinkAccent,
+                backgroundColor: const Color.fromARGB(255, 82, 253, 244),
+                buttonColor: Colors.black,
+                buttonTextColor: Colors.pinkAccent,
+                shareButtonColor: Colors.pinkAccent,
+                shareButtonTextColor: Colors.black,
+                onSharePressed: () =>
+                    shareRecap(context, mostLikedController), // Use dedicated controller
+              ),
+              // Second Recap: Most Commented Post
               buildRecapContent(
-                  context, ScreenshotController()), // Another unique controller
+                context: context,
+                controller: mostCommentedController, // Use dedicated controller
+                post: mostCommentedPost,
+                text: "Your post with the most interactions got ",
+                textTail: "comments", // Specify the tail text
+                metricValue:
+                    "${mostCommentedPost?.detailedComments.length ?? 0}",
+                metricColor: const Color.fromARGB(255, 255, 242, 7),
+                backgroundColor: const Color.fromARGB(255, 65, 252, 155),
+                buttonColor: const Color.fromARGB(255, 255, 242, 7),
+                buttonTextColor: Colors.black,
+                shareButtonColor: const Color.fromARGB(255, 255, 242, 7),
+                shareButtonTextColor: Colors.black,
+                onSharePressed: () =>
+                    shareRecap(context, mostCommentedController), // Use dedicated controller
+              ),
+              buildRecapContent(
+                context: context,
+                controller: mostSavedController, // Use dedicated controller
+                post: mostCommentedPost,
+                text: "Your post with the most saves got ",
+                textTail: "saves", // Specify the tail text
+                metricValue: "${mostSavedPost?.savesCount ?? 0}",
+                metricColor: const Color.fromARGB(255, 251, 246, 163),
+                backgroundColor: Colors.pinkAccent,
+                buttonColor: const Color.fromARGB(255, 251, 246, 163),
+                buttonTextColor: Colors.black,
+                shareButtonColor: const Color.fromARGB(255, 251, 246, 163),
+                shareButtonTextColor: Colors.black,
+                onSharePressed: () =>
+                    shareRecap(context, mostSavedController), // Use dedicated controller
+              ),
             ],
           ),
-          // Vertical Dot Indicator
           Positioned(
             right: 16.0,
-            top: MediaQuery.of(context).size.height / 2 - 60,
+            top: MediaQuery.of(context).size.height / 3 - 60,
             child: SmoothPageIndicator(
               controller: _pageController,
-              count: 2, // Update with the number of pages
+              count: 3,
               axisDirection: Axis.vertical,
               effect: const WormEffect(
                 dotHeight: 6,
                 dotWidth: 6,
-                activeDotColor: Color.fromARGB(185, 57, 56, 56), // Dark gray for the active dot
-                dotColor: Colors.grey, // Light gray for the inactive dots
+                activeDotColor: Color.fromARGB(185, 57, 56, 56),
+                dotColor: Colors.grey,
               ),
             ),
           ),
         ],
-      ),
-      floatingActionButton: Align(
-        alignment: Alignment.bottomCenter, // Center the button horizontally
-        child: Padding(
-          padding:
-              const EdgeInsets.only(bottom: 16.0), // Small padding from bottom
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.pinkAccent, // Magenta color
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0), // Rounded corners
-              ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-            ),
-            onPressed: () => shareRecap(context, ScreenshotController()),
-            icon: const Icon(Icons.share_rounded, color: Colors.black),
-            label: const Text(
-              "Share",
-              style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20),
-            ),
-          ),
-        ),
       ),
     );
   }

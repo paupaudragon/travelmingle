@@ -32,14 +32,15 @@ class PostCard extends StatelessWidget {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.all(4.0),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0), // Left and right padding
               child: Row(
                 children: [
                   CircleAvatar(
                     backgroundImage: NetworkImage(post.user.profilePictureUrl),
                     radius: 20,
                   ),
-                  const SizedBox(width: 8),
+
                   Expanded(
                     child: Text(
                       post.user.username,
@@ -55,27 +56,34 @@ class PostCard extends StatelessWidget {
             ),
           ),
 
+
           // Cover Photo
           if (post.images.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  post.images.first.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0), // Left and right padding
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    post.images.first.imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
                 ),
               ),
             ),
-          const SizedBox(height: 4),
 
-          // Title Preview and Like Count
+
+          // Content Section
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10.0), // Left and right padding
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Title
                 Text(
                   post.title.isNotEmpty
                       ? post.title.length > 30
@@ -89,22 +97,52 @@ class PostCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        post.isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: post.isLiked ? Colors.red : Colors.grey,
+
+
+                // Location (if not null or empty)
+                if (post.location.isNotEmpty)
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.grey,
+                        size: 16,
                       ),
-                      onPressed: onLikePressed,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${post.likesCount}',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
+
+                      Expanded(
+                        child: Text(
+                          post.location,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
+              ],
+            ),
+          ),
+
+          // Like Button and Count
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 0.0), // Left and right padding
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    post.isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: post.isLiked ? Colors.red : Colors.grey,
+                  ),
+                  onPressed: onLikePressed,
+                ),
+                Text(
+                  '${post.likesCount}',
+                  style: const TextStyle(fontSize: 14),
                 ),
               ],
             ),

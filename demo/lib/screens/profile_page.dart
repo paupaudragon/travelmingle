@@ -79,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage>
           },
         ),
       ),
-    );
+    ).then((_) => _onRefresh());
   }
 
   Future<void> fetchUserData() async {

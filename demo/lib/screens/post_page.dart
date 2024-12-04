@@ -109,7 +109,7 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-    void togglePostSave(Post post) async {
+  void togglePostSave(Post post) async {
     try {
       final response = await apiService.updatePostSaves(post.id);
       print("Response from API: $response"); // Log the response for debugging
@@ -137,7 +137,6 @@ class _PostPageState extends State<PostPage> {
       print("Error toggling comment like: $e");
     }
   }
-  
 
   void toggleExpand(int commentId) {
     setState(() {
@@ -401,6 +400,7 @@ class _PostPageState extends State<PostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              //Title
               Text(
                 post.title,
                 style: const TextStyle(
@@ -409,11 +409,47 @@ class _PostPageState extends State<PostPage> {
                 ),
               ),
               const SizedBox(height: 10),
-              Text(post.content),
+
+              //Content
+              Text(
+                post.content,
+                style: const TextStyle(
+                  fontSize: 18,
+                ),
+              ),
+              // Display location if available
+              if (post.location.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(
+                      top: 8.0), // Small padding for location
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.grey,
+                        size: 17,
+                      ),
+                      const SizedBox(
+                          width: 4), // Space between icon and location text
+                      Expanded(
+                        child: Text(
+                          post.location,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 10),
+              // Created At
               Text(
                 formatDate(post.createdAt),
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ],
           ),
@@ -513,7 +549,7 @@ class _PostPageState extends State<PostPage> {
                       Text(
                         comment.user.username,
                         style: const TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           color: Colors.black,
                           fontWeight:
                               FontWeight.w600, // Makes the text semi-bold
@@ -527,7 +563,7 @@ class _PostPageState extends State<PostPage> {
                         Text(
                           comment.content!,
                           style: const TextStyle(
-                              fontSize: 14, color: Colors.black),
+                              fontSize: 15, color: Colors.black),
                         ),
                       if (comment.commentPictureUrl != null)
                         const SizedBox(height: 8),
@@ -546,7 +582,7 @@ class _PostPageState extends State<PostPage> {
                           Text(
                             formatDate(comment.createdAt),
                             style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
+                                fontSize: 13, color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
@@ -555,7 +591,7 @@ class _PostPageState extends State<PostPage> {
                             child: const Text(
                               "Reply",
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: Color.fromARGB(255, 120, 120, 120),
                               ),
                             ),
@@ -724,6 +760,8 @@ class _PostPageState extends State<PostPage> {
                 }
 
                 final post = snapshot.data!;
+                final commentCount =
+                    commentsCache?.length ?? 0; // Number of comments
                 return SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,14 +771,15 @@ class _PostPageState extends State<PostPage> {
                       buildPostActions(
                           post), // Reactions section (like, save, etc.)
                       const Divider(),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
                             horizontal: 16.0), // Add padding to comments header
                         child: Text(
-                          'Comments',
+                          "$commentCount comments",
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.normal,
+                            color: Colors.grey[700], // Slightly darker grey
                           ),
                         ),
                       ),

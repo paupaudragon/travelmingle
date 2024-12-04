@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
         title: Text(
           "TravelMingle",
           style: TextStyle(
-              color: Colors.orange, 
+              color: Colors.blue, 
               fontSize: 26,
               fontWeight: FontWeight.bold),
         ),

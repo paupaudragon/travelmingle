@@ -21,6 +21,45 @@ class MyApp extends StatelessWidget {
       title: 'My App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        hintColor: Colors.grey, // Accent color
+        inputDecorationTheme: InputDecorationTheme(
+          labelStyle: const TextStyle(
+            color: Colors.black, // Label text color
+          ),
+          enabledBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(
+                color: Colors.blue), // Blue underline when not focused
+          ),
+          focusedBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(
+                color: Colors.blue, width: 2), // Blue underline when focused
+          ),
+          hintStyle: const TextStyle(
+            color: Colors.grey, // Hint text color
+          ),
+        ),
+        tabBarTheme: TabBarTheme(
+          labelColor: Colors.black, // Selected tab text color
+          unselectedLabelColor: Colors.grey, // Unselected tab text color
+          indicator: UnderlineTabIndicator(
+            borderSide:
+                BorderSide(color: Colors.blue, width: 3), // Tab underline
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue, // Elevated button background
+            foregroundColor: Colors.black, // Elevated button text color
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.black, // Text button color
+          ),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.black, // Floating action button color
+        ),
       ),
       initialRoute: '/login', // Set your initial route
       routes: {

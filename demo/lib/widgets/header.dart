@@ -21,15 +21,14 @@ class Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color.fromARGB(255, 244, 240, 240), // Off-white background color
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      // color: const Color.fromARGB(255, 244, 240, 240), // Off-white background color
       child: Center(
         child: TextButton(
           onPressed: () => onExplorePressed(),
           child: const Text(
             "Explore",
             style: TextStyle(
-              color: Colors.orange,
+              color: Colors.blue,
               fontSize: 20, // Highlighted as active
             ),
           ),

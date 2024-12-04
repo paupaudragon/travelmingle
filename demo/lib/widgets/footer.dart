@@ -19,7 +19,7 @@ class Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF5F5F5), // Off-white background color
+      // color: const Color(0xFFF5F5F5), // Off-white background color
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -43,7 +43,7 @@ class Footer extends StatelessWidget {
               height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.orange, // Background color of the "+" button
+                color: Colors.blue, // Background color of the "+" button
                 borderRadius: BorderRadius.circular(
                     8), // Rounded corners for square button
               ),
