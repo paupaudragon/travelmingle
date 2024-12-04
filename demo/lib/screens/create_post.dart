@@ -88,7 +88,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               child: TextButton(
                 onPressed: _isLoading ? null : _submitPost,
                 style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.all(Colors.orange),
+                  backgroundColor: WidgetStateProperty.all(Colors.blue),
                   shape: WidgetStateProperty.all(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
