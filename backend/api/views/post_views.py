@@ -161,6 +161,18 @@ class PostListCreateView(APIView):
 
 
 class PostDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    PostDetailView handles the retrieval, update, and deletion of a specific post.
+    Attributes:
+        queryset (QuerySet): The queryset to retrieve posts with related user data.
+        serializer_class (Serializer): The serializer class to use for post data.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    Methods:
+        get_serializer_context(): Returns the context for the serializer, including the request.
+        get(request, *args, **kwargs): Retrieves details of a specific post by ID.
+        patch(request, *args, **kwargs): Updates a specific post's title, content, status, or visibility.
+        delete(request, *args, **kwargs): Deletes a specific post by ID.
+    """
     queryset = Posts.objects.select_related('user').all()
     serializer_class = PostSerializer
 
