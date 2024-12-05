@@ -10,6 +10,19 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class UserListCreateView(ListCreateAPIView):
+    """
+    UserListCreateView is a view that provides both listing and creation of users.
+    Methods:
+        get(self, request, *args, **kwargs):
+            Retrieve a list of all registered users.
+    Attributes:
+        queryset: A queryset of all User objects.
+        serializer_class: The serializer class used for serializing User objects.
+    Swagger Documentation:
+        operation_summary: "List all users"
+        operation_description: "Retrieve a list of all registered users."
+        responses: {200: UserSerializer(many=True)}
+    """
     queryset = Users.objects.all()
     serializer_class = UserSerializer
 
@@ -23,6 +36,16 @@ class UserListCreateView(ListCreateAPIView):
 
 
 class UserDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    UserDetailView handles the retrieval, update, and deletion of user details.
+    Methods:
+        get(request, *args, **kwargs):
+            Retrieve details of a specific user by ID.
+        put(request, *args, **kwargs):
+            Update user information such as username, email, bio, or profile picture.
+        delete(request, *args, **kwargs):
+            Delete a user from the system by ID.
+    """
     queryset = Users.objects.all()
     serializer_class = UserSerializer
 

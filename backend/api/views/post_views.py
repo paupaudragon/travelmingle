@@ -26,6 +26,29 @@ from rest_framework.permissions import IsAuthenticated
 
 
 class PostListCreateView(APIView):
+    """
+    View for creating and listing posts.
+    Methods
+    -------
+    post(request)
+        Create a new post with title, content, images, location, and other metadata.
+        Parameters:
+            - title (str): Post title (required)
+            - content (str): Post content (required)
+            - image (file): Post images (multiple files allowed) (optional)
+            - location (str): Post location (required)
+            - status (str): Post status (published/draft) (default: 'published') (optional)
+            - visibility (str): Post visibility (public/private) (default: 'public') (optional)
+        Responses:
+            - 201: Post created successfully
+            - 400: Bad Request
+            - 401: Unauthorized
+    get(request)
+        Retrieve a list of all posts ordered by creation date.
+        Responses:
+            - 200: List of posts
+            - 401: Unauthorized
+    """
     parser_classes = (MultiPartParser, FormParser)
     permission_classes = [IsAuthenticated]
 
@@ -138,6 +161,18 @@ class PostListCreateView(APIView):
 
 
 class PostDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    PostDetailView handles the retrieval, update, and deletion of a specific post.
+    Attributes:
+        queryset (QuerySet): The queryset to retrieve posts with related user data.
+        serializer_class (Serializer): The serializer class to use for post data.
+        permission_classes (list): The list of permission classes required for accessing this view.
+    Methods:
+        get_serializer_context(): Returns the context for the serializer, including the request.
+        get(request, *args, **kwargs): Retrieves details of a specific post by ID.
+        patch(request, *args, **kwargs): Updates a specific post's title, content, status, or visibility.
+        delete(request, *args, **kwargs): Deletes a specific post by ID.
+    """
     queryset = Posts.objects.select_related('user').all()
     serializer_class = PostSerializer
 
@@ -219,6 +254,21 @@ class ToggleLikeView(APIView):
 
 
 class ToggleSaveView(APIView):
+    """
+    ToggleSaveView handles the saving and unsaving of posts by authenticated users.
+    Methods:
+        post(request, post_id):
+            Handles the POST request to save or unsave a post.
+            - Retrieves the user from the request.
+            - Safely accesses the folder name from the request data, defaults to 'Default'.
+            - Checks if the post with the given post_id exists.
+            - Gets or creates a folder for the user.
+            - Checks if the post is already saved in the specified folder.
+            - If the post is already saved, it unsaves (deletes) the collect.
+            - If the post is not saved, it saves (creates) the collect.
+            - Counts the total number of users who have saved this post.
+            - Returns a response with the save status and the total number of saves.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, post_id):

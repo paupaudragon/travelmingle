@@ -7,6 +7,26 @@ from ..serializers import UserSerializer
 
 
 class FollowListView(APIView):
+    '''
+    FollowListView handles the retrieval of a user's followers or following list.
+    Methods
+    -------
+    get(request, user_id, list_type)
+        Retrieves a list of followers or following users based on the list_type parameter.
+    Parameters
+    ----------
+    request : Request
+        The HTTP request object.
+    user_id : int
+        The ID of the user whose followers or following list is to be retrieved.
+    list_type : str
+        The type of list to retrieve, either 'followers' or 'following'.
+    Returns
+    -------
+    Response
+        A Response object containing the serialized list of users or an error message.
+    '''
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id, list_type):

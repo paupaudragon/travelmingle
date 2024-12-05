@@ -6,6 +6,22 @@ from django.utils import timezone
 
 
 class Users(AbstractUser):
+    """
+    Users model that extends the AbstractUser model to include additional fields and functionality.
+    Attributes:
+        email (EmailField): Unique email address for the user.
+        bio (TextField): Optional bio for the user.
+        profile_picture (ImageField): Optional profile picture for the user, uploaded to 'profile_pictures/'.
+        created_at (DateTimeField): Timestamp when the user was created, automatically set.
+        updated_at (DateTimeField): Timestamp when the user was last updated, automatically set.
+        REQUIRED_FIELDS (list): List of fields required for user creation, includes 'email'.
+        following (ManyToManyField): Many-to-many relationship to self through the Follow model, representing users this user is following.
+    Meta:
+        db_table (str): Name of the database table.
+        indexes (list): List of database indexes for the model.
+    Methods:
+        __str__(): Returns the username of the user.
+    """
     email = models.EmailField(unique=True)
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(
@@ -39,6 +55,24 @@ class Users(AbstractUser):
 
 
 class Posts(models.Model):
+    """
+    Represents a post created by a user.
+    Attributes:
+        id (BigAutoField): The primary key for the post.
+        user (ForeignKey): The user who created the post, linked to the Users model.
+        title (CharField): The title of the post, optional.
+        content (TextField): The content of the post, optional.
+        location (CharField): The location associated with the post, optional.
+        created_at (DateTimeField): The timestamp when the post was created.
+        updated_at (DateTimeField): The timestamp when the post was last updated.
+        status (CharField): The publication status of the post, can be 'draft' or 'published'.
+        visibility (CharField): The visibility of the post, can be 'public', 'private', or 'friends'.
+    Meta:
+        db_table (str): The name of the database table.
+        indexes (list): The list of indexes for the model.
+    Methods:
+        __str__(): Returns a string representation of the post.
+    """
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
         Users, on_delete=models.CASCADE, related_name="posts")
@@ -342,6 +376,19 @@ class Notifications(models.Model):
 
 
 class Follow(models.Model):
+    """
+    Model representing a follow relationship between users.
+    Attributes:
+        follower (ForeignKey): The user who is following another user.
+        following (ForeignKey): The user who is being followed.
+        created_at (DateTimeField): The timestamp when the follow relationship was created.
+    Meta:
+        db_table (str): The name of the database table.
+        unique_together (tuple): Ensures that a user cannot follow another user more than once.
+        indexes (list): Database indexes for the follower and following fields.
+    Methods:
+        __str__(): Returns a string representation of the follow relationship.
+    """
     follower = models.ForeignKey(
         Users, on_delete=models.CASCADE, related_name='following_relationships')
     following = models.ForeignKey(
