@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Import the image picker package
-import '../services/api_service.dart'; // Import the ApiService
+import 'package:image_picker/image_picker.dart';
+import '../services/api_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -43,20 +43,28 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Profile Picture Field
-              GestureDetector(
-                onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundImage:
-                      _profileImage != null ? FileImage(_profileImage!) : null,
-                  child: _profileImage == null
-                      ? const Icon(Icons.camera_alt, size: 40)
-                      : null,
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.grey[200],
+                    child: _profileImage == null
+                        ? const Icon(Icons.camera_alt,
+                            size: 40, color: Colors.grey)
+                        : ClipOval(
+                            child: Image.file(
+                              _profileImage!,
+                              width: 80, // diameter = 2 * radius
+                              height: 80,
+                              fit: BoxFit
+                                  .cover, // This ensures the image covers the circle properly
+                            ),
+                          ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Username Field
               TextFormField(
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Username *'),
@@ -69,10 +77,9 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 16),
 
-              // Email Field
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(labelText: 'Email *'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter an email';
@@ -82,7 +89,6 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 16),
 
-              // Password Field
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password *'),
@@ -96,14 +102,12 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 16),
 
-              // Bio Field
               TextFormField(
                 controller: _bioController,
                 decoration: const InputDecoration(labelText: 'Bio (Optional)'),
               ),
               const SizedBox(height: 16),
 
-              // Register Button
               isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton(
@@ -120,38 +124,35 @@ class _RegisterPageState extends State<RegisterPage> {
   void _registerUser() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        isLoading = true; // Show loader
+        isLoading = true;
       });
 
       try {
-        // Call the ApiService to register the user
         final errorMessage = await ApiService.registerAUser(
           username: _usernameController.text,
           email: _emailController.text,
           password: _passwordController.text,
           bio: _bioController.text,
-          profileImagePath: _profileImage?.path, // Add image path
+          profileImagePath: _profileImage?.path,
         );
 
         setState(() {
-          isLoading = false; // Hide loader
+          isLoading = false;
         });
 
         if (errorMessage == null) {
-          // Registration succeeded
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Registration successful!')),
           );
-          Navigator.pop(context); // Navigate back to the previous screen
+          Navigator.pop(context);
         } else {
-          // Show backend error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(errorMessage)),
           );
         }
       } catch (e) {
         setState(() {
-          isLoading = false; // Hide loader
+          isLoading = false;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
