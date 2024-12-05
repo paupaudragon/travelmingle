@@ -7,21 +7,33 @@ from django.db.models import Prefetch
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
+
+    # Custom field that will be populated by a method called get_varraibel_name
+    # This naming convention is used by Django Rest Framework to populate the field
+    # So the getter name has to be "get_profile_picture_url"
     profile_picture_url = serializers.SerializerMethodField()
 
     followers_count = serializers.IntegerField(
+        # relationship defined in Follow Model
         read_only=True, source='follower_relationships.count')
     following_count = serializers.IntegerField(
+        # relationship defined in Follow Model
         read_only=True, source='following_relationships.count')
     is_following = serializers.BooleanField(read_only=True, default=False)
 
+    # Defines what fileds and nested obj should be in the serialization
     class Meta:
         model = Users
         fields = ['id', 'username', 'email', 'password', 'bio',
                   'profile_picture', 'profile_picture_url', 'created_at',
                   'updated_at', 'followers_count', 'following_count',
                   'is_following']
+
+        # defines the settings for each field
         extra_kwargs = {
+            # write_only means field will only be used when creating/updating
+            # read_only means can't be modifed
+            # required means forced of not to create the obj
             'profile_picture': {'write_only': True, 'required': False},
             'bio': {'required': False},
             'created_at': {'read_only': True},
@@ -46,16 +58,20 @@ class UserSerializer(serializers.ModelSerializer):
         # Return relative URL of default picture
         return '/media/profile_pictures/default.png'
 
+    # Add a dynamic is_following field that tells the currently authenticated user whether they are following the user being serialized.
+    # Used in any serializers that has a UserSerializer field.
     def to_representation(self, instance):
+        # get parent to_rep to get initial serialize data
         data = super().to_representation(instance)
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
+        request = self.context.get('request')  # get request from context
+        if request and request.user.is_authenticated:  # check request nout null and if user is authenticated
             data['is_following'] = Follow.objects.filter(
                 follower=request.user,
                 following=instance
             ).exists()
         return data
 
+    #
     def create(self, validated_data):
         # Hash the password before saving
         validated_data['password'] = make_password(
@@ -73,6 +89,44 @@ class UserSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return Follow.objects.filter(follower=request.user, following=obj).exists()
         return False
+
+
+# Example of how to use UserSerializer:
+# 1. Serializing a user
+
+# user = Users.objects.get(id=1)
+# serializer = UserSerializer(user, context={'request': request})
+# return Response(serializer.data)
+
+# # Output would look like:
+# {
+#     "id": 1,
+#     "username": "john_doe",
+#     "email": "john@example.com",
+#     "bio": "Hello world",
+#     "profile_picture_url": "http://yoursite.com/media/profiles/pic.jpg",
+#     "followers_count": 42,
+#     "following_count": 38,
+#     "is_following": true
+# }
+
+# 2. Create a new user
+# serializer = UserSerializer(data={
+#     "username": "new_user",
+#     "email": "new@example.com",
+#     "password": "secret123",
+#     "bio": "Hello!"
+# })
+# if serializer.is_valid():
+#     user = serializer.save()
+
+# context is always context={'request': request}
+# Example request attributes
+# request.user  # The authenticated user object
+# request.method  # 'GET', 'POST', etc.
+# request.data  # Contains parsed request body for POST/PUT
+# request.query_params  # GET parameters
+# request.META  # Contains HTTP headers and environment info
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -130,7 +184,6 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_likes_count(self, obj):
         return obj.comment_likes.count()
 
-    ###
     def get_is_liked(self, obj):
         """Check if the logged-in user liked the comment."""
         request = self.context.get('request', None)

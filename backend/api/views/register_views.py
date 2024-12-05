@@ -9,6 +9,19 @@ from drf_yasg import openapi
 
 
 class RegisterView(APIView):
+    """
+    RegisterView handles the registration of a new user.
+    This view allows any user to register by providing a username, email, and password.
+    It uses the UserSerializer to validate and save the user data.
+    Methods:
+        post(request, *args, **kwargs): Handles the POST request to register a new user.
+        - Request Body: UserSerializer
+        - Responses:
+            201: User successfully created
+            400: Validation error
+    Attributes:
+        permission_classes (list): Specifies the permission classes that this view requires.
+    """
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
