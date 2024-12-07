@@ -464,7 +464,6 @@ class ApiService {
     }
   }
 
-  // Add this to api_service.dart
   Future<Map<String, dynamic>> getUserProfile(int userId) async {
     final response = await makeAuthenticatedRequest(
       url: "$baseApiUrl/users/$userId/",
@@ -498,7 +497,6 @@ class ApiService {
     }
   }
 
-  // Add this method to check follow status
   Future<Map<String, dynamic>> checkFollowStatus(int userId) async {
     try {
       final response = await makeAuthenticatedRequest(
@@ -533,16 +531,16 @@ class ApiService {
       // Add auth header
       request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
-      // Add text fields
+      // text fields
       request.fields['title'] = title;
       request.fields['content'] = content;
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
 
-      // Add location field
+      // location field
       request.fields['location'] = location;
 
-      // Add multiple images if provided
+      // multiple images if provided
       if (imagePaths != null) {
         for (String path in imagePaths) {
           request.files.add(await http.MultipartFile.fromPath(

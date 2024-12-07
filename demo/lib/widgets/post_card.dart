@@ -33,7 +33,7 @@ class PostCard extends StatelessWidget {
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0), // Left and right padding
+                  horizontal: 8.0), 
               child: Row(
                 children: [
                   CircleAvatar(
@@ -61,7 +61,7 @@ class PostCard extends StatelessWidget {
           if (post.images.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0), // Left and right padding
+                  horizontal: 8.0), 
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: ClipRRect(
@@ -79,7 +79,7 @@ class PostCard extends StatelessWidget {
           // Content Section
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: 10.0), // Left and right padding
+                horizontal: 10.0), 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -99,7 +99,6 @@ class PostCard extends StatelessWidget {
                 ),
 
 
-                // Location (if not null or empty)
                 if (post.location.isNotEmpty)
                   Row(
                     children: [
@@ -130,7 +129,7 @@ class PostCard extends StatelessWidget {
           // Like Button and Count
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: 0.0), // Left and right padding
+                horizontal: 0.0),
             child: Row(
               children: [
                 IconButton(

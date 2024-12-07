@@ -6,7 +6,7 @@ class Header extends StatelessWidget {
   final Function onNearbyPressed;
   final Function onMenuPressed;
   final Function onSearchPressed;
-  final Function onCreateUserPressed; // Add callback for "Create User"
+  final Function onCreateUserPressed; // Add callback
 
   const Header({
     Key? key,
@@ -15,7 +15,7 @@ class Header extends StatelessWidget {
     required this.onNearbyPressed,
     required this.onMenuPressed,
     required this.onSearchPressed,
-    required this.onCreateUserPressed, // Add parameter
+    required this.onCreateUserPressed, 
   }) : super(key: key);
 
   @override

@@ -179,8 +179,6 @@ class _PostPageState extends State<PostPage> {
     return null; // Not found
   }
 
-  // bool isAddingComment = false;
-
   void resetCommentInput() {
     setState(() {
       _commentController.clear(); // Clear the text input
@@ -653,8 +651,8 @@ class _PostPageState extends State<PostPage> {
   Widget buildCommentInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0), // Slightly darker background
-        borderRadius: BorderRadius.circular(16), // Round the container
+        color: const Color(0xFFF0F0F0), 
+        borderRadius: BorderRadius.circular(16), 
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -662,7 +660,7 @@ class _PostPageState extends State<PostPage> {
           if (activeReplyToCommentId != null)
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFD6D6D6), // Darker reply box color
+                color: const Color(0xFFD6D6D6), 
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -671,7 +669,7 @@ class _PostPageState extends State<PostPage> {
                   Expanded(
                     child: Text(
                       '@$replyingToUsername',
-                      style: TextStyle(color: Colors.grey[900]), //Reply text
+                      style: TextStyle(color: Colors.grey[900]), 
                     ),
                   ),
                   IconButton(
@@ -698,7 +696,7 @@ class _PostPageState extends State<PostPage> {
                     ),
                     filled: true,
                     fillColor:
-                        const Color(0xFFE8E8E8), // Light gray for input box
+                        const Color(0xFFE8E8E8), 
                   ),
                 ),
               ),
@@ -773,13 +771,13 @@ class _PostPageState extends State<PostPage> {
                       const Divider(),
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0), // Add padding to comments header
+                            horizontal: 16.0), 
                         child: Text(
                           "$commentCount comments",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.normal,
-                            color: Colors.grey[700], // Slightly darker grey
+                            color: Colors.grey[700], 
                           ),
                         ),
                       ),
@@ -787,7 +785,7 @@ class _PostPageState extends State<PostPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal:
-                                16.0), // Add padding to comments section
+                                16.0), 
                         child: buildCommentsSection(),
                       ),
                       const SizedBox(height: 10),
@@ -797,7 +795,7 @@ class _PostPageState extends State<PostPage> {
               },
             ),
           ),
-          buildCommentInput(), // Comment input box (excluded from padding)
+          buildCommentInput(), 
         ],
       ),
     );

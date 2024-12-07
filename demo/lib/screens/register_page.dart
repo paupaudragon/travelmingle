@@ -55,7 +55,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         : ClipOval(
                             child: Image.file(
                               _profileImage!,
-                              width: 80, // diameter = 2 * radius
+                              width: 80, 
                               height: 80,
                               fit: BoxFit
                                   .cover, // This ensures the image covers the circle properly

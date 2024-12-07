@@ -40,7 +40,7 @@ class RecapPage extends StatelessWidget {
   }
 
   Post? getMostSavedPost() {
-    if (posts.isEmpty) return null; // Return null if the list is empty
+    if (posts.isEmpty) return null;
     int maxSaves =
         posts.map((post) => post.savesCount).reduce((a, b) => a > b ? a : b);
     return posts.firstWhere((post) => post.savesCount == maxSaves);
@@ -78,7 +78,7 @@ class RecapPage extends StatelessWidget {
     required ScreenshotController controller,
     required Post? post,
     required String text,
-    required String textTail, // New parameter for dynamic tail text
+    required String textTail, 
     required String metricValue,
     required Color metricColor,
     required Color backgroundColor,
@@ -153,7 +153,7 @@ class RecapPage extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: " $textTail", // Append tail text dynamically
+                            text: " $textTail",
                             style: const TextStyle(
                               fontSize: 46,
                               fontFamily: 'Roboto',

@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
       title: 'My App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        hintColor: Colors.grey, // Accent color
+        hintColor: Colors.grey, 
         inputDecorationTheme: InputDecorationTheme(
           labelStyle: const TextStyle(
             color: Colors.black, // Label text color
@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/auth-check': (context) => const AuthCheck(),
         '/feed': (context) => const FeedPage(), // Home route
-        '/login': (context) => const LoginPage(),
+        '/login': (context) => const LoginPage(), // Login route
         '/register': (context) => const RegisterPage(), // Register route
       },
     );
