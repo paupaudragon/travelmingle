@@ -1,5 +1,6 @@
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
+import 'package:demo/screens/search_page.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../widgets/header.dart';
@@ -182,7 +183,14 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onExplorePressed: () => requireLogin(context),
           onNearbyPressed: () => requireLogin(context),
           onMenuPressed: () => requireLogin(context),
-          onSearchPressed: () => requireLogin(context),
+          onSearchPressed: () {
+            requireLogin(context, onSuccess: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SearchPage()),
+              );
+            });
+          },
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
           },
@@ -223,20 +231,47 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                     );
         },
       ),
-      bottomNavigationBar: Footer(
-        onHomePressed: () => _onRefresh(),
-        onLogoutPressed: () => handleLogout(context),
-        onPlusPressed: () {
-          requireLogin(context);
-          _navigateToCreatePost();
-        },
-        onMessagesPressed: () => requireLogin(context),
-        onMePressed: () => requireLogin(context, onSuccess: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ProfilePage()),
-          ).then((_) => _onRefresh());
-        }),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.home),
+              onPressed: () => _onRefresh(),
+            ),
+            FloatingActionButton(
+              onPressed: () {
+                requireLogin(context);
+                _navigateToCreatePost();
+              },
+              backgroundColor: Colors.white,
+              child: const Icon(
+                Icons.add,
+                color: Colors.blue,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                requireLogin(context, onSuccess: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SearchPage()),
+                  );
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.person),
+              onPressed: () => requireLogin(context, onSuccess: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                ).then((_) => _onRefresh());
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
