@@ -14,6 +14,7 @@ import logging
 # Create a logger instance
 logger = logging.getLogger(__name__)
 
+
 class CommentListCreateView(ListCreateAPIView):
     """
     Handles listing all comments and creating new comments.
@@ -38,11 +39,12 @@ class CommentListCreateView(ListCreateAPIView):
         request_body=CommentSerializer,
         responses={201: CommentSerializer}
     )
-
     def post(self, request, *args, **kwargs):
 
-        logger.debug(f"Received request with content type: {request.content_type}")
-        print(f"Received request with content type: {request.content_type}")  # For immediate console output
+        logger.debug(f"Received request with content type: {
+                     request.content_type}")
+        print(f"Received request with content type: {
+              request.content_type}")  # For immediate console output
 
         # Check Content-Type
         if request.content_type.startswith('application/json'):
@@ -50,7 +52,8 @@ class CommentListCreateView(ListCreateAPIView):
             return super().post(request, *args, **kwargs)
         elif request.content_type.startswith('multipart/form-data'):
             # Multipart payload (image or mixed content)
-            serializer = self.get_serializer(data=request.data, context={'request': request})
+            serializer = self.get_serializer(
+                data=request.data, context={'request': request})
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -61,7 +64,6 @@ class CommentListCreateView(ListCreateAPIView):
                 {"detail": f"Unsupported media type: {request.content_type}"},
                 status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             )
-        
 
 
 class CommentDetailView(RetrieveUpdateDestroyAPIView):
@@ -90,11 +92,22 @@ class CommentDetailView(RetrieveUpdateDestroyAPIView):
 
     @swagger_auto_schema(
         operation_summary="Delete a comment",
-        operation_description="Delete a comment by its ID.",
-        responses={204: "Comment deleted successfully."}
+        operation_description="Delete a comment. Users can delete their own comments, admins can delete any comment.",
+        responses={
+            204: "Comment deleted successfully.",
+            403: "Permission denied - user is not the owner or admin.",
+            404: "Comment not found."
+        },
     )
     def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
+        instance = self.get_object()
+        if request.user == instance.user or request.user.profile.role == 'admin':
+            return super().delete(request, *args, **kwargs)
+        return Response(
+            {"detail": "You do not have permission to delete this comment."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
 
 class PostCommentsView(ListAPIView):
     serializer_class = CommentSerializer
@@ -102,4 +115,4 @@ class PostCommentsView(ListAPIView):
 
     def get_queryset(self):
         post_id = self.kwargs['post_id']
-        return Comments.objects.filter(post_id=post_id, reply_to=None)        
+        return Comments.objects.filter(post_id=post_id, reply_to=None)
