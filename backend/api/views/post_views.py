@@ -202,11 +202,21 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
 
     @swagger_auto_schema(
         operation_summary="Delete a post",
-        operation_description="Delete a specific post by ID.",
-        responses={204: "Post deleted successfully."},
+        operation_description="Delete a post. Users can delete their own posts, admins can delete any post.",
+        responses={
+            204: "Post deleted successfully.",
+            403: "Permission denied - user is not the owner or admin.",
+            404: "Post not found."
+        },
     )
     def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
+        instance = self.get_object()
+        if request.user == instance.user or request.user.profile.role == 'admin':
+            return super().delete(request, *args, **kwargs)
+        return Response(
+            {"detail": "You do not have permission to delete this post."},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
 
 class ToggleLikeView(APIView):

@@ -21,13 +21,15 @@ class UserSerializer(serializers.ModelSerializer):
         read_only=True, source='following_relationships.count')
     is_following = serializers.BooleanField(read_only=True, default=False)
 
+    role = serializers.CharField(source='profile.role', read_only=True)
     # Defines what fileds and nested obj should be in the serialization
+
     class Meta:
         model = Users
         fields = ['id', 'username', 'email', 'password', 'bio',
                   'profile_picture', 'profile_picture_url', 'created_at',
                   'updated_at', 'followers_count', 'following_count',
-                  'is_following']
+                  'is_following', 'role']
 
         # defines the settings for each field
         extra_kwargs = {

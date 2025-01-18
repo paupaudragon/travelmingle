@@ -1,5 +1,5 @@
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
-from drf_yasg import openapi
+from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from ..models import Users
@@ -68,10 +68,28 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     @swagger_auto_schema(
         operation_summary="Delete a user",
-        operation_description="Delete a user from the system by ID.",
-        responses={204: "User deleted successfully."},
+        operation_description="Delete a user. Only admins can delete users, and they cannot delete themselves.",
+        responses={
+            204: "User deleted successfully.",
+            403: "Permission denied - user is not an admin.",
+            400: "Bad request - admin attempting to delete themselves.",
+            404: "User not found."
+        },
     )
     def delete(self, request, *args, **kwargs):
+        if request.user.profile.role != 'admin':
+            return Response(
+                {"detail": "Only administrators can delete user accounts."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        instance = self.get_object()
+        if request.user.id == instance.id:
+            return Response(
+                {"detail": "You cannot delete your own account."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         return super().delete(request, *args, **kwargs)
 
 

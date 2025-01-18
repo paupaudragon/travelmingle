@@ -405,3 +405,25 @@ class Follow(models.Model):
 
     def __str__(self):
         return f"{self.follower.username} follows {self.following.username}"
+
+# Add for role-based relationship
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(
+        Users, on_delete=models.CASCADE, related_name='profile')
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('user', 'User'),
+    ]
+    role = models.CharField(
+        max_length=10,
+        choices=ROLE_CHOICES,
+        default='user'
+    )
+
+    class Meta:
+        db_table = 'profiles'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
