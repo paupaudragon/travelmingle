@@ -14,10 +14,13 @@ class Post {
   final String visibility;
   final List<Comment> detailedComments;
   final List<PostImage> images; // store a list of images
+  final String category; // Add category field
+  final String period; // Add period field
+  final String? hashtags; // Add optional hashtags field
   int likesCount;
   int savesCount;
-  bool isLiked; 
-  bool isSaved; 
+  bool isLiked;
+  bool isSaved;
 
   Post({
     required this.id,
@@ -33,8 +36,12 @@ class Post {
     required this.savesCount,
     required this.detailedComments,
     required this.images,
-    required this.isLiked, 
-    required this.isSaved, 
+    required this.isLiked,
+    required this.isSaved,
+    required this.category, // Add category to constructor
+    required this.period, // Add period to constructor
+    this.hashtags, // Add hashtags to constructor
+    
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -57,7 +64,10 @@ class Post {
           .map((image) => PostImage.fromJson(image))
           .toList(),
       isLiked: json['is_liked'] ?? false,
-      isSaved: json['is_saved'] ?? false, 
+      isSaved: json['is_saved'] ?? false,
+      category: json['category'] ?? '', // Parse category from JSON
+      period: json['period'] ?? '', // Parse period from JSON
+      hashtags: json['hashtags'], // Parse optional hashtags from JSON
     );
   }
 }

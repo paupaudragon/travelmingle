@@ -116,6 +116,13 @@ class PostListCreateView(APIView):
                     {'error': 'Location is required'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            category = request.data.get('category')  # Retrieve category from request data
+            if not category:
+                 return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            period = request.data.get('period')  # Retrieve category from request data
+            if not period:
+                 return Response({'error': 'Period is required'}, status=status.HTTP_400_BAD_REQUEST)    
 
             # Create the post with location
             post = Posts.objects.create(
@@ -148,13 +155,41 @@ class PostListCreateView(APIView):
     @swagger_auto_schema(
         operation_summary="List all posts",
         operation_description="Retrieve a list of all posts ordered by creation date",
+        manual_parameters=[
+            openapi.Parameter(
+                'category',
+                openapi.IN_QUERY,
+                description="Filter posts by category (e.g., 'adventure', 'hiking')",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
+        ],
         responses={
             200: PostSerializer(many=True),
             401: "Unauthorized"
         }
     )
     def get(self, request):
+        travel_types = request.query_params.get('travel_types', '').split(',')
+        periods = request.query_params.get('periods', '').split(',')
+
+
+        # Remove empty strings from query parameters
+        travel_types = [t for t in travel_types if t]
+        periods = [p for p in periods if p]
+
         posts = Posts.objects.all().order_by('-created_at')
+
+        # Filter by travel types if provided
+        if travel_types:
+            posts = posts.filter(category__in=travel_types)
+            print("Posts after Travel Types Filter:", posts.count())  # Debugging
+
+        # Filter by periods if provided
+        if periods:
+            posts = posts.filter(period__in=periods)
+            print("Posts after Periods Filter:", posts.count())  # Debugging
+
         serializer = PostSerializer(
             posts, many=True, context={'request': request})
         return Response(serializer.data)

@@ -24,6 +24,20 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   bool isLoading = true;
   bool isLoggedIn = false;
 
+  // Add state for category filter
+  List<String> selectedTravelTypes = [];
+  List<String> selectedPeriods = [];
+  final List<String> travelTypes = [
+    'Adventure',
+    'Hiking',
+    'Skiing',
+    'Road Trip',
+    'Food Tour',
+  ];
+  final List<String> periods = [
+    'One Day',
+     'Multiple Day'
+  ];
   @override
   void initState() {
     super.initState();
@@ -71,6 +85,45 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       });
 
       final fetchedPosts = await _apiService.fetchPosts();
+
+      if (!mounted) return;
+
+      setState(() {
+        posts = fetchedPosts;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+      });
+      print('Error loading posts: $e');
+    }
+  }
+
+  Future<void> _fetchPosts() async {
+    if (!mounted) return;
+
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      // Ensure filters are properly formatted
+      final travelFilters =
+          selectedTravelTypes.map((type) => type.toLowerCase()).toList();
+      final periodFilters = selectedPeriods
+          .map((period) => period.toLowerCase().replaceAll(' ', ''))
+          .toList();
+
+      print(
+          'Fetching posts with filters - Travel Types: $travelFilters, Periods: $periodFilters'); // Debug print
+
+      // Fetch posts from the API
+      final fetchedPosts = await _apiService.fetchPosts(
+        travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+        periods: periodFilters.isNotEmpty ? periodFilters : null,
+      );
 
       if (!mounted) return;
 
@@ -173,6 +226,91 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     ).then((_) => _onRefresh());
   }
 
+  void _showMultiSectionFilterDialog() {
+    List<String> tempTravelTypes = List.from(selectedTravelTypes);
+    List<String> tempPeriods = List.from(selectedPeriods);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Filter Posts"),
+          content: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Type of Traveling"),
+                    ...travelTypes.map((type) {
+                      final isSelected =
+                          tempTravelTypes.contains(type.toLowerCase());
+
+                      return CheckboxListTile(
+                        title: Text(type),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              tempTravelTypes.add(type.toLowerCase());
+                            } else {
+                              tempTravelTypes.remove(type.toLowerCase());
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                    const SizedBox(height: 20),
+                    const Text("Period"),
+                    ...periods.map((period) {
+                      final isSelected =
+                          tempPeriods.contains(period.toLowerCase());
+
+                      return CheckboxListTile(
+                        title: Text(period),
+                        value: isSelected,
+                        onChanged: (bool? value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              tempPeriods.add(period.toLowerCase());
+                            } else {
+                              tempPeriods.remove(period.toLowerCase());
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  selectedTravelTypes = tempTravelTypes;
+                  selectedPeriods = tempPeriods;
+                });
+                print('Selected Travel Types: $selectedTravelTypes'); // Debug
+                print('Selected Periods: $selectedPeriods'); // Debug
+                Navigator.pop(context);
+                _fetchPosts(); // Refresh posts with the selected filters
+              },
+              child: const Text("Apply"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,8 +324,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onSearchPressed: () {
             requireLogin(context, onSuccess: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SearchPage()),
+                context,
+                MaterialPageRoute(builder: (context) => const SearchPage()),
               );
             });
           },
@@ -196,40 +334,53 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           },
         ),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : posts.isEmpty
-                  ? const Center(child: Text("No posts available."))
-                  : SmartRefresher(
-                      controller: _refreshController,
-                      onRefresh: _onRefresh,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 4.0,
-                            mainAxisSpacing: 4.0,
-                            childAspectRatio: 0.8,
+      body: Column(
+        children: [
+          // Add a row for the filter button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list, size: 24),
+                onPressed: _showMultiSectionFilterDialog,
+                tooltip: 'Filter by Categories',
+              ),
+            ],
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : posts.isEmpty
+                    ? const Center(child: Text("No posts available."))
+                    : SmartRefresher(
+                        controller: _refreshController,
+                        onRefresh: _onRefresh,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: GridView.builder(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 4.0,
+                              mainAxisSpacing: 4.0,
+                              childAspectRatio: 0.8,
+                            ),
+                            itemCount: posts.length,
+                            itemBuilder: (context, index) {
+                              final post = posts[index];
+                              return GestureDetector(
+                                onTap: () => navigateToPostDetail(post),
+                                child: PostCard(
+                                  post: post,
+                                  onLikePressed: () => toggleLike(post),
+                                ),
+                              );
+                            },
                           ),
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            final post = posts[index];
-                            return GestureDetector(
-                              onTap: () => navigateToPostDetail(post),
-                              child: PostCard(
-                                post: post,
-                                onLikePressed: () => toggleLike(post),
-                              ),
-                            );
-                          },
                         ),
                       ),
-                    );
-        },
+          ),
+        ],
       ),
       bottomNavigationBar: BottomAppBar(
         child: Row(

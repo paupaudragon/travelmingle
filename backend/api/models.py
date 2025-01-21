@@ -55,6 +55,17 @@ class Users(AbstractUser):
 
 
 class Posts(models.Model):
+    CATEGORY_CHOICES = [
+        ('adventure', 'Adventure'),
+        ('hiking', 'Hiking'),
+        ('skiing', 'Skiing'),
+        ('roadtrip', 'Road Trip'),
+        ('foodtour', 'Food Tour'),
+    ]
+    PERIOD_CHOICES = [
+        ('oneday', 'One Day'),
+        ('multipleday', 'Multiple Day'),
+    ]
     """
     Represents a post created by a user.
     Attributes:
@@ -100,11 +111,31 @@ class Posts(models.Model):
     visibility = models.CharField(
         max_length=20, choices=VISIBILITY_CHOICES, default='public')
 
+    # New category field for Filter feature
+    category = models.CharField(
+        max_length=20,
+        choices=PERIOD_CHOICES,
+        default='adventure',
+    )
+
+    period = models.CharField(
+        max_length=20,
+        choices=PERIOD_CHOICES,
+        default='oneday',
+    )
+    hashtags = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma-separated hashtags (e.g., #travel, #nature)"
+    )
+
     class Meta:
         db_table = "posts"
         indexes = [
             models.Index(fields=["user"]),
             models.Index(fields=["created_at"]),
+            models.Index(fields=["category"]),  # New index for category filtering
+            models.Index(fields=["period"]),  # New index for period filtering
         ]
 
     def __str__(self):

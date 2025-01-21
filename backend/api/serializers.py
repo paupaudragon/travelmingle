@@ -215,10 +215,13 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Posts
-        fields = ['id', 'user', 'title', 'content', 'location', 'created_at',
+        fields = ['id', 'user', 'title', 'content', 'location', 'created_at', 'category', 'period',
                   'updated_at', 'status', 'visibility', 'images', 'likes_count',
                   'saves_count', 'detailed_comments', 'is_liked', 'is_saved',]
-
+        extra_kwargs = {
+            'category': {'required': True},  # Ensure category is required
+            'hashtags': {'required': False},  # Hashtags are optional
+        }
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""
         return obj.post_likes.count()

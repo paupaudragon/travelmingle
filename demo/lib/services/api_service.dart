@@ -124,10 +124,30 @@ class ApiService {
     print("Logged out successfully.");
   }
 
-  // Posts
-  Future<List<Post>> fetchPosts() async {
+  // **Fetch Posts with Category Filtering**
+  Future<List<Post>> fetchPosts({
+    List<String>? travelTypes,
+    List<String>? periods,
+  }) async {
+    String? url = "$baseApiUrl/posts/";
+
+    // Add travel types and periods as query parameters
+    final queryParams = <String>[];
+    if (travelTypes != null && travelTypes.isNotEmpty) {
+      queryParams.add("travel_types=${travelTypes.join(',')}");
+    }
+    if (periods != null && periods.isNotEmpty) {
+      queryParams.add("periods=${periods.join(',')}");
+    }
+
+    if (queryParams.isNotEmpty) {
+      url += "?${queryParams.join('&')}";
+    }
+
+    print("Request URL: $url"); // Debug the URL
+
     final response = await makeAuthenticatedRequest(
-      url: "$baseApiUrl/posts/",
+      url: url,
       method: 'GET',
     );
 
