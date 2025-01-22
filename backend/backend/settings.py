@@ -202,3 +202,5 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'

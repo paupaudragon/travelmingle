@@ -15,7 +15,8 @@ class Header extends StatelessWidget {
     required this.onNearbyPressed,
     required this.onMenuPressed,
     required this.onSearchPressed,
-    required this.onCreateUserPressed, 
+    required this.onCreateUserPressed,
+    required void Function() onMapPressed,
   }) : super(key: key);
 
   @override

@@ -183,11 +183,14 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onExplorePressed: () => requireLogin(context),
           onNearbyPressed: () => requireLogin(context),
           onMenuPressed: () => requireLogin(context),
+          onMapPressed: () => requireLogin(context, onSuccess: () {
+            Navigator.pushNamed(context, '/map');
+          }),
           onSearchPressed: () {
             requireLogin(context, onSuccess: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SearchPage()),
+                context,
+                MaterialPageRoute(builder: (context) => const SearchPage()),
               );
             });
           },
@@ -269,6 +272,14 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                   MaterialPageRoute(builder: (context) => const ProfilePage()),
                 ).then((_) => _onRefresh());
               }),
+            ),
+            IconButton(
+              icon: const Icon(Icons.map), // New map icon
+              onPressed: () {
+                requireLogin(context, onSuccess: () {
+                  Navigator.pushNamed(context, '/map');
+                });
+              },
             ),
           ],
         ),
