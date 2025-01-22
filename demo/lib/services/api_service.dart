@@ -519,8 +519,9 @@ class ApiService {
   }
 
 // In api_service.dart
-  Future<void> createPost(String title, String content, String location,
-      List<String>? imagePaths) async {
+  Future<void> createPost(
+      String title, String content, String location, List<String>? imagePaths,
+      {double? latitude, double? longitude}) async {
     const String url = "$baseApiUrl/posts/";
     print('location: $location');
 
