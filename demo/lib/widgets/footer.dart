@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Footer extends StatelessWidget {
   final Function onHomePressed;
-  final Function onLogoutPressed;
+  final Function onSearchPressed;
   final Function onPlusPressed;
   final Function onMessagesPressed;
   final Function onMePressed;
@@ -10,7 +10,7 @@ class Footer extends StatelessWidget {
   const Footer({
     Key? key,
     required this.onHomePressed,
-    required this.onLogoutPressed,
+    required this.onSearchPressed,
     required this.onPlusPressed,
     required this.onMessagesPressed,
     required this.onMePressed,
@@ -26,14 +26,14 @@ class Footer extends StatelessWidget {
         children: [
           // Home Button
           IconButton(
-            icon: const Icon(Icons.home, size: 28, color: Colors.black),
+            icon: const Icon(Icons.home_rounded, size: 28, color: Colors.black),
             onPressed: () => onHomePressed(),
           ),
-          // // Log Out Button
-          // IconButton(
-          //   icon: const Icon(Icons.logout, size: 28, color: Colors.black),
-          //   onPressed: () => onLogoutPressed(),
-          // ),
+
+          IconButton(
+            icon: const Icon(Icons.search_rounded, size: 28, color: Colors.black),
+            onPressed: () => onSearchPressed(),
+          ),
 
           // "+" Button (Square Design)
           GestureDetector(
@@ -47,17 +47,19 @@ class Footer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(
                     8), // Rounded corners for square button
               ),
-              child: const Icon(Icons.add, size: 28, color: Colors.white),
+              child: const Icon(Icons.add_rounded, size: 28, color: Colors.white),
             ),
           ),
-          // Messages Button
-          // IconButton(
-          //   icon: const Icon(Icons.message, size: 28, color: Colors.black),
-          //   onPressed: () => onMessagesPressed(),
-          // ),
+
+          //Messages Button
+          IconButton(
+            icon: const Icon(Icons.message_rounded, size: 28, color: Colors.black),
+            onPressed: () => onMessagesPressed(),
+          ),
+
           // Me Button
           IconButton(
-            icon: const Icon(Icons.person, size: 28, color: Colors.black),
+            icon: const Icon(Icons.person_rounded, size: 28, color: Colors.black),
             onPressed: () => onMePressed(),
           ),
         ],

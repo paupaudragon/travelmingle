@@ -24,7 +24,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   bool isLoading = true;
   bool isLoggedIn = false;
 
-  // Add state for category filter
+  //Category and period filter
   List<String> selectedTravelTypes = [];
   List<String> selectedPeriods = [];
   final List<String> travelTypes = [
@@ -38,6 +38,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     'One Day',
      'Multiple Day'
   ];
+
+//Manage state section
   @override
   void initState() {
     super.initState();
@@ -60,6 +62,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
+//Load, refesh, fetch posts section
   Future<void> _onRefresh() async {
     try {
       final fetchedPosts = await _apiService.fetchPosts();
@@ -141,19 +144,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> checkLoginStatus() async {
-    final token = await _apiService.getAccessToken();
-    if (!mounted) return;
-
-    setState(() {
-      isLoggedIn = token != null;
-    });
-
-    if (!isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-  }
-
+//Interaction section
   void toggleLike(Post post) async {
     try {
       final result = await _apiService.updatePostLikes(post.id);
@@ -168,6 +159,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
+//Navigation section
   void navigateToPostDetail(Post post) async {
     await Navigator.push(
       context,
@@ -188,6 +180,30 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     ).then((_) => _onRefresh());
   }
 
+  Future<void> navigateToCreatePost() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CreatePostPage()),
+    ).then((_) => _onRefresh());
+  }
+
+
+  void navigateToProfilePage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfilePage()),
+    ).then((_) => _loadPosts());
+  }
+
+  void navigateToSearchPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SearchPage()),
+    ).then((_) => _loadPosts());
+  }
+
+
+//Login section
   void handleLogout(BuildContext context) async {
     try {
       await ApiService().logout();
@@ -219,13 +235,20 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _navigateToCreatePost() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CreatePostPage()),
-    ).then((_) => _onRefresh());
+  Future<void> checkLoginStatus() async {
+    final token = await _apiService.getAccessToken();
+    if (!mounted) return;
+
+    setState(() {
+      isLoggedIn = token != null;
+    });
+
+    if (!isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
+//Create UI section
   void _showMultiSectionFilterDialog() {
     List<String> tempTravelTypes = List.from(selectedTravelTypes);
     List<String> tempPeriods = List.from(selectedPeriods);
@@ -314,6 +337,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      //Header (Tabs)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: Header(
@@ -334,6 +358,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           },
         ),
       ),
+      //Row for Filter button
       body: Column(
         children: [
           // Add a row for the filter button
@@ -382,47 +407,22 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           ),
         ],
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.home),
-              onPressed: () => _onRefresh(),
-            ),
-            FloatingActionButton(
-              onPressed: () {
-                requireLogin(context);
-                _navigateToCreatePost();
-              },
-              backgroundColor: Colors.white,
-              child: const Icon(
-                Icons.add,
-                color: Colors.blue,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () {
-                requireLogin(context, onSuccess: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SearchPage()),
-                  );
-                });
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.person),
-              onPressed: () => requireLogin(context, onSuccess: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                ).then((_) => _onRefresh());
-              }),
-            ),
-          ],
-        ),
+      
+      //Footer (Navigation Bar)
+      bottomNavigationBar: Footer(
+        onHomePressed: _loadPosts,
+        onSearchPressed: () {
+          navigateToSearchPage();
+        },
+        onPlusPressed: () {
+          navigateToCreatePost();
+        },
+        onMessagesPressed: () {
+          _loadPosts(); // TO-DO
+        },        
+        onMePressed: () {
+          navigateToProfilePage();
+        },
       ),
     );
   }

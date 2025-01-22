@@ -15,7 +15,7 @@ class ApiService {
 
   int? get currentUserId => _currentUserId;
 
-  // Add method to get auth headers
+// Add method to get auth headers
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await getAccessToken();
     return {
@@ -24,7 +24,7 @@ class ApiService {
     };
   }
 
-  // Centralized authenticated request handler
+// Centralized authenticated request handler
   Future<http.Response> makeAuthenticatedRequest({
     required String url,
     required String method,
@@ -67,7 +67,7 @@ class ApiService {
     }
   }
 
-  // Token Management
+// Token Management, log in, log out
   Future<String?> getAccessToken() async {
     if (_cachedToken != null) {
       return _cachedToken;
@@ -115,6 +115,39 @@ class ApiService {
     }
   }
 
+  Future<bool> login(String username, String password) async {
+    const String url = "$baseApiUrl/token/";
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"username": username, "password": password}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await _storage.write(key: "access_token", value: data["access"]);
+      await _storage.write(key: "refresh_token", value: data["refresh"]);
+      _cachedToken = data["access"];
+
+      // Fetch and store user info after successful login
+      try {
+        final userInfo = await getUserInfo();
+        if (userInfo != null) {
+          _currentUserId = userInfo['id'];
+          await _storage.write(
+              key: "current_user_id", value: _currentUserId.toString());
+        }
+      } catch (e) {
+        print("Error fetching user info after login: $e");
+      }
+
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: "access_token");
     await _storage.delete(key: "refresh_token");
@@ -124,7 +157,7 @@ class ApiService {
     print("Logged out successfully.");
   }
 
-  // **Fetch Posts with Category Filtering**
+// Fetch data section
   Future<List<Post>> fetchPosts({
     List<String>? travelTypes,
     List<String>? periods,
@@ -161,6 +194,7 @@ class ApiService {
     }
   }
 
+
   Future<Post> fetchPostDetail(int postId) async {
     final String url = "$baseApiUrl/posts/$postId/";
 
@@ -184,6 +218,7 @@ class ApiService {
     }
   }
 
+//Update post detail section 
   Future<Map<String, dynamic>> updatePostLikes(int postId) async {
     final response = await makeAuthenticatedRequest(
       url: '$baseApiUrl/posts/$postId/like/',
@@ -223,7 +258,7 @@ class ApiService {
     }
   }
 
-  // Comments
+// Comment section
   Future<List<Comment>> fetchComments(int postId) async {
     final response = await makeAuthenticatedRequest(
       url: "$baseApiUrl/posts/$postId/comments/",
@@ -294,40 +329,7 @@ class ApiService {
     }
   }
 
-  // User Management
-  Future<bool> login(String username, String password) async {
-    const String url = "$baseApiUrl/token/";
-
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"username": username, "password": password}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _storage.write(key: "access_token", value: data["access"]);
-      await _storage.write(key: "refresh_token", value: data["refresh"]);
-      _cachedToken = data["access"];
-
-      // Fetch and store user info after successful login
-      try {
-        final userInfo = await getUserInfo();
-        if (userInfo != null) {
-          _currentUserId = userInfo['id'];
-          await _storage.write(
-              key: "current_user_id", value: _currentUserId.toString());
-        }
-      } catch (e) {
-        print("Error fetching user info after login: $e");
-      }
-
-      return true;
-    } else {
-      return false;
-    }
-  }
-
+// User Management
   Future<void> initializeCurrentUser() async {
     if (_currentUserId == null) {
       // Try to get from storage first
@@ -411,7 +413,7 @@ class ApiService {
     }
   }
 
-  // In ApiService class
+// Profile section
   Future<Map<String, dynamic>> followUser(int userId) async {
     try {
       final response = await makeAuthenticatedRequest(
@@ -538,7 +540,7 @@ class ApiService {
     }
   }
 
-// In api_service.dart
+// Create post section
   Future<void> createPost(String title, String content, String location,
       List<String>? imagePaths) async {
     const String url = "$baseApiUrl/posts/";
