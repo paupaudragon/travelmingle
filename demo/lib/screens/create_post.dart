@@ -190,6 +190,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> _submitPost() async {
+    // Ensure location is set before submitting
     if (_titleController.text.isEmpty ||
         _contentController.text.isEmpty ||
         _locationController.text.isEmpty) {
@@ -197,6 +198,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
         const SnackBar(content: Text('Please fill in all required fields')),
       );
       return;
+    }
+
+    // Ensure location data is set
+    if (_selectedLocation == null) {
+      // If no location selected, try to use the text from location controller
+      try {
+        // You might want to use geocoding to get lat/long if not already set
+        List<Location> locations =
+            await locationFromAddress(_locationController.text);
+        if (locations.isNotEmpty) {
+          _selectedLocation =
+              LatLng(locations.first.latitude, locations.first.longitude);
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not resolve location: $e')),
+        );
+        return;
+      }
     }
 
     setState(() {
@@ -210,7 +230,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         _locationName ?? _locationController.text,
         latitude: _selectedLocation?.latitude,
         longitude: _selectedLocation?.longitude,
-        _images.map((file) => file.path).toList(), // Pass list of image paths
+        imagePaths: _images.map((file) => file.path).toList(),
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

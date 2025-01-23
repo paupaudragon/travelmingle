@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import Follow, Users, Posts, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
+from .models import Follow, Location, Users, Posts, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
 
 from django.db.models import Prefetch
 
@@ -204,7 +204,15 @@ class CommentSerializer(serializers.ModelSerializer):
         )
 
 
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'place_id', 'name', 'address', 'latitude', 'longitude']
+
+
 class PostSerializer(serializers.ModelSerializer):
+    # location_data = serializers.DictField(write_only=True, required=False)
+    location = LocationSerializer(read_only=True)
     user = UserSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
@@ -218,6 +226,25 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'title', 'content', 'location', 'created_at',
                   'updated_at', 'status', 'visibility', 'images', 'likes_count',
                   'saves_count', 'detailed_comments', 'is_liked', 'is_saved',]
+
+    def validate(self, data):
+        if 'location' not in data or not data['location']:
+            raise serializers.ValidationError(
+                {"location": "Location data is required."})
+        return data
+
+    def create(self, validated_data):
+        location_data = validated_data.pop('location', None)
+
+        if location_data:
+            location, created = Location.objects.get_or_create(
+                place_id=location_data['place_id'],
+                defaults=location_data
+            )
+
+        validated_data['location'] = location
+
+        return super().create(validated_data)
 
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""

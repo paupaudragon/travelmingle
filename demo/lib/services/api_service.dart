@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:demo/models/location_model.dart';
 import 'package:demo/models/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -518,34 +519,50 @@ class ApiService {
     }
   }
 
-// In api_service.dart
-  Future<void> createPost(
-      String title, String content, String location, List<String>? imagePaths,
-      {double? latitude, double? longitude}) async {
-    const String url = "$baseApiUrl/posts/";
-    print('location: $location');
-
+  Future<void> createPost(String title, String content, String locationName,
+      {double? latitude,
+      double? longitude,
+      List<String> imagePaths = const []}) async {
     try {
+      // Validate location input
+      if (locationName.isEmpty) {
+        throw Exception('Location name cannot be empty');
+      }
+
+      // Create LocationData instance
+      final locationData = {
+        'place_id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        'name': locationName,
+        'address': locationName,
+        'latitude': latitude ?? 0.0,
+        'longitude': longitude ?? 0.0,
+      };
+
+      // Extensive logging
+      print('Sending POST request with data:');
+      print('Title: $title');
+      print('Content: $content');
+      print('Location Data: $locationData');
+
       // Create multipart request
-      final request = http.MultipartRequest('POST', Uri.parse(url));
+      final request =
+          http.MultipartRequest('POST', Uri.parse('${baseApiUrl}/posts/'));
 
-      // Add auth header
-      request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
+      // Add headers
+      request.headers.addAll(await getHeaders());
 
-      // text fields
+      // Add text fields
       request.fields['title'] = title;
       request.fields['content'] = content;
+      request.fields['location_data'] = jsonEncode(locationData);
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
 
-      // location field
-      request.fields['location'] = location;
-
-      // multiple images if provided
-      if (imagePaths != null) {
+      // Add images if provided
+      if (imagePaths.isNotEmpty) {
         for (String path in imagePaths) {
           request.files.add(await http.MultipartFile.fromPath(
-            'image', // Keep the field name 'image' as expected by your backend
+            'image',
             path,
           ));
         }
@@ -555,6 +572,11 @@ class ApiService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      // Print full response for debugging
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      // Check response
       if (response.statusCode != 201) {
         throw Exception('Failed to create post: ${response.body}');
       }
@@ -564,5 +586,13 @@ class ApiService {
       print('Error creating post: $e');
       throw Exception('Failed to create post: $e');
     }
+  }
+
+  Future<Map<String, String>> getHeaders() async {
+    final token = await getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
   }
 }
