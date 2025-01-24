@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -420,31 +421,45 @@ class _PostPageState extends State<PostPage> {
                 Padding(
                   padding: const EdgeInsets.only(
                       top: 8.0), // Small padding for location
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        color: Colors.grey,
-                        size: 17,
-                      ),
-                      const SizedBox(
-                          width: 4), // Space between icon and location text
-                      Expanded(
-                        child: Text(
-                          post.location.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LocationPostsPage(
+                            locationName: post.location.name,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.grey,
+                          size: 17,
+                        ),
+                        const SizedBox(
+                            width: 4), // Space between icon and location text
+                        Expanded(
+                          child: Text(
+                            post.location.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors
+                                  .blue, // Change color to blue to indicate interactivity
+                              decoration: TextDecoration
+                                  .underline, // Underline to show it's clickable
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               const SizedBox(height: 10),
-              // Created At
               Text(
                 formatDate(post.createdAt),
                 style: const TextStyle(fontSize: 16, color: Colors.grey),

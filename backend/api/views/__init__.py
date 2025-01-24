@@ -9,3 +9,4 @@ from .login_views import LoginView
 from .post_views import ToggleLikeView, ToggleSaveView
 from .follow_views import FollowView
 from .user_follow_list_views import UserFollowingListView, UserFollowersListView
+from .location_posts_views import PostListByLocationView

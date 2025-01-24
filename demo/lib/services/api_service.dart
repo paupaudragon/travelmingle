@@ -596,4 +596,19 @@ class ApiService {
       'Authorization': 'Bearer $token',
     };
   }
+
+  Future<List<Post>> fetchPostsByLocation(String locationName) async {
+    final response = await http.get(
+      Uri.parse(
+          '$baseApiUrl/posts/by-location/?name=${Uri.encodeComponent(locationName)}'),
+      headers: await getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((post) => Post.fromJson(post)).toList();
+    } else {
+      throw Exception('Failed to load posts for this location');
+    }
+  }
 }
