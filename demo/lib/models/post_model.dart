@@ -49,8 +49,10 @@ class Post {
         placeId: json['location']['place_id'],
         name: json['location']['name'],
         address: json['location']['address'],
-        latitude: json['location']['latitude'].toDouble(),
-        longitude: json['location']['longitude'].toDouble(),
+        latitude:
+            double.tryParse(json['location']['latitude'].toString()) ?? 0.0,
+        longitude:
+            double.tryParse(json['location']['longitude'].toString()) ?? 0.0,
       ),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
