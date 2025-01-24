@@ -213,15 +213,20 @@ class PostSerializer(serializers.ModelSerializer):
     is_liked = serializers.SerializerMethodField()
     is_saved = serializers.SerializerMethodField()
 
+    childPosts = serializers.SerializerMethodField()
+
     class Meta:
         model = Posts
         fields = ['id', 'user', 'title', 'content', 'location', 'created_at', 'category', 'period',
                   'updated_at', 'status', 'visibility', 'images', 'likes_count',
-                  'saves_count', 'detailed_comments', 'is_liked', 'is_saved',]
+                  'saves_count', 'detailed_comments', 'is_liked', 'is_saved',
+                  'childPosts',]
         extra_kwargs = {
             'category': {'required': True},  # Ensure category is required
-            'hashtags': {'required': False},  # Hashtags are optional
+            'hashtags': {'required': False},  # Hashtags are optional   
         }
+        read_only_fields = ['period']  # Prevent users from manually modifying it
+
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""
         return obj.post_likes.count()
@@ -235,8 +240,7 @@ class PostSerializer(serializers.ModelSerializer):
         comments = obj.comments_set.filter(
             reply_to=None)  # Fetch only top-level comments
         return CommentSerializer(comments, many=True).data
-
-    ##
+  
     def get_is_liked(self, obj):
         """Check if the logged-in user liked the post."""
         request = self.context.get('request', None)
@@ -250,6 +254,12 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.post_saves.filter(user=request.user).exists()
         return False
+
+    def get_childPosts(self, obj):
+        if obj.period == 'multipleday':
+            child_posts = obj.child_posts.all()
+            return PostSerializer(child_posts, many=True, context=self.context).data
+        return None
 
 
 class LikeSerializer(serializers.ModelSerializer):

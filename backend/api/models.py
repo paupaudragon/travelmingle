@@ -55,17 +55,6 @@ class Users(AbstractUser):
 
 
 class Posts(models.Model):
-    CATEGORY_CHOICES = [
-        ('adventure', 'Adventure'),
-        ('hiking', 'Hiking'),
-        ('skiing', 'Skiing'),
-        ('roadtrip', 'Road Trip'),
-        ('foodtour', 'Food Tour'),
-    ]
-    PERIOD_CHOICES = [
-        ('oneday', 'One Day'),
-        ('multipleday', 'Multiple Day'),
-    ]
     """
     Represents a post created by a user.
     Attributes:
@@ -84,6 +73,27 @@ class Posts(models.Model):
     Methods:
         __str__(): Returns a string representation of the post.
     """
+    CATEGORY_CHOICES = [
+        ('adventure', 'Adventure'),
+        ('hiking', 'Hiking'),
+        ('skiing', 'Skiing'),
+        ('roadtrip', 'Road Trip'),
+        ('foodtour', 'Food Tour'),
+        ('others', 'Others')
+    ]
+    PERIOD_CHOICES = [
+        ('oneday', 'One Day'),
+        ('multipleday', 'Multiple Day'),
+    ]
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    ]
+    VISIBILITY_CHOICES = [
+        ('public', 'Public'),
+        ('private', 'Private'),
+        ('friends', 'Friends Only'),
+    ]
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
         Users, on_delete=models.CASCADE, related_name="posts")
@@ -96,37 +106,30 @@ class Posts(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('published', 'Published'),
-    ]
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='published')
 
-    VISIBILITY_CHOICES = [
-        ('public', 'Public'),
-        ('private', 'Private'),
-        ('friends', 'Friends Only'),
-    ]
     visibility = models.CharField(
         max_length=20, choices=VISIBILITY_CHOICES, default='public')
 
     # New category field for Filter feature
     category = models.CharField(
         max_length=20,
-        choices=PERIOD_CHOICES,
-        default='adventure',
+        help_text="Category of the post, e.g., 'Adventure', 'Hiking'."
     )
 
     period = models.CharField(
         max_length=20,
         choices=PERIOD_CHOICES,
-        default='oneday',
     )
     hashtags = models.TextField(
         blank=True,
         null=True,
         help_text="Comma-separated hashtags (e.g., #travel, #nature)"
+    )
+    
+    parent_post = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name="child_posts"
     )
 
     class Meta:
@@ -139,6 +142,8 @@ class Posts(models.Model):
         ]
 
     def __str__(self):
+        if self.parent_post:
+            return f"Day Post: {self.title} (Parent: {self.parent_post.title})"
         return f"Post: {self.title or 'Untitled'} by {self.user.username}"
 
 

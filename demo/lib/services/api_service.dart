@@ -194,7 +194,6 @@ class ApiService {
     }
   }
 
-
   Future<Post> fetchPostDetail(int postId) async {
     final String url = "$baseApiUrl/posts/$postId/";
 
@@ -208,6 +207,16 @@ class ApiService {
       if (response.statusCode == 200) {
         // Parse the response into a Post object
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
+
+        // Process the childPosts if they exist
+        if (jsonData['childPosts'] != null) {
+          jsonData['childPosts'] = (jsonData['childPosts'] as List)
+              .map((childJson) => Post.fromJson(childJson))
+              .toList();
+        } else {
+          jsonData['childPosts'] = [];
+        }
+
         return Post.fromJson(jsonData);
       } else {
         throw Exception(
@@ -218,7 +227,7 @@ class ApiService {
     }
   }
 
-//Update post detail section 
+//Update post detail section
   Future<Map<String, dynamic>> updatePostLikes(int postId) async {
     final response = await makeAuthenticatedRequest(
       url: '$baseApiUrl/posts/$postId/like/',
@@ -541,38 +550,52 @@ class ApiService {
   }
 
 // Create post section
-  Future<void> createPost(String title, String content, String location,
-      List<String>? imagePaths) async {
+  Future<void> createPost({
+    required String title,
+    required String location,
+    required String? category,
+    List<String>? imagePaths,
+    String? content,
+    required String period,
+    String? generalLocation,
+    List<Map<String, dynamic>>? multiDayTrips,
+  }) async {
     const String url = "$baseApiUrl/posts/";
-    print('location: $location');
 
     try {
-      // Create multipart request
       final request = http.MultipartRequest('POST', Uri.parse(url));
 
-      // Add auth header
       request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
-      // text fields
+
+
+      // Common fields
       request.fields['title'] = title;
-      request.fields['content'] = content;
+      request.fields['location'] = location;
+      request.fields['category'] = category ?? '';
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
+      request.fields['period'] = period;
 
-      // location field
-      request.fields['location'] = location;
+      print('API - period: ${period}');
 
-      // multiple images if provided
+      if (period == 'multipleday') {
+        // Multi-Day specific fields
+        request.fields['location'] = generalLocation ?? '';
+        request.fields['childPosts'] = jsonEncode(multiDayTrips ?? []);
+        request.fields['content'] = '';
+      } else {
+        // Single-Day specific fields
+        request.fields['content'] = content ?? '';
+      }
+
+      // Add images if provided
       if (imagePaths != null) {
         for (String path in imagePaths) {
-          request.files.add(await http.MultipartFile.fromPath(
-            'image', // Keep the field name 'image' as expected by your backend
-            path,
-          ));
+          request.files.add(await http.MultipartFile.fromPath('image', path));
         }
       }
 
-      // Send request
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 

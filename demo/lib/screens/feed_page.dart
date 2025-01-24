@@ -33,6 +33,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     'Skiing',
     'Road Trip',
     'Food Tour',
+    'Others',
   ];
   final List<String> periods = [
     'One Day',

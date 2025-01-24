@@ -16,11 +16,11 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.all(4.0),
-      elevation: 2,
+      elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: [     
           // Author Info with navigation
           InkWell(
             onTap: () {
@@ -56,24 +56,73 @@ class PostCard extends StatelessWidget {
             ),
           ),
 
-
           // Cover Photo
-          if (post.images.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0), 
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    post.images.first.imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                  ),
+          // if (post.images.isNotEmpty)
+          //   Padding(
+          //     padding: const EdgeInsets.symmetric(
+          //         horizontal: 8.0), 
+          //     child: AspectRatio(
+          //       aspectRatio: 16 / 9,
+          //       child: ClipRRect(
+          //         borderRadius: BorderRadius.circular(10),
+          //         child: Image.network(
+          //           post.images.first.imageUrl,
+          //           fit: BoxFit.cover,
+          //           width: double.infinity,
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+
+        // Cover Photo
+        if (post.period == 'multipleday' && post.images.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  post.images.first.imageUrl, // First image for "Day 1"
+                  fit: BoxFit.cover,
+                  width: double.infinity,
                 ),
               ),
             ),
+          )
+        else if (post.images.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  post.images.first.imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.grey[300],
+                ),
+                child: const Icon(
+                  Icons.image,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+          ),
 
 
           // Content Section

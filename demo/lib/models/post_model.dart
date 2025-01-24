@@ -6,7 +6,7 @@ class Post {
   final int id;
   final User user;
   final String title;
-  final String content;
+  final String? content;
   final String location;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -14,9 +14,11 @@ class Post {
   final String visibility;
   final List<Comment> detailedComments;
   final List<PostImage> images; // store a list of images
-  final String category; // Add category field
-  final String period; // Add period field
-  final String? hashtags; // Add optional hashtags field
+  final String category;
+  final String period;
+  final String? hashtags;
+  final int? parentPostId; // Reference to parent post for child posts
+  final List<Post>? childPosts; // Store child posts for multi-day posts
   int likesCount;
   int savesCount;
   bool isLiked;
@@ -26,7 +28,7 @@ class Post {
     required this.id,
     required this.user,
     required this.title,
-    required this.content,
+    this.content,
     required this.location,
     required this.createdAt,
     required this.updatedAt,
@@ -38,10 +40,11 @@ class Post {
     required this.images,
     required this.isLiked,
     required this.isSaved,
-    required this.category, // Add category to constructor
-    required this.period, // Add period to constructor
-    this.hashtags, // Add hashtags to constructor
-    
+    required this.category,
+    required this.period,
+    this.hashtags,
+    this.parentPostId, // Reference to parent post
+    this.childPosts, // Initialize child posts
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -68,6 +71,10 @@ class Post {
       category: json['category'] ?? '', // Parse category from JSON
       period: json['period'] ?? '', // Parse period from JSON
       hashtags: json['hashtags'], // Parse optional hashtags from JSON
+      parentPostId: json['parent_post'], // Parse parent post ID if provided
+      childPosts: (json['child_posts'] as List? ?? []) // Parse child posts
+          .map((childPost) => Post.fromJson(childPost))
+          .toList(),
     );
   }
 }

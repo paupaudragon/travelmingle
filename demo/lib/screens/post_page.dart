@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:demo/screens/profile_page.dart';
+import 'package:demo/widgets/ProgressIndicatorWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -35,6 +36,9 @@ class _PostPageState extends State<PostPage> {
   // Controller for the PageView
   final PageController _pageController = PageController();
 
+  // Multiple day post
+  int _currentDayIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +55,22 @@ class _PostPageState extends State<PostPage> {
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
+  }
+
+  void _goToPreviousDay(Post post) {
+    setState(() {
+      if (_currentDayIndex > 0) {
+        _currentDayIndex--;
+      }
+    });
+  }
+
+  void _goToNextDay(Post post) {
+    setState(() {
+      if (_currentDayIndex < post.childPosts!.length - 1) {
+        _currentDayIndex++;
+      }
+    });
   }
 
   Future<void> _pickCommentImage() async {
@@ -353,108 +373,108 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-  Widget buildPostContent(Post post) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (post.images.isNotEmpty)
-          Column(
-            children: [
-              // Swipeable image carousel
-              SizedBox(
-                height: 200,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: post.images.length,
-                  itemBuilder: (context, index) {
-                    final imageUrl = post.images[index].imageUrl;
-                    return Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                    );
-                  },
-                ),
-              ),
-              // Dot indicator for the image carousel
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Center(
-                  child: SmoothPageIndicator(
-                    controller: _pageController,
-                    count: post.images.length,
-                    effect: const WormEffect(
-                      dotHeight: 8.0,
-                      dotWidth: 8.0,
-                      activeDotColor: Colors.blue,
-                      dotColor: Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              //Title
-              Text(
-                post.title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
+  // Widget buildPostContent(Post post) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       if (post.images.isNotEmpty)
+  //         Column(
+  //           children: [
+  //             // Swipeable image carousel
+  //             SizedBox(
+  //               height: 200,
+  //               child: PageView.builder(
+  //                 controller: _pageController,
+  //                 itemCount: post.images.length,
+  //                 itemBuilder: (context, index) {
+  //                   final imageUrl = post.images[index].imageUrl;
+  //                   return Image.network(
+  //                     imageUrl,
+  //                     fit: BoxFit.cover,
+  //                   );
+  //                 },
+  //               ),
+  //             ),
+  //             // Dot indicator for the image carousel
+  //             Padding(
+  //               padding: const EdgeInsets.only(top: 8.0),
+  //               child: Center(
+  //                 child: SmoothPageIndicator(
+  //                   controller: _pageController,
+  //                   count: post.images.length,
+  //                   effect: const WormEffect(
+  //                     dotHeight: 8.0,
+  //                     dotWidth: 8.0,
+  //                     activeDotColor: Colors.blue,
+  //                     dotColor: Colors.grey,
+  //                   ),
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       Padding(
+  //         padding: const EdgeInsets.all(16.0),
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             //Title
+  //             Text(
+  //               post.title,
+  //               style: const TextStyle(
+  //                 fontSize: 24,
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 10),
 
-              //Content
-              Text(
-                post.content,
-                style: const TextStyle(
-                  fontSize: 18,
-                ),
-              ),
-              // Display location if available
-              if (post.location.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(
-                      top: 8.0), // Small padding for location
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        color: Colors.grey,
-                        size: 17,
-                      ),
-                      const SizedBox(
-                          width: 4), // Space between icon and location text
-                      Expanded(
-                        child: Text(
-                          post.location,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 10),
-              // Created At
-              Text(
-                formatDate(post.createdAt),
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  //             //Content
+  //             Text(
+  //               post.content!,
+  //               style: const TextStyle(
+  //                 fontSize: 18,
+  //               ),
+  //             ),
+  //             // Display location if available
+  //             if (post.location.isNotEmpty)
+  //               Padding(
+  //                 padding: const EdgeInsets.only(
+  //                     top: 8.0), // Small padding for location
+  //                 child: Row(
+  //                   children: [
+  //                     const Icon(
+  //                       Icons.location_on_rounded,
+  //                       color: Colors.grey,
+  //                       size: 17,
+  //                     ),
+  //                     const SizedBox(
+  //                         width: 4), // Space between icon and location text
+  //                     Expanded(
+  //                       child: Text(
+  //                         post.location,
+  //                         style: const TextStyle(
+  //                           fontSize: 16,
+  //                           color: Colors.grey,
+  //                         ),
+  //                         maxLines: 1,
+  //                         overflow: TextOverflow.ellipsis,
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             const SizedBox(height: 10),
+  //             // Created At
+  //             Text(
+  //               formatDate(post.createdAt),
+  //               style: const TextStyle(fontSize: 16, color: Colors.grey),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget buildPostActions(Post post) {
     return Row(
@@ -479,6 +499,113 @@ class _PostPageState extends State<PostPage> {
         Text("${post.savesCount}"),
       ],
     );
+  }
+
+  Widget buildSingleDayContent(Post day) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (day.images.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  day.images.first.imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+          Text(
+            day.title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            day.content ?? "No content provided",
+            style: const TextStyle(
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (day.location.isNotEmpty)
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 18, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  day.location,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildMultiDayPost(Post post) {
+    if (post.childPosts == null || post.childPosts!.isEmpty) {
+      return Center(
+        child: Text("No content available for this multi-day post."),
+      );
+    }
+
+    print("Child posts count: ${post.childPosts?.length ?? 0}");
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: post.childPosts!.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentDayIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final dayPost = post.childPosts![index];
+              return buildSingleDayContent(dayPost);
+            },
+          ),
+        ),
+        Center(
+          child: SmoothPageIndicator(
+            controller: _pageController,
+            count: post.childPosts!.length,
+            effect: const WormEffect(
+              dotHeight: 8,
+              dotWidth: 8,
+              activeDotColor: Colors.blue,
+              dotColor: Colors.grey,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildPostContent(Post post) {
+    final isMultiDay = post.period == 'multipleday';
+    final period = post.period;
+
+    print("period: $period ");
+
+    if (!isMultiDay) {
+      // Render single-day post content as usual
+      return buildSingleDayContent(post);
+    }
+
+    return buildMultiDayPost(post);
   }
 
   Widget buildCommentsSection() {
@@ -651,8 +778,8 @@ class _PostPageState extends State<PostPage> {
   Widget buildCommentInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0), 
-        borderRadius: BorderRadius.circular(16), 
+        color: const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -660,7 +787,7 @@ class _PostPageState extends State<PostPage> {
           if (activeReplyToCommentId != null)
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFD6D6D6), 
+                color: const Color(0xFFD6D6D6),
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -669,7 +796,7 @@ class _PostPageState extends State<PostPage> {
                   Expanded(
                     child: Text(
                       '@$replyingToUsername',
-                      style: TextStyle(color: Colors.grey[900]), 
+                      style: TextStyle(color: Colors.grey[900]),
                     ),
                   ),
                   IconButton(
@@ -695,8 +822,7 @@ class _PostPageState extends State<PostPage> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor:
-                        const Color(0xFFE8E8E8), 
+                    fillColor: const Color(0xFFE8E8E8),
                   ),
                 ),
               ),
@@ -770,22 +896,19 @@ class _PostPageState extends State<PostPage> {
                           post), // Reactions section (like, save, etc.)
                       const Divider(),
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0), 
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text(
                           "$commentCount comments",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.normal,
-                            color: Colors.grey[700], 
+                            color: Colors.grey[700],
                           ),
                         ),
                       ),
                       const SizedBox(height: 10),
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal:
-                                16.0), 
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: buildCommentsSection(),
                       ),
                       const SizedBox(height: 10),
@@ -795,7 +918,7 @@ class _PostPageState extends State<PostPage> {
               },
             ),
           ),
-          buildCommentInput(), 
+          buildCommentInput(),
         ],
       ),
     );

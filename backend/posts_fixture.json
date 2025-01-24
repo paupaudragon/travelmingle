@@ -21,16 +21,16 @@
         "pk": 2,
         "fields": {
             "user": 2,
-            "title": "Hiking Expedition",
-            "content": "Climbed to the peak and enjoyed a fantastic view.",
-            "location": "Alps Mountains",
-            "created_at": "2024-11-21T14:15:00Z",
-            "updated_at": "2024-11-21T14:15:00Z",
+            "title": "Hiking the Rockies",
+            "content": "A challenging yet rewarding trek through the Rockies.",
+            "location": "Rocky Mountains",
+            "created_at": "2024-11-21T09:00:00Z",
+            "updated_at": "2024-11-21T09:00:00Z",
             "status": "published",
             "visibility": "friends",
             "category": "hiking",
-            "period": "multipleday",
-            "hashtags": "#hiking,#mountains,#expedition"
+            "period": "oneday",
+            "hashtags": "#hiking,#rockies,#nature"
         }
     },
     {
@@ -39,15 +39,15 @@
         "fields": {
             "user": 3,
             "title": "Skiing Adventure",
-            "content": "Hit the slopes and enjoyed the snowy paradise.",
-            "location": "Aspen, Colorado",
-            "created_at": "2024-11-22T09:45:00Z",
-            "updated_at": "2024-11-22T09:45:00Z",
+            "content": "Hit the slopes for an adrenaline-pumping day of skiing.",
+            "location": "Swiss Alps",
+            "created_at": "2024-11-22T10:00:00Z",
+            "updated_at": "2024-11-22T10:00:00Z",
             "status": "published",
             "visibility": "public",
             "category": "skiing",
             "period": "oneday",
-            "hashtags": "#skiing,#snow,#winterfun"
+            "hashtags": "#skiing,#snow,#alps"
         }
     },
     {
@@ -55,16 +55,16 @@
         "pk": 4,
         "fields": {
             "user": 4,
-            "title": "Road Trip Across the States",
-            "content": "Traveled through 10 states in a week. Amazing experience!",
-            "location": "USA",
-            "created_at": "2024-11-23T12:00:00Z",
-            "updated_at": "2024-11-23T12:00:00Z",
+            "title": "Road Trip to the Coast",
+            "content": "Drove along the scenic coastline, enjoying the views.",
+            "location": "California Coast",
+            "created_at": "2024-11-23T11:00:00Z",
+            "updated_at": "2024-11-23T11:00:00Z",
             "status": "published",
             "visibility": "public",
             "category": "roadtrip",
-            "period": "multipleday",
-            "hashtags": "#roadtrip,#adventure,#travel"
+            "period": "oneday",
+            "hashtags": "#roadtrip,#coast,#california"
         }
     },
     {
@@ -72,16 +72,16 @@
         "pk": 5,
         "fields": {
             "user": 5,
-            "title": "Food Tour in Italy",
-            "content": "Savored some of the best pasta and pizza in the world!",
-            "location": "Rome, Italy",
-            "created_at": "2024-11-24T15:00:00Z",
-            "updated_at": "2024-11-24T15:00:00Z",
+            "title": "Food Tour in Japan",
+            "content": "Tasted amazing sushi and ramen on the streets of Tokyo.",
+            "location": "Tokyo, Japan",
+            "created_at": "2024-11-24T12:00:00Z",
+            "updated_at": "2024-11-24T12:00:00Z",
             "status": "published",
-            "visibility": "friends",
+            "visibility": "public",
             "category": "foodtour",
-            "period": "multipleday",
-            "hashtags": "#foodtour,#italianfood,#delicious"
+            "period": "oneday",
+            "hashtags": "#food,#japan,#tokyo"
         }
     },
     {
@@ -89,16 +89,16 @@
         "pk": 6,
         "fields": {
             "user": 1,
-            "title": "Quick Adventure Trip",
-            "content": "A thrilling adventure in just one day!",
-            "location": "Grand Canyon",
-            "created_at": "2024-11-18T17:00:00Z",
-            "updated_at": "2024-11-18T17:00:00Z",
+            "title": "Exploring the Desert",
+            "content": "Witnessed a breathtaking sunset over the dunes.",
+            "location": "Sahara Desert",
+            "created_at": "2024-11-25T13:00:00Z",
+            "updated_at": "2024-11-25T13:00:00Z",
             "status": "published",
             "visibility": "public",
             "category": "adventure",
             "period": "oneday",
-            "hashtags": "#adventure,#grandcanyon"
+            "hashtags": "#desert,#adventure,#sunset"
         }
     },
     {
@@ -106,16 +106,16 @@
         "pk": 7,
         "fields": {
             "user": 2,
-            "title": "Hiking and Camping",
-            "content": "An unforgettable multi-day hiking and camping experience.",
-            "location": "Yellowstone National Park",
-            "created_at": "2024-11-19T10:00:00Z",
-            "updated_at": "2024-11-19T10:00:00Z",
+            "title": "Exploring Ancient Ruins",
+            "content": "Visited ancient ruins and learned about their history.",
+            "location": "Machu Picchu",
+            "created_at": "2024-11-26T14:00:00Z",
+            "updated_at": "2024-11-26T14:00:00Z",
             "status": "published",
             "visibility": "friends",
-            "category": "hiking",
-            "period": "multipleday",
-            "hashtags": "#hiking,#camping,#nature"
+            "category": "adventure",
+            "period": "oneday",
+            "hashtags": "#history,#ruins,#machupicchu"
         }
     },
     {
@@ -123,16 +123,16 @@
         "pk": 8,
         "fields": {
             "user": 3,
-            "title": "Skiing Weekend",
-            "content": "Spent the weekend skiing with friends.",
-            "location": "Whistler, Canada",
-            "created_at": "2024-11-20T15:00:00Z",
-            "updated_at": "2024-11-20T15:00:00Z",
+            "title": "A Day in the City",
+            "content": "Explored downtown with its vibrant culture and food.",
+            "location": "New York City",
+            "created_at": "2024-11-27T15:00:00Z",
+            "updated_at": "2024-11-27T15:00:00Z",
             "status": "published",
-            "visibility": "private",
-            "category": "skiing",
-            "period": "multipleday",
-            "hashtags": "#skiing,#canada,#weekendfun"
+            "visibility": "public",
+            "category": "others",
+            "period": "oneday",
+            "hashtags": "#city,#newyork,#culture"
         }
     },
     {
@@ -140,16 +140,16 @@
         "pk": 9,
         "fields": {
             "user": 4,
-            "title": "One-Day Food Tour",
-            "content": "Visited multiple cafes and bakeries in one day!",
-            "location": "San Francisco, CA",
-            "created_at": "2024-11-21T10:00:00Z",
-            "updated_at": "2024-11-21T10:00:00Z",
+            "title": "Mountain Climbing Experience",
+            "content": "Climbed the tallest peak in the region and enjoyed amazing views.",
+            "location": "Mount Everest Basecamp",
+            "created_at": "2024-11-28T16:00:00Z",
+            "updated_at": "2024-11-28T16:00:00Z",
             "status": "published",
             "visibility": "public",
-            "category": "foodtour",
+            "category": "adventure",
             "period": "oneday",
-            "hashtags": "#food,#cafe,#bakeries"
+            "hashtags": "#mountains,#climbing,#views"
         }
     },
     {
@@ -157,16 +157,16 @@
         "pk": 10,
         "fields": {
             "user": 5,
-            "title": "Road Tripping Through Europe",
-            "content": "Visited multiple countries in a two-week road trip.",
-            "location": "Europe",
-            "created_at": "2024-11-22T09:00:00Z",
-            "updated_at": "2024-11-22T09:00:00Z",
+            "title": "Wildlife Safari",
+            "content": "Witnessed majestic animals in their natural habitat.",
+            "location": "Serengeti National Park",
+            "created_at": "2024-11-29T17:00:00Z",
+            "updated_at": "2024-11-29T17:00:00Z",
             "status": "published",
-            "visibility": "friends",
-            "category": "roadtrip",
-            "period": "multipleday",
-            "hashtags": "#roadtrip,#europe,#travel"
+            "visibility": "public",
+            "category": "adventure",
+            "period": "oneday",
+            "hashtags": "#wildlife,#safari,#serengeti"
         }
     }
 ]

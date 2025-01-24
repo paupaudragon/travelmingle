@@ -1,6 +1,9 @@
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+import re #regular expressions
+from django.shortcuts import get_object_or_404
+import logging
 
 # Serializer
 from ..serializers import PostSerializer
@@ -110,26 +113,28 @@ class PostListCreateView(APIView):
     def post(self, request):
         try:
             # Check if location is provided
-            location = request.data.get('location')
-            if not location:
-                return Response(
-                    {'error': 'Location is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            location = request.data.get('general_location') or request.data.get('location') 
             category = request.data.get('category')  # Retrieve category from request data
+            content = request.data.get('content', '')
+            period = request.data.get('period')
+            if not location:
+                return Response({'error': 'Location is required'},status=status.HTTP_400_BAD_REQUEST)           
             if not category:
-                 return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)
+                 return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)    
+            
+            is_multi_day = period == 'multipleday'
 
-            period = request.data.get('period')  # Retrieve category from request data
-            if not period:
-                 return Response({'error': 'Period is required'}, status=status.HTTP_400_BAD_REQUEST)    
+            logger = logging.getLogger(__name__)
+            logger.error(f"is_multi_day: {is_multi_day}")
 
-            # Create the post with location
-            post = Posts.objects.create(
+            # Create the parent post
+            parent_post = Posts.objects.create(
                 user=request.user,
                 title=request.data.get('title'),
-                content=request.data.get('content'),
-                location=location,  # Add location field
+                content=None if is_multi_day else request.data.get('content'),
+                location=location,
+                category=category,
+                period=period,
                 status=request.data.get('status', 'published'),
                 visibility=request.data.get('visibility', 'public')
             )
@@ -138,18 +143,53 @@ class PostListCreateView(APIView):
             images = request.FILES.getlist('image')
             for image in images:
                 PostImages.objects.create(
-                    post=post,
+                    post=parent_post,
                     image=image
                 )
+                  
+            # Handle multi-day child posts
+            if is_multi_day:
+                message = "Multi-day post created successfully."            
+                for day_content in content:
+                    title = day_content.get('title')
+                    day_content_text = day_content.get('content')
+                    location = day_content.get('location')
+
+                    if not title or not day_content_text or not location:
+                        return Response(
+                            {'error': 'Each day in a multi-day post must include title, content, and location'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    Posts.objects.create(
+                        user=request.user,
+                        title=title,
+                        content=day_content_text,
+                        location=location,
+                        category=category,
+                        period='oneday',
+                        status='published',
+                        visibility=parent_post.visibility,
+                        parent_post=parent_post
+                    )                
 
             # Return the created post with all its data
-            serializer = PostSerializer(post, context={'request': request})
+            serializer = PostSerializer(parent_post, context={'request': request})
+
+            return Response(
+                {"message": message, "post": serializer.data},
+                status=status.HTTP_201_CREATED
+            )
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating post: {str(e)}")
+
             return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'An unexpected error occurred while creating the post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @swagger_auto_schema(
@@ -163,22 +203,43 @@ class PostListCreateView(APIView):
                 type=openapi.TYPE_STRING,
                 required=False
             ),
+            openapi.Parameter(
+                'period',
+                openapi.IN_QUERY,
+                description="Filter posts by period (e.g., 'oneday', 'multipleday')",
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
         ],
         responses={
             200: PostSerializer(many=True),
             401: "Unauthorized"
         }
     )
+
+
     def get(self, request):
         travel_types = request.query_params.get('travel_types', '').split(',')
         periods = request.query_params.get('periods', '').split(',')
 
+       # Preprocess travel types and periods to remove spaces, special characters, and trim
+        def preprocess_filter_values(values):
+            processed = []
+            for value in values:
+                value = re.sub(r'[^\w]', '', value)  # Remove non-alphanumeric characters
+                value = value.strip().lower()  # Trim and convert to lowercase
+                if value:  # Add only if not empty
+                    processed.append(value)
+            return processed
 
-        # Remove empty strings from query parameters
-        travel_types = [t for t in travel_types if t]
-        periods = [p for p in periods if p]
+        travel_types = preprocess_filter_values(travel_types)
+        periods = preprocess_filter_values(periods)
 
-        posts = Posts.objects.all().order_by('-created_at')
+       # Debugging: Log the preprocessed values
+        print("Processed Travel Types:", travel_types)
+        print("Processed Periods:", periods)
+
+        posts = Posts.objects.all().filter(parent_post__isnull=True).order_by('-created_at')
 
         # Filter by travel types if provided
         if travel_types:
@@ -224,6 +285,20 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
         responses={200: PostSerializer},
     )
     def get(self, request, *args, **kwargs):
+        post = get_object_or_404(self.queryset, pk=kwargs['pk'])
+        
+        # If the post is a multi-day post, include child_posts in the response
+        if post.period == 'multipleday':
+            child_posts = Posts.objects.filter(parent_post=post).order_by('id')
+            child_posts_serializer = PostSerializer(
+                child_posts, many=True, context=self.get_serializer_context()
+            )
+            serializer = self.get_serializer(post)
+            data = serializer.data
+            data['child_posts'] = child_posts_serializer.data
+            return Response(data, status=status.HTTP_200_OK)
+
+        # For single-day posts, return the standard serialized data
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(

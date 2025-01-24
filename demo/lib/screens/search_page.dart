@@ -50,7 +50,7 @@ class _SearchPageState extends State<SearchPage> {
       } else {
         filteredPosts = posts.where((post) {
           return post.title.toLowerCase().contains(query) ||
-              post.content.toLowerCase().contains(query) ||
+              post.content!.toLowerCase().contains(query) ||
               post.user.username.toLowerCase().contains(query);
         }).toList();
       }
