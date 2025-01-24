@@ -416,7 +416,7 @@ class _PostPageState extends State<PostPage> {
                 ),
               ),
               // Display location if available
-              if (post.location.isNotEmpty)
+              if (post.location.name.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(
                       top: 8.0), // Small padding for location
@@ -431,7 +431,7 @@ class _PostPageState extends State<PostPage> {
                           width: 4), // Space between icon and location text
                       Expanded(
                         child: Text(
-                          post.location,
+                          post.location.name,
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.grey,
@@ -651,8 +651,8 @@ class _PostPageState extends State<PostPage> {
   Widget buildCommentInput() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0), 
-        borderRadius: BorderRadius.circular(16), 
+        color: const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -660,7 +660,7 @@ class _PostPageState extends State<PostPage> {
           if (activeReplyToCommentId != null)
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFD6D6D6), 
+                color: const Color(0xFFD6D6D6),
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -669,7 +669,7 @@ class _PostPageState extends State<PostPage> {
                   Expanded(
                     child: Text(
                       '@$replyingToUsername',
-                      style: TextStyle(color: Colors.grey[900]), 
+                      style: TextStyle(color: Colors.grey[900]),
                     ),
                   ),
                   IconButton(
@@ -695,8 +695,7 @@ class _PostPageState extends State<PostPage> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor:
-                        const Color(0xFFE8E8E8), 
+                    fillColor: const Color(0xFFE8E8E8),
                   ),
                 ),
               ),
@@ -770,22 +769,19 @@ class _PostPageState extends State<PostPage> {
                           post), // Reactions section (like, save, etc.)
                       const Divider(),
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0), 
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text(
                           "$commentCount comments",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.normal,
-                            color: Colors.grey[700], 
+                            color: Colors.grey[700],
                           ),
                         ),
                       ),
                       const SizedBox(height: 10),
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal:
-                                16.0), 
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: buildCommentsSection(),
                       ),
                       const SizedBox(height: 10),
@@ -795,7 +791,7 @@ class _PostPageState extends State<PostPage> {
               },
             ),
           ),
-          buildCommentInput(), 
+          buildCommentInput(),
         ],
       ),
     );

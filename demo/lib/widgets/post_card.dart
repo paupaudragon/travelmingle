@@ -32,15 +32,13 @@ class PostCard extends StatelessWidget {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0), 
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Row(
                 children: [
                   CircleAvatar(
                     backgroundImage: NetworkImage(post.user.profilePictureUrl),
                     radius: 20,
                   ),
-
                   Expanded(
                     child: Text(
                       post.user.username,
@@ -56,12 +54,10 @@ class PostCard extends StatelessWidget {
             ),
           ),
 
-
           // Cover Photo
           if (post.images.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0), 
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: ClipRRect(
@@ -75,11 +71,9 @@ class PostCard extends StatelessWidget {
               ),
             ),
 
-
           // Content Section
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 10.0), 
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -98,8 +92,7 @@ class PostCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
 
-
-                if (post.location.isNotEmpty)
+                if (post.location.name.isNotEmpty)
                   Row(
                     children: [
                       const Icon(
@@ -107,10 +100,9 @@ class PostCard extends StatelessWidget {
                         color: Colors.grey,
                         size: 16,
                       ),
-
                       Expanded(
                         child: Text(
-                          post.location,
+                          post.location.name,
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 14,
@@ -121,15 +113,13 @@ class PostCard extends StatelessWidget {
                       ),
                     ],
                   ),
-
               ],
             ),
           ),
 
           // Like Button and Count
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 0.0),
+            padding: const EdgeInsets.symmetric(horizontal: 0.0),
             child: Row(
               children: [
                 IconButton(

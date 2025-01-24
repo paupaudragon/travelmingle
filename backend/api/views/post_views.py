@@ -16,10 +16,10 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 # Always import new models
-from ..models import PostImages, Posts, Likes, Comments, Collects, CollectionFolders
+from ..models import Location, PostImages, Posts, Likes, Comments, Collects, CollectionFolders
 
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -49,7 +49,7 @@ class PostListCreateView(APIView):
             - 200: List of posts
             - 401: Unauthorized
     """
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -109,41 +109,61 @@ class PostListCreateView(APIView):
     )
     def post(self, request):
         try:
-            # Check if location is provided
-            location = request.data.get('location')
-            if not location:
+            # Extract location data from request
+            location_data = request.data.get('location')
+            if not location_data:
                 return Response(
                     {'error': 'Location is required'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Create the post with location
+            # Parse location JSON string if necessary
+            if isinstance(location_data, str):
+                import json
+                location_data = json.loads(location_data)
+
+            # Ensure required location fields are present
+            required_fields = ['place_id', 'name',
+                               'address', 'latitude', 'longitude']
+            for field in required_fields:
+                if field not in location_data:
+                    return Response(
+                        {'error': f'Missing location field: {field}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # Get or create location instance
+            location, created = Location.objects.get_or_create(
+                place_id=location_data['place_id'],
+                defaults={
+                    'name': location_data['name'],
+                    'address': location_data['address'],
+                    'latitude': location_data['latitude'],
+                    'longitude': location_data['longitude']
+                }
+            )
+
+            # Create the post with location instance
             post = Posts.objects.create(
                 user=request.user,
                 title=request.data.get('title'),
                 content=request.data.get('content'),
-                location=location,  # Add location field
+                location=location,  # Assign the Location instance
                 status=request.data.get('status', 'published'),
                 visibility=request.data.get('visibility', 'public')
             )
 
-            # Handle multiple images
+            # Handle multiple images if provided
             images = request.FILES.getlist('image')
             for image in images:
-                PostImages.objects.create(
-                    post=post,
-                    image=image
-                )
+                PostImages.objects.create(post=post, image=image)
 
-            # Return the created post with all its data
+            # Serialize and return the created post
             serializer = PostSerializer(post, context={'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         operation_summary="List all posts",

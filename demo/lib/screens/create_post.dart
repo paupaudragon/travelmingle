@@ -224,6 +224,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
     });
 
     try {
+      if (_selectedLocation == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please select a location.')),
+        );
+        return;
+      }
+
       await apiService.createPost(
         _titleController.text,
         _contentController.text,

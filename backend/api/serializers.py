@@ -5,6 +5,10 @@ from .models import Follow, Location, Users, Posts, Comments, PostImages, Likes,
 from django.db.models import Prefetch
 
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
 
@@ -212,7 +216,7 @@ class LocationSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     # location_data = serializers.DictField(write_only=True, required=False)
-    location = LocationSerializer(read_only=True)
+    location = LocationSerializer()
     user = UserSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
@@ -235,15 +239,12 @@ class PostSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         location_data = validated_data.pop('location', None)
-
         if location_data:
             location, created = Location.objects.get_or_create(
                 place_id=location_data['place_id'],
                 defaults=location_data
             )
-
-        validated_data['location'] = location
-
+            validated_data['location'] = location
         return super().create(validated_data)
 
     def get_likes_count(self, obj):

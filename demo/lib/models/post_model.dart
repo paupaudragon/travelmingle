@@ -1,3 +1,5 @@
+import 'package:demo/models/location_model.dart';
+
 import 'user_model.dart';
 import 'comment_model.dart';
 import 'postImage_model.dart';
@@ -7,7 +9,7 @@ class Post {
   final User user;
   final String title;
   final String content;
-  final String location;
+  final LocationData location;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String status;
@@ -16,8 +18,8 @@ class Post {
   final List<PostImage> images; // store a list of images
   int likesCount;
   int savesCount;
-  bool isLiked; 
-  bool isSaved; 
+  bool isLiked;
+  bool isSaved;
 
   Post({
     required this.id,
@@ -33,8 +35,8 @@ class Post {
     required this.savesCount,
     required this.detailedComments,
     required this.images,
-    required this.isLiked, 
-    required this.isSaved, 
+    required this.isLiked,
+    required this.isSaved,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -43,7 +45,13 @@ class Post {
       user: User.fromJson(json['user']),
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      location: json['location'] ?? '',
+      location: LocationData(
+        placeId: json['location']['place_id'],
+        name: json['location']['name'],
+        address: json['location']['address'],
+        latitude: json['location']['latitude'].toDouble(),
+        longitude: json['location']['longitude'].toDouble(),
+      ),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       status: json['status'],
@@ -57,7 +65,7 @@ class Post {
           .map((image) => PostImage.fromJson(image))
           .toList(),
       isLiked: json['is_liked'] ?? false,
-      isSaved: json['is_saved'] ?? false, 
+      isSaved: json['is_saved'] ?? false,
     );
   }
 }

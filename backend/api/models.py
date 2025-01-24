@@ -117,9 +117,6 @@ class Posts(models.Model):
     title = models.CharField(max_length=255, blank=True, null=True)
     content = models.TextField(blank=True, null=True)
 
-    # # Force location input
-    # location = models.CharField(max_length=255, blank=True, null=True)
-
     location = models.ForeignKey(
         Location,
         on_delete=models.SET_NULL,

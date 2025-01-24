@@ -554,7 +554,7 @@ class ApiService {
       // Add text fields
       request.fields['title'] = title;
       request.fields['content'] = content;
-      request.fields['location_data'] = jsonEncode(locationData);
+      request.fields['location'] = jsonEncode(locationData);
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
 
@@ -568,6 +568,7 @@ class ApiService {
         }
       }
 
+      print('Sending request with: ${jsonEncode(locationData)}');
       // Send request
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
