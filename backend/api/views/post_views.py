@@ -139,6 +139,7 @@ class PostListCreateView(APIView):
                     image=image
                 )
 
+            message = "Post created successfully."
             # Handle multi-day child posts
             if is_multi_day:
                 message = "Multi-day post created successfully."
