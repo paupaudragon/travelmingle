@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'api',
     'rest_framework',
     'drf_yasg',
+    'django.contrib.gis',
 ]
 
 AUTH_USER_MODEL = 'api.Users'
@@ -93,7 +94,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default='default-secret-key')
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': env('DB_NAME', default='travelmingle'),
         'USER': env('DB_USER', default=''),
         'PASSWORD': env('DB_PASSWORD', default=''),
@@ -175,6 +176,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ]
+
 }
 
 SWAGGER_SETTINGS = {
@@ -187,6 +194,7 @@ SWAGGER_SETTINGS = {
         }
     },
     'USE_SESSION_AUTH': False,
+    'VALIDATOR_URL': None,
 }
 
 SIMPLE_JWT = {
@@ -202,3 +210,8 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'
+
+GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309.dll'
+GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'

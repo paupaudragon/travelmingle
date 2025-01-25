@@ -3,6 +3,8 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.contrib.gis.geos import Point
+from django.contrib.gis.db import models
 
 
 class Users(AbstractUser):
@@ -53,6 +55,45 @@ class Users(AbstractUser):
     def __str__(self):
         return self.username
 
+##########################  NEW   ###################################
+
+
+class Location(models.Model):
+    """
+    Represents a location from Google Maps API.
+    Attributes:
+        place_id (CharField): Unique identifier from Google Maps
+        name (CharField): Human-readable location name
+        address (CharField): Full address of the location
+        latitude (DecimalField): Latitude coordinate
+        longitude (DecimalField): Longitude coordinate
+        point (PointField): Geographic point representation
+        created_at (DateTimeField): Timestamp of creation
+    """
+    place_id = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    address = models.CharField(max_length=512)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    point = models.PointField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Create point field from lat/long if not set
+        if self.latitude and self.longitude and not self.point:
+            self.point = Point(float(self.longitude), float(self.latitude))
+        super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = "locations"
+        indexes = [
+            models.Index(fields=["place_id"]),
+            models.Index(fields=["name"]),
+        ]
+
+    def __str__(self):
+        return self.name
+
 
 class Posts(models.Model):
     """
@@ -100,8 +141,14 @@ class Posts(models.Model):
     title = models.CharField(max_length=255, blank=True, null=True)
     content = models.TextField(blank=True, null=True)
 
-    # Force location input
-    location = models.CharField(max_length=255, blank=True, null=True)
+    # New location field for Post detail view
+    location = models.ForeignKey(
+        Location,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='posts'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -127,7 +174,7 @@ class Posts(models.Model):
         null=True,
         help_text="Comma-separated hashtags (e.g., #travel, #nature)"
     )
-    
+
     parent_post = models.ForeignKey(
         'self', on_delete=models.CASCADE, null=True, blank=True, related_name="child_posts"
     )
@@ -137,8 +184,10 @@ class Posts(models.Model):
         indexes = [
             models.Index(fields=["user"]),
             models.Index(fields=["created_at"]),
-            models.Index(fields=["category"]),  # New index for category filtering
+            # New index for category filtering
+            models.Index(fields=["category"]),
             models.Index(fields=["period"]),  # New index for period filtering
+            models.Index(fields=["location"]),
         ]
 
     def __str__(self):

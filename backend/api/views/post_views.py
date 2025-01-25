@@ -1,7 +1,7 @@
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-import re #regular expressions
+import re  # regular expressions
 from django.shortcuts import get_object_or_404
 import logging
 
@@ -19,10 +19,10 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 
 # Always import new models
-from ..models import PostImages, Posts, Likes, Comments, Collects, CollectionFolders
+from ..models import Location, PostImages, Posts, Likes, Comments, Collects, CollectionFolders
 
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -52,58 +52,13 @@ class PostListCreateView(APIView):
             - 200: List of posts
             - 401: Unauthorized
     """
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_summary="Create a new post",
         operation_description="Create a new post with title, content, images, location, and other metadata",
-        manual_parameters=[
-            openapi.Parameter(
-                'title',
-                openapi.IN_FORM,
-                description="Post title",
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'content',
-                openapi.IN_FORM,
-                description="Post content",
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'image',
-                openapi.IN_FORM,
-                description="Post images (multiple files allowed)",
-                type=openapi.TYPE_FILE,
-                required=False
-            ),
-            openapi.Parameter(
-                'location',
-                openapi.IN_FORM,
-                description="Post location",
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'status',
-                openapi.IN_FORM,
-                description="Post status (published/draft)",
-                type=openapi.TYPE_STRING,
-                default='published',
-                required=False
-            ),
-            openapi.Parameter(
-                'visibility',
-                openapi.IN_FORM,
-                description="Post visibility (public/private)",
-                type=openapi.TYPE_STRING,
-                default='public',
-                required=False
-            ),
-        ],
+        request_body=PostSerializer,
         responses={
             201: PostSerializer,
             400: "Bad Request",
@@ -113,15 +68,52 @@ class PostListCreateView(APIView):
     def post(self, request):
         try:
             # Check if location is provided
-            location = request.data.get('general_location') or request.data.get('location') 
-            category = request.data.get('category')  # Retrieve category from request data
+            # location = request.data.get(
+            #     'general_location') or request.data.get('location')
+
+            # Extract location data from request
+            location_data = request.data.get('location')
+            if not location_data:
+                return Response(
+                    {'error': 'Location is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Parse location JSON string if necessary
+            if isinstance(location_data, str):
+                import json
+                location_data = json.loads(location_data)
+
+            # Ensure required location fields are present
+            required_fields = ['place_id', 'name',
+                               'address', 'latitude', 'longitude']
+            for field in required_fields:
+                if field not in location_data:
+                    return Response(
+                        {'error': f'Missing location field: {field}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # Get or create location instance
+            location, created = Location.objects.get_or_create(
+                place_id=location_data['place_id'],
+                defaults={
+                    'name': location_data['name'],
+                    'address': location_data['address'],
+                    'latitude': location_data['latitude'],
+                    'longitude': location_data['longitude']
+                }
+            )
+
+            # Retrieve category from request data
+            category = request.data.get('category')
             content = request.data.get('content', '')
             period = request.data.get('period')
             if not location:
-                return Response({'error': 'Location is required'},status=status.HTTP_400_BAD_REQUEST)           
+                return Response({'error': 'Location is required'}, status=status.HTTP_400_BAD_REQUEST)
             if not category:
-                 return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)    
-            
+                return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)
+
             is_multi_day = period == 'multipleday'
 
             logger = logging.getLogger(__name__)
@@ -146,10 +138,10 @@ class PostListCreateView(APIView):
                     post=parent_post,
                     image=image
                 )
-                  
+
             # Handle multi-day child posts
             if is_multi_day:
-                message = "Multi-day post created successfully."            
+                message = "Multi-day post created successfully."
                 for day_content in content:
                     title = day_content.get('title')
                     day_content_text = day_content.get('content')
@@ -171,10 +163,11 @@ class PostListCreateView(APIView):
                         status='published',
                         visibility=parent_post.visibility,
                         parent_post=parent_post
-                    )                
+                    )
 
             # Return the created post with all its data
-            serializer = PostSerializer(parent_post, context={'request': request})
+            serializer = PostSerializer(
+                parent_post, context={'request': request})
 
             return Response(
                 {"message": message, "post": serializer.data},
@@ -216,8 +209,6 @@ class PostListCreateView(APIView):
             401: "Unauthorized"
         }
     )
-
-
     def get(self, request):
         travel_types = request.query_params.get('travel_types', '').split(',')
         periods = request.query_params.get('periods', '').split(',')
@@ -226,7 +217,8 @@ class PostListCreateView(APIView):
         def preprocess_filter_values(values):
             processed = []
             for value in values:
-                value = re.sub(r'[^\w]', '', value)  # Remove non-alphanumeric characters
+                # Remove non-alphanumeric characters
+                value = re.sub(r'[^\w]', '', value)
                 value = value.strip().lower()  # Trim and convert to lowercase
                 if value:  # Add only if not empty
                     processed.append(value)
@@ -239,12 +231,14 @@ class PostListCreateView(APIView):
         print("Processed Travel Types:", travel_types)
         print("Processed Periods:", periods)
 
-        posts = Posts.objects.all().filter(parent_post__isnull=True).order_by('-created_at')
+        posts = Posts.objects.all().filter(
+            parent_post__isnull=True).order_by('-created_at')
 
         # Filter by travel types if provided
         if travel_types:
             posts = posts.filter(category__in=travel_types)
-            print("Posts after Travel Types Filter:", posts.count())  # Debugging
+            print("Posts after Travel Types Filter:",
+                  posts.count())  # Debugging
 
         # Filter by periods if provided
         if periods:
@@ -286,7 +280,7 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     )
     def get(self, request, *args, **kwargs):
         post = get_object_or_404(self.queryset, pk=kwargs['pk'])
-        
+
         # If the post is a multi-day post, include child_posts in the response
         if post.period == 'multipleday':
             child_posts = Posts.objects.filter(parent_post=post).order_by('id')

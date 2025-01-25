@@ -1,8 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import Follow, Users, Posts, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
+from .models import Follow, Users, Posts, Location, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
 
 from django.db.models import Prefetch
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -204,7 +207,14 @@ class CommentSerializer(serializers.ModelSerializer):
         )
 
 
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'place_id', 'name', 'address', 'latitude', 'longitude']
+
+
 class PostSerializer(serializers.ModelSerializer):
+    location = LocationSerializer()
     user = UserSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
@@ -223,9 +233,26 @@ class PostSerializer(serializers.ModelSerializer):
                   'childPosts',]
         extra_kwargs = {
             'category': {'required': True},  # Ensure category is required
-            'hashtags': {'required': False},  # Hashtags are optional   
+            'hashtags': {'required': False},  # Hashtags are optional
         }
-        read_only_fields = ['period']  # Prevent users from manually modifying it
+        # Prevent users from manually modifying it
+        read_only_fields = ['period']
+
+    def validate(self, data):
+        if 'location' not in data or not data['location']:
+            raise serializers.ValidationError(
+                {"location": "Location data is required."})
+        return data
+
+    def create(self, validated_data):
+        location_data = validated_data.pop('location', None)
+        if location_data:
+            location, created = Location.objects.get_or_create(
+                place_id=location_data['place_id'],
+                defaults=location_data
+            )
+            validated_data['location'] = location
+        return super().create(validated_data)
 
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""
@@ -240,7 +267,7 @@ class PostSerializer(serializers.ModelSerializer):
         comments = obj.comments_set.filter(
             reply_to=None)  # Fetch only top-level comments
         return CommentSerializer(comments, many=True).data
-  
+
     def get_is_liked(self, obj):
         """Check if the logged-in user liked the post."""
         request = self.context.get('request', None)
