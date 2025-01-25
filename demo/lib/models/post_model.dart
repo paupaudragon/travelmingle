@@ -2,12 +2,14 @@ import 'user_model.dart';
 import 'comment_model.dart';
 import 'postImage_model.dart';
 
+import 'package:demo/models/location_model.dart';
+
 class Post {
   final int id;
   final User user;
   final String title;
   final String? content;
-  final String location;
+  final LocationData location;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String status;
@@ -53,7 +55,16 @@ class Post {
       user: User.fromJson(json['user']),
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      location: json['location'] ?? '',
+      location: LocationData(
+        placeId: json['location']['place_id'],
+        name: json['location']['name'],
+        address: json['location']['address'],
+        latitude:
+            double.tryParse(json['location']['latitude'].toString()) ?? 0.0,
+        longitude:
+            double.tryParse(json['location']['longitude'].toString()) ?? 0.0,
+      ),
+
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       status: json['status'],

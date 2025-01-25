@@ -20,7 +20,7 @@ class PostCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [     
+        children: [
           // Author Info with navigation
           InkWell(
             onTap: () {
@@ -32,15 +32,13 @@ class PostCard extends StatelessWidget {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0), 
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Row(
                 children: [
                   CircleAvatar(
                     backgroundImage: NetworkImage(post.user.profilePictureUrl),
                     radius: 20,
                   ),
-
                   Expanded(
                     child: Text(
                       post.user.username,
@@ -60,7 +58,7 @@ class PostCard extends StatelessWidget {
           // if (post.images.isNotEmpty)
           //   Padding(
           //     padding: const EdgeInsets.symmetric(
-          //         horizontal: 8.0), 
+          //         horizontal: 8.0),
           //     child: AspectRatio(
           //       aspectRatio: 16 / 9,
           //       child: ClipRRect(
@@ -74,61 +72,59 @@ class PostCard extends StatelessWidget {
           //     ),
           //   ),
 
-        // Cover Photo
-        if (post.period == 'multipleday' && post.images.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  post.images.first.imageUrl, // First image for "Day 1"
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
-              ),
-            ),
-          )
-        else if (post.images.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  post.images.first.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
-              ),
-            ),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
+          // Cover Photo
+          if (post.period == 'multipleday' && post.images.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey[300],
+                  child: Image.network(
+                    post.images.first.imageUrl, // First image for "Day 1"
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.image,
-                  size: 50,
-                  color: Colors.grey,
+              ),
+            )
+          else if (post.images.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    post.images.first.imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey[300],
+                  ),
+                  child: const Icon(
+                    Icons.image,
+                    size: 50,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
             ),
-          ),
-
 
           // Content Section
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 10.0), 
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -147,8 +143,7 @@ class PostCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
 
-
-                if (post.location.isNotEmpty)
+                if (post.location.name.isNotEmpty)
                   Row(
                     children: [
                       const Icon(
@@ -156,10 +151,9 @@ class PostCard extends StatelessWidget {
                         color: Colors.grey,
                         size: 16,
                       ),
-
                       Expanded(
                         child: Text(
-                          post.location,
+                          post.location.name,
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 14,
@@ -170,15 +164,13 @@ class PostCard extends StatelessWidget {
                       ),
                     ],
                   ),
-
               ],
             ),
           ),
 
           // Like Button and Count
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 0.0),
+            padding: const EdgeInsets.symmetric(horizontal: 0.0),
             child: Row(
               children: [
                 IconButton(

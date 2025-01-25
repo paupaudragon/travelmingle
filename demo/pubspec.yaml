@@ -40,6 +40,12 @@ dependencies:
   share_plus: ^10.1.2
   path_provider: ^2.0.12
 
+  #This is for Google Maps
+  google_places_flutter: ^2.0.5
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.0.1
+  geocoding: ^2.1.1
+
   #This is for Swipeable Image
   smooth_page_indicator: ^1.0.0
 

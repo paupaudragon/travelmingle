@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:demo/widgets/ProgressIndicatorWidget.dart';
 import 'package:flutter/material.dart';
@@ -535,16 +536,48 @@ class _PostPageState extends State<PostPage> {
             ),
           ),
           const SizedBox(height: 16),
-          if (day.location.isNotEmpty)
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 18, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  day.location,
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+          // Display location if available
+          if (day.location.name.isNotEmpty)
+            Padding(
+              padding:
+                  const EdgeInsets.only(top: 8.0), // Small padding for location
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LocationPostsPage(
+                        locationName: day.location.name,
+                      ),
+                    ),
+                  );
+                },
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_rounded,
+                      color: Colors.grey,
+                      size: 17,
+                    ),
+                    const SizedBox(
+                        width: 4), // Space between icon and location text
+                    Expanded(
+                      child: Text(
+                        day.location.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors
+                              .blue, // Change color to blue to indicate interactivity
+                          decoration: TextDecoration
+                              .underline, // Underline to show it's clickable
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
         ],
       ),
@@ -559,7 +592,7 @@ class _PostPageState extends State<PostPage> {
     }
 
     print("Child posts count: ${post.childPosts?.length ?? 0}");
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

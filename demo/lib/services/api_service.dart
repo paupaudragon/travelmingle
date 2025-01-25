@@ -552,9 +552,11 @@ class ApiService {
 // Create post section
   Future<void> createPost({
     required String title,
-    required String location,
     required String? category,
     List<String>? imagePaths,
+    required String locationName,
+    double? latitude,
+    double? longitude,
     String? content,
     required String period,
     String? generalLocation,
@@ -567,15 +569,25 @@ class ApiService {
 
       request.headers['Authorization'] = 'Bearer ${await getAccessToken()}';
 
-
+      if (locationName.isEmpty) {
+        throw Exception('Location name cannot be empty');
+      }
+      final locationData = {
+        'place_id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        'name': locationName,
+        'address': locationName,
+        'latitude': latitude ?? 0.0,
+        'longitude': longitude ?? 0.0,
+      };
 
       // Common fields
       request.fields['title'] = title;
-      request.fields['location'] = location;
+      // request.fields['location'] = location;
       request.fields['category'] = category ?? '';
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
       request.fields['period'] = period;
+      request.fields['location'] = jsonEncode(locationData);
 
       print('API - period: ${period}');
 
@@ -608,5 +620,28 @@ class ApiService {
       print('Error creating post: $e');
       throw Exception('Failed to create post: $e');
     }
+  }
+
+  Future<List<Post>> fetchPostsByLocation(String locationName) async {
+    final response = await http.get(
+      Uri.parse(
+          '$baseApiUrl/posts/by-location/?name=${Uri.encodeComponent(locationName)}'),
+      headers: await getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((post) => Post.fromJson(post)).toList();
+    } else {
+      throw Exception('Failed to load posts for this location');
+    }
+  }
+
+  Future<Map<String, String>> getHeaders() async {
+    final token = await getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
   }
 }

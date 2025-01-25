@@ -1,4 +1,5 @@
 import 'package:demo/services/api_service.dart';
+import 'package:demo/screens/map_page.dart';
 import 'package:flutter/material.dart';
 import 'screens/feed_page.dart';
 import 'screens/register_page.dart';
@@ -21,7 +22,7 @@ class MyApp extends StatelessWidget {
       title: 'My App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        hintColor: Colors.grey, 
+        hintColor: Colors.grey,
         inputDecorationTheme: InputDecorationTheme(
           labelStyle: const TextStyle(
             color: Colors.black, // Label text color
@@ -67,6 +68,7 @@ class MyApp extends StatelessWidget {
         '/feed': (context) => const FeedPage(), // Home route
         '/login': (context) => const LoginPage(), // Login route
         '/register': (context) => const RegisterPage(), // Register route
+        '/map': (context) => MapTestScreen(),
       },
     );
   }

@@ -6,6 +6,7 @@ class Footer extends StatelessWidget {
   final Function onPlusPressed;
   final Function onMessagesPressed;
   final Function onMePressed;
+  final Function onMapPressed;
 
   const Footer({
     Key? key,
@@ -14,6 +15,7 @@ class Footer extends StatelessWidget {
     required this.onPlusPressed,
     required this.onMessagesPressed,
     required this.onMePressed,
+    required this.onMapPressed,
   }) : super(key: key);
 
   @override
@@ -31,7 +33,8 @@ class Footer extends StatelessWidget {
           ),
 
           IconButton(
-            icon: const Icon(Icons.search_rounded, size: 28, color: Colors.black),
+            icon:
+                const Icon(Icons.search_rounded, size: 28, color: Colors.black),
             onPressed: () => onSearchPressed(),
           ),
 
@@ -47,20 +50,27 @@ class Footer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(
                     8), // Rounded corners for square button
               ),
-              child: const Icon(Icons.add_rounded, size: 28, color: Colors.white),
+              child:
+                  const Icon(Icons.add_rounded, size: 28, color: Colors.white),
             ),
           ),
 
           //Messages Button
           IconButton(
-            icon: const Icon(Icons.message_rounded, size: 28, color: Colors.black),
+            icon: const Icon(Icons.message_rounded,
+                size: 28, color: Colors.black),
             onPressed: () => onMessagesPressed(),
           ),
 
           // Me Button
           IconButton(
-            icon: const Icon(Icons.person_rounded, size: 28, color: Colors.black),
+            icon:
+                const Icon(Icons.person_rounded, size: 28, color: Colors.black),
             onPressed: () => onMePressed(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.map),
+            onPressed: () => onMapPressed(),
           ),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:demo/screens/map_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:demo/screens/search_page.dart';
@@ -35,10 +36,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     'Food Tour',
     'Others',
   ];
-  final List<String> periods = [
-    'One Day',
-     'Multiple Day'
-  ];
+  final List<String> periods = ['One Day', 'Multiple Day'];
 
 //Manage state section
   @override
@@ -188,11 +186,17 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     ).then((_) => _onRefresh());
   }
 
-
   void navigateToProfilePage() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ProfilePage()),
+    ).then((_) => _loadPosts());
+  }
+
+  void navigateToMapPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MapTestScreen()),
     ).then((_) => _loadPosts());
   }
 
@@ -202,7 +206,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       MaterialPageRoute(builder: (context) => const SearchPage()),
     ).then((_) => _loadPosts());
   }
-
 
 //Login section
   void handleLogout(BuildContext context) async {
@@ -408,7 +411,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           ),
         ],
       ),
-      
+
       //Footer (Navigation Bar)
       bottomNavigationBar: Footer(
         onHomePressed: _loadPosts,
@@ -420,11 +423,21 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         },
         onMessagesPressed: () {
           _loadPosts(); // TO-DO
-        },        
+        },
         onMePressed: () {
           navigateToProfilePage();
         },
+        onMapPressed: () => requireLogin(context, onSuccess: () {
+          Navigator.pushNamed(context, '/map');
+        }),
       ),
     );
+  }
+
+  Future<void> _navigateToCreatePost() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CreatePostPage()),
+    ).then((_) => _onRefresh());
   }
 }
