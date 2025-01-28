@@ -213,5 +213,11 @@ SIMPLE_JWT = {
 
 GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'
 
-GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309.dll'
+
+#Tingting computer
+#GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309.dll'
 GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+
+#Andy computer
+GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
+

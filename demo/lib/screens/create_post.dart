@@ -31,6 +31,8 @@ class _CreatePostPageState extends State<CreatePostPage>
   final ApiService apiService = ApiService();
   bool _isLoading = false;
 
+ 
+
   final List<String> _categories = [
     'Adventure',
     'Hiking',
@@ -74,6 +76,9 @@ class _CreatePostPageState extends State<CreatePostPage>
 
   Future<void> _getCurrentLocation() async {
     try {
+      // Log initial state
+      print('Checking location permissions...');
+
       // Check location permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -90,16 +95,25 @@ class _CreatePostPageState extends State<CreatePostPage>
         _isLoading = true;
       });
 
+      // Log before fetching position
+      print('Fetching current position...');
       // Get current position
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      );
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        throw Exception('Location request timed out. Please try again.');
+      });
+
+      // Log fetched position
+      print('Position fetched: ${position.latitude}, ${position.longitude}');
 
       // Get address from coordinates using geocoding
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
+
+      print('Location name set to: $_locationName');
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
@@ -108,8 +122,11 @@ class _CreatePostPageState extends State<CreatePostPage>
           _locationName = '${place.locality}, ${place.administrativeArea}';
           _locationController.text = _locationName!;
         });
+
+
       }
     } catch (e) {
+      print('Error in fetching location: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error getting location: $e')),
       );
@@ -119,6 +136,8 @@ class _CreatePostPageState extends State<CreatePostPage>
       });
     }
   }
+
+
 
   Future<void> _showLocationSearchDialog() async {
     TextEditingController searchController = TextEditingController();
