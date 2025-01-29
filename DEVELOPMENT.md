@@ -1,3 +1,64 @@
+# Jan 29 2025
+* install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) and select Express install
+
+* add System Variables into `Path`
+  ```
+  C:\OSGeo4W\bin
+  C:\OSGeo4W\apps\gdal\bin
+  ```
+
+* create new System variables
+  > name: GDAL_DATA 
+  > value: C:\OSGeo4W\share\gdal
+  > 
+  > name: PROJ_LIB
+  > value: C:\OSGeo4W\apps\share\proj
+
+* install related PostgreSQL extension
+  > * open Stack Builder app, select current server
+  > * under Spatial Extensions, select PostGIS 3.5 Bundle
+  > * after agree the license agreement, select all components
+  ![PostGIS Bundle](.note_files\PostGIS_Bundle.png)
+
+* recreate database
+  ```
+  DROP DATABASE travelmingle;
+  CREATE DATABASE travelmingle;
+  \dt
+  ```
+  if any table returned, drop them all with
+  ```
+  DROP TABLE auth_group;
+  DROP TABLE auth_group_permissions;
+  DROP TABLE auth_permission;
+  DROP TABLE auth_user;
+  DROP TABLE auth_user_groups;
+  DROP TABLE auth_user_user_permissions;
+  DROP TABLE comments;
+  DROP TABLE django_admin_log;
+  DROP TABLE django_content_type;
+  DROP TABLE django_migrations;
+  DROP TABLE django_session;
+  DROP TABLE post_images;
+  DROP TABLE posts;
+  DROP TABLE users;
+  ```
+
+  Go to `backend/api/migrations` folder, delete all files `BUT` `_init_.py`. If you don't do this, the command won't work.
+
+  ```
+  cd backend
+  python manage.py makemigrations
+  python manage.py migrate
+  ```
+
+* install related packages
+  ```
+  cd demo
+  flutter pub get
+  ```
+
+
 # Nov 24 2024 Recreate the db and load with new data
 
 ## Drop `travelmingle` db and re-create a new one
