@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../models/post_model.dart';
 import '../widgets/post_card.dart';
 import 'create_post.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -341,6 +342,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFe6e6e6),
       //Header (Tabs)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
@@ -386,26 +388,23 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                         onRefresh: _onRefresh,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 4.0,
-                              mainAxisSpacing: 4.0,
-                              childAspectRatio: 0.8,
-                            ),
-                            itemCount: posts.length,
-                            itemBuilder: (context, index) {
-                              final post = posts[index];
-                              return GestureDetector(
-                                onTap: () => navigateToPostDetail(post),
-                                child: PostCard(
-                                  post: post,
-                                  onLikePressed: () => toggleLike(post),
+                          child: MasonryGridView.count(
+                          crossAxisCount: 2,  // Number of columns
+                          mainAxisSpacing: 4.0,   // Vertical space between items
+                          crossAxisSpacing: 4.0,  // Horizontal space between items
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            final post = posts[index];
+                            return GestureDetector(
+                              onTap: () => navigateToPostDetail(post),
+                              child: PostCard(
+                                post: post,
+                                onLikePressed: () => toggleLike(post),
                                 ),
                               );
                             },
                           ),
+
                         ),
                       ),
           ),

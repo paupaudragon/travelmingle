@@ -18,9 +18,14 @@ class Header extends StatelessWidget {
     required this.onCreateUserPressed, 
   }) : super(key: key);
 
+  // TODO: move filter button
+
   @override
   Widget build(BuildContext context) {
     return Container(
+      color: Color(0xFFfafafa),
+      height: 60,
+
       // color: const Color.fromARGB(255, 244, 240, 240), // Off-white background color
       child: Center(
         child: TextButton(
@@ -28,7 +33,7 @@ class Header extends StatelessWidget {
           child: const Text(
             "Explore",
             style: TextStyle(
-              color: Colors.blue,
+              color: Color(0xffEBC122),
               fontSize: 20, // Highlighted as active
             ),
           ),
