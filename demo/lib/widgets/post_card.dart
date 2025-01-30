@@ -204,22 +204,44 @@ class _PostCardState extends State<PostCard> {
                   ),
 
           // Reserve fixed space for pure text post
-          if (widget.post.images.isEmpty)
-            SizedBox(height: 8), // Add some spacing
+
+          // if (widget.post.images.isEmpty)
+          //   SizedBox(height: 8), // Add some spacing
 
           // Post title
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-            child: Text(
-              widget.post.title.isNotEmpty ? widget.post.title : 'No Title',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// **始终显示标题**
+                Text(
+                  widget.post.title.isNotEmpty ? widget.post.title : 'No Title',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.start,
+                ),
+
+                /// **如果没有图片，显示内容**
+                if (widget.post.images.isEmpty && widget.post.content != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0), // 标题和内容之间的间距
+                    child: Text(
+                      widget.post.content!, // 展示内容
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54, // 让内容颜色稍微淡一些
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis, // 超出部分省略
+                    ),
+                  ),
+              ],
             ),
           ),
 
@@ -264,19 +286,23 @@ class _PostCardState extends State<PostCard> {
 
               // Like button
               Padding(
-                padding: const EdgeInsets.only(right: 12.0), // Adjust right padding to bring the elements closer
+                padding: const EdgeInsets.only(
+                    right:
+                        12.0), // Adjust right padding to bring the elements closer
                 child: Row(
-                  mainAxisSize: MainAxisSize.min, // Prevent Row from taking up the entire space
+                  mainAxisSize: MainAxisSize
+                      .min, // Prevent Row from taking up the entire space
                   children: [
                     IconButton(
                       icon: Icon(
                         widget.post.isLiked
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        color: widget.post.isLiked ? Colors.red : Colors.grey,
+                        color: widget.post.isLiked ? colorLiked : colorLike,
                       ),
                       iconSize: 20,
-                      visualDensity: VisualDensity.compact, // Make IconButton more compact
+                      visualDensity:
+                          VisualDensity.compact, // Make IconButton more compact
                       padding: EdgeInsets.zero, // Remove default padding
                       constraints: const BoxConstraints(), // Remove extra space
                       onPressed: widget.onLikePressed,

@@ -10,7 +10,7 @@ const Color footerColor = Color(0xFFfafafa);
 const Color filterPageColor = Color(0xFFfafafa);
 const Color gridBackgroundColor = Color(0xFFeeeeee);
 const Color colorLike = Color(0xFF747f7f);
-const Color colorLiked = Color(0xFFff4858);
+const Color colorLiked = Color(0xFFffad08);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,7 +88,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'My App',
       theme: ThemeData(
-        primaryColor: Color(0xfff6cc50),
+        colorScheme: ColorScheme.fromSeed(
+      seedColor: Color(0xfffadd00), // Change highlight color globally
+    ),
+        primaryColor: Color(0xFFffad08),
         scaffoldBackgroundColor: Color(0xFFfafafa), // default background color
 
         iconTheme: IconThemeData(
