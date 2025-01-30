@@ -1,5 +1,6 @@
 import 'package:demo/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Footer extends StatelessWidget {
   final Function onHomePressed;
@@ -30,13 +31,21 @@ class Footer extends StatelessWidget {
         children: [
           // Home Button
           IconButton(
-            icon: const Icon(Icons.home_rounded, size: 28),
+            icon: SvgPicture.asset(
+              'assets/icons/home.svg',
+              width: 22,
+              height: 22,
+            ),
             onPressed: () => onHomePressed(),
           ),
 
           // map Button
           IconButton(
-            icon: const Icon(Icons.map),
+            icon: SvgPicture.asset(
+              'assets/icons/map.svg',
+              width: 22,
+              height: 22,
+            ),
             onPressed: () => onMapPressed(),
           ),
 
@@ -48,7 +57,8 @@ class Footer extends StatelessWidget {
               height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor, // Background color of the "+" button
+                color: Theme.of(context)
+                    .primaryColor, // Background color of the "+" button
                 borderRadius: BorderRadius.circular(
                     8), // Rounded corners for square button
               ),
@@ -59,15 +69,21 @@ class Footer extends StatelessWidget {
 
           //Messages Button
           IconButton(
-            icon: const Icon(Icons.message_rounded,
-                size: 28),
+            icon: SvgPicture.asset(
+              'assets/icons/message.svg',
+              width: 22,
+              height: 22,
+            ),
             onPressed: () => onMessagesPressed(),
           ),
 
           // Me Button
           IconButton(
-            icon:
-                const Icon(Icons.person_rounded, size: 28),
+            icon: SvgPicture.asset(
+              'assets/icons/me.svg',
+              width: 22,
+              height: 22,
+            ),
             onPressed: () => onMePressed(),
           ),
         ],

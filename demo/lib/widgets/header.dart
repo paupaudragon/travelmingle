@@ -1,7 +1,8 @@
 import 'package:demo/main.dart';
 import 'package:demo/screens/feed_page.dart';
 import 'package:flutter/material.dart';
-import '../widgets/CircleTabIndicator.dart';
+import 'circle_tab_indicator.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Header extends StatelessWidget {
   final Function onFollowPressed;
@@ -39,7 +40,11 @@ class Header extends StatelessWidget {
             left: 10,
             top: 4,
             child: IconButton(
-              icon: const Icon(Icons.filter_list, size: 28),
+              icon: SvgPicture.asset(
+              'assets/icons/filter.svg',
+              width: 22,
+              height: 22,
+            ),
               onPressed: () => onFilterPressed(),
               tooltip: 'Filter by Categories',
             ),
@@ -81,7 +86,11 @@ class Header extends StatelessWidget {
             right: 10,
             top: 3,
             child: IconButton(
-              icon: const Icon(Icons.search_rounded, size: 28),
+              icon: SvgPicture.asset(
+              'assets/icons/search.svg',
+              width: 22,
+              height: 22,
+            ),
               onPressed: () => onSearchPressed(),
             ),
           ),
