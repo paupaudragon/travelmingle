@@ -342,7 +342,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFe6e6e6),
       //Header (Tabs)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
@@ -362,22 +361,12 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
           },
+          onFilterPressed: (){_showMultiSectionFilterDialog();},
         ),
       ),
       //Row for Filter button
       body: Column(
         children: [
-          // Add a row for the filter button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list, size: 24),
-                onPressed: _showMultiSectionFilterDialog,
-                tooltip: 'Filter by Categories',
-              ),
-            ],
-          ),
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())

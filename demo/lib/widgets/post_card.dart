@@ -34,7 +34,7 @@ class PostCard extends StatelessWidget {
     return Card(
       color: Color(0xFFfafafa),
       margin: const EdgeInsets.all(1.0),  // gap between post card
-      elevation: 2, // outside shallow
+      elevation: 1, // outside shallow
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),  // outside corner radius
       child: IntrinsicHeight(
         child: Column(

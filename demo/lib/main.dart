@@ -5,6 +5,9 @@ import 'screens/feed_page.dart';
 import 'screens/register_page.dart';
 import 'screens/login_page.dart';
 
+const Color headerColor = Color(0xFFfafafa);
+const Color footerColor = Color(0xFFfafafa);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final apiService = ApiService();
@@ -16,56 +19,89 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   return MaterialApp(
+  //     title: 'My App',
+  //     theme: ThemeData(
+  //       primarySwatch: Colors.blue,
+  //       scaffoldBackgroundColor: Color(0xFFfafafa),
+  //       hintColor: Colors.grey,
+  //       inputDecorationTheme: InputDecorationTheme(
+  //         labelStyle: const TextStyle(
+  //           color: Colors.black, // Label text color
+  //         ),
+  //         enabledBorder: const UnderlineInputBorder(
+  //           borderSide: BorderSide(
+  //               color: Colors.blue), // Blue underline when not focused
+  //         ),
+  //         focusedBorder: const UnderlineInputBorder(
+  //           borderSide: BorderSide(
+  //               color: Colors.blue, width: 2), // Blue underline when focused
+  //         ),
+  //         hintStyle: const TextStyle(
+  //           color: Colors.grey, // Hint text color
+  //         ),
+  //       ),
+  //       tabBarTheme: TabBarTheme(
+  //         labelColor: Colors.black, // Selected tab text color
+  //         unselectedLabelColor: Colors.grey, // Unselected tab text color
+  //         indicator: UnderlineTabIndicator(
+  //           borderSide:
+  //               BorderSide(color: Colors.blue, width: 3), // Tab underline
+  //         ),
+  //       ),
+  //       elevatedButtonTheme: ElevatedButtonThemeData(
+  //         style: ElevatedButton.styleFrom(
+  //           backgroundColor: Colors.blue, // Elevated button background
+  //           foregroundColor: Colors.black, // Elevated button text color
+  //         ),
+  //       ),
+  //       textButtonTheme: TextButtonThemeData(
+  //         style: TextButton.styleFrom(
+  //           foregroundColor: Colors.black, // Text button color
+  //         ),
+  //       ),
+  //       floatingActionButtonTheme: FloatingActionButtonThemeData(
+  //         backgroundColor: Colors.black, // Floating action button color
+  //       ),
+  //     ),
+  //     initialRoute: '/login', // Set your initial route
+  //     routes: {
+  //       '/auth-check': (context) => const AuthCheck(),
+  //       '/feed': (context) => const FeedPage(), // Home route
+  //       '/login': (context) => const LoginPage(), // Login route
+  //       '/register': (context) => const RegisterPage(), // Register route
+  //       '/map': (context) => MapTestScreen(),
+  //     },
+  //   );
+  // }
+
+  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        hintColor: Colors.grey,
-        inputDecorationTheme: InputDecorationTheme(
-          labelStyle: const TextStyle(
-            color: Colors.black, // Label text color
-          ),
-          enabledBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(
-                color: Colors.blue), // Blue underline when not focused
-          ),
-          focusedBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(
-                color: Colors.blue, width: 2), // Blue underline when focused
-          ),
-          hintStyle: const TextStyle(
-            color: Colors.grey, // Hint text color
-          ),
-        ),
-        tabBarTheme: TabBarTheme(
-          labelColor: Colors.black, // Selected tab text color
-          unselectedLabelColor: Colors.grey, // Unselected tab text color
-          indicator: UnderlineTabIndicator(
-            borderSide:
-                BorderSide(color: Colors.blue, width: 3), // Tab underline
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue, // Elevated button background
-            foregroundColor: Colors.black, // Elevated button text color
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.black, // Text button color
-          ),
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: Colors.black, // Floating action button color
+        primaryColor: Color(0xfff6cc50),
+        scaffoldBackgroundColor: Color(0xFFfafafa), // default background color
+
+        iconTheme: IconThemeData(
+          color: Color(0xff1d1d1d), // icon color
         ),
       ),
       initialRoute: '/login', // Set your initial route
       routes: {
         '/auth-check': (context) => const AuthCheck(),
-        '/feed': (context) => const FeedPage(), // Home route
+        '/feed': (context) => Builder(
+        builder: (context) => Theme(
+          data: Theme.of(context).copyWith(
+            scaffoldBackgroundColor: const Color(0xFFe6e6e6),
+          ),
+          child: const FeedPage(),
+        ),
+      ),
         '/login': (context) => const LoginPage(), // Login route
         '/register': (context) => const RegisterPage(), // Register route
         '/map': (context) => MapTestScreen(),

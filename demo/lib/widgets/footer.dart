@@ -1,3 +1,4 @@
+import 'package:demo/main.dart';
 import 'package:flutter/material.dart';
 
 class Footer extends StatelessWidget {
@@ -21,21 +22,21 @@ class Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // color: const Color(0xFFF5F5F5), // Off-white background color
+      color: footerColor, // Off-white background color
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           // Home Button
           IconButton(
-            icon: const Icon(Icons.home_rounded, size: 28, color: Colors.black),
+            icon: const Icon(Icons.home_rounded, size: 28),
             onPressed: () => onHomePressed(),
           ),
 
+          // map Button
           IconButton(
-            icon:
-                const Icon(Icons.search_rounded, size: 28, color: Colors.black),
-            onPressed: () => onSearchPressed(),
+            icon: const Icon(Icons.map),
+            onPressed: () => onMapPressed(),
           ),
 
           // "+" Button (Square Design)
@@ -46,7 +47,7 @@ class Footer extends StatelessWidget {
               height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.blue, // Background color of the "+" button
+                color: Theme.of(context).primaryColor, // Background color of the "+" button
                 borderRadius: BorderRadius.circular(
                     8), // Rounded corners for square button
               ),
@@ -58,19 +59,15 @@ class Footer extends StatelessWidget {
           //Messages Button
           IconButton(
             icon: const Icon(Icons.message_rounded,
-                size: 28, color: Colors.black),
+                size: 28),
             onPressed: () => onMessagesPressed(),
           ),
 
           // Me Button
           IconButton(
             icon:
-                const Icon(Icons.person_rounded, size: 28, color: Colors.black),
+                const Icon(Icons.person_rounded, size: 28),
             onPressed: () => onMePressed(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.map),
-            onPressed: () => onMapPressed(),
           ),
         ],
       ),
