@@ -101,6 +101,10 @@ flutter:
     - assets/icons/message_filled.svg
     - assets/icons/message.svg
     - assets/icons/search.svg
+    - assets/icons/create.svg
+    - assets/icons/create.png
+    - assets/icons/create2.svg
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

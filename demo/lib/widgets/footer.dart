@@ -30,61 +30,127 @@ class Footer extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           // Home Button
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/home.svg',
-              width: 22,
-              height: 22,
-            ),
-            onPressed: () => onHomePressed(),
+          Column(
+            mainAxisSize: MainAxisSize.min, // Ensure compact layout
+            children: [
+              SvgPicture.asset(
+                'assets/icons/home.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                    Colors.black, BlendMode.srcIn), // Change color dynamically
+              ),
+              const SizedBox(height: 2), // Reduce gap between icon and text
+              const Text(
+                "Home",
+                style: TextStyle(
+                  fontSize: 10, // Make text smaller
+                  fontWeight: FontWeight.w400, // Lighter font weight
+                  color: Colors.black, // Text color
+                ),
+              ),
+            ],
           ),
 
           // map Button
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/map.svg',
-              width: 22,
-              height: 22,
-            ),
-            onPressed: () => onMapPressed(),
-          ),
-
-          // "+" Button (Square Design)
-          GestureDetector(
-            onTap: () => onPlusPressed(),
-            child: Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .primaryColor, // Background color of the "+" button
-                borderRadius: BorderRadius.circular(
-                    8), // Rounded corners for square button
+          Column(
+            mainAxisSize: MainAxisSize.min, // Ensure compact layout
+            children: [
+              SvgPicture.asset(
+                'assets/icons/map.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                    Colors.black, BlendMode.srcIn), // Change color dynamically
               ),
-              child:
-                  const Icon(Icons.add_rounded, size: 28, color: Colors.white),
+              const SizedBox(height: 2), // Reduce gap between icon and text
+              const Text(
+                "Map",
+                style: TextStyle(
+                  fontSize: 10, // Make text smaller
+                  fontWeight: FontWeight.w400, // Use a lighter font weight
+                  color: Colors.black, // Text color
+                ),
+              ),
+            ],
+          ),
+
+          // // "+" Button (Square Design)
+          // IconButton(
+          //   onPressed: () => onPlusPressed(),
+          //   padding: EdgeInsets.zero, // Remove default padding
+          //   constraints: BoxConstraints(), // Remove default size constraints
+          //   icon: SizedBox(
+          //     width: 50, // Ensure correct size
+          //     height: 50,
+          //     child: SvgPicture.asset(
+          //       'assets/icons/create.svg',
+          //       fit: BoxFit.contain, // Ensure proper scaling
+          //       colorFilter: ColorFilter.mode(
+          //           primaryColor, BlendMode.srcIn), // Change color dynamically
+          //     ),
+          //   ),
+          // ),
+
+          IconButton(
+            onPressed: () => onPlusPressed(),
+            padding: EdgeInsets.zero, // Remove default padding
+            constraints: BoxConstraints(), // Remove default size constraints
+            icon: SizedBox(
+              width: 55, // Ensure correct size
+              height: 47,
+              child: Image.asset(
+                'assets/icons/create.png',
+                fit: BoxFit
+                    .contain, // Ensure proper scaling Change color dynamically
+              ),
             ),
           ),
 
-          //Messages Button
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/message.svg',
-              width: 22,
-              height: 22,
-            ),
-            onPressed: () => onMessagesPressed(),
+          // Messages Button
+          Column(
+            mainAxisSize: MainAxisSize.min, // Ensure compact layout
+            children: [
+              SvgPicture.asset(
+                'assets/icons/message.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                    Colors.black, BlendMode.srcIn), // Change color dynamically
+              ),
+              const SizedBox(height: 2), // Reduce gap between icon and text
+              const Text(
+                "Messages",
+                style: TextStyle(
+                  fontSize: 10, // Make text smaller
+                  fontWeight: FontWeight.w400, // Lighter font weight
+                  color: Colors.black, // Text color
+                ),
+              ),
+            ],
           ),
 
           // Me Button
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/me.svg',
-              width: 22,
-              height: 22,
-            ),
-            onPressed: () => onMePressed(),
+          Column(
+            mainAxisSize: MainAxisSize.min, // Ensure compact layout
+            children: [
+              SvgPicture.asset(
+                'assets/icons/me.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                    Colors.black, BlendMode.srcIn), // Change color dynamically
+              ),
+              const SizedBox(height: 2), // Reduce gap between icon and text
+              const Text(
+                "Me",
+                style: TextStyle(
+                  fontSize: 10, // Make text smaller
+                  fontWeight: FontWeight.w400, // Lighter font weight
+                  color: Colors.black, // Text color
+                ),
+              ),
+            ],
           ),
         ],
       ),
