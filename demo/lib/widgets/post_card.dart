@@ -6,6 +6,7 @@ import 'package:demo/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/cache_manager.dart';
 import 'dart:io';
+import 'dart:ui';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -85,8 +86,8 @@ class _PostCardState extends State<PostCard> {
   Widget build(BuildContext context) {
     return Card(
       color: Color(0xFFfafafa),
-      margin: const EdgeInsets.all(1.0),
-      elevation: 1,
+      margin: const EdgeInsets.all(3.0),
+      elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +100,14 @@ class _PostCardState extends State<PostCard> {
                     child: AspectRatio(
                       aspectRatio: _imageSize!.width / _imageSize!.height,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3), // Rounded corners
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8), // Top left corner 8
+                          topRight: Radius.circular(8), // Top right corner 8
+                          bottomLeft:
+                              Radius.circular(2), // Bottom left corner 2
+                          bottomRight:
+                              Radius.circular(2), // Bottom right corner 2
+                        ),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -111,69 +119,77 @@ class _PostCardState extends State<PostCard> {
 
                             // Display location information on the image
                             if (widget.post.location.name.isNotEmpty)
-                              Positioned(
-                                bottom: 0, // Distance from the bottom
-                                left: 0, // Align left
-                                right: 0, // Optional: keep text within bounds
-                                child: Container(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(4, 8, 4, 0),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.6),
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.6),
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.5),
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.4),
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.2),
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.1),
-                                        const Color.fromARGB(255, 116, 116, 116)
-                                            .withOpacity(0.05),
-                                      ],
-                                      stops: [
-                                        0.0,
-                                        0.2,
-                                        0.4,
-                                        0.55,
-                                        0.8,
-                                        0.9,
-                                        1.0
-                                      ],
-                                    ),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                              if (widget.post.location.name.isNotEmpty)
+                                Positioned(
+                                  top: 0, // Position adjustment
+                                  left: 0,
+                                  right: 0,
+                                  child: Stack(
                                     children: [
-                                      const Icon(
-                                        Icons.location_on_rounded,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          ' ${widget.post.location.name}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
+                                      // Blurred background, but does not affect text
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(4),
+                                          topRight: Radius.circular(4),
+                                        ),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                              sigmaX: 2,
+                                              sigmaY: 4), // Slight blur
+                                          child: Container(
+                                            height:
+                                                25, // Limit blur height to reduce impact
+                                            color: Colors
+                                                .transparent, // Transparent background
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+
+                                      // Foreground layer, display text & gradient
+                                      Container(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            4, 2, 4, 8),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.black.withOpacity(
+                                                  0.4), // Start with 40% transparent black
+                                              Colors.black.withOpacity(0.2),
+                                              Colors
+                                                  .transparent, // Gradually become transparent
+                                            ],
+                                            stops: [0.0, 0.5, 1.0],
+                                          ),
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.location_on_rounded,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                            Expanded(
+                                              child: Text(
+                                                ' ${widget.post.location.name}',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
                           ],
                         ),
                       ),
@@ -232,7 +248,7 @@ class _PostCardState extends State<PostCard> {
                             NetworkImage(widget.post.user.profilePictureUrl),
                         radius: 13,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         widget.post.user.username,
                         style: const TextStyle(
@@ -248,8 +264,9 @@ class _PostCardState extends State<PostCard> {
 
               // Like button
               Padding(
-                padding: const EdgeInsets.only(right: 12.0),
+                padding: const EdgeInsets.only(right: 12.0), // Adjust right padding to bring the elements closer
                 child: Row(
+                  mainAxisSize: MainAxisSize.min, // Prevent Row from taking up the entire space
                   children: [
                     IconButton(
                       icon: Icon(
@@ -259,9 +276,11 @@ class _PostCardState extends State<PostCard> {
                         color: widget.post.isLiked ? Colors.red : Colors.grey,
                       ),
                       iconSize: 20,
+                      visualDensity: VisualDensity.compact, // Make IconButton more compact
+                      padding: EdgeInsets.zero, // Remove default padding
+                      constraints: const BoxConstraints(), // Remove extra space
                       onPressed: widget.onLikePressed,
                     ),
-                    const SizedBox(width: 4),
                     Text(
                       '${widget.post.likesCount}',
                       style: const TextStyle(fontSize: 14),
