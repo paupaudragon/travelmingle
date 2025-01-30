@@ -15,23 +15,28 @@ class CreatePostPage extends StatefulWidget {
 
 class _CreatePostPageState extends State<CreatePostPage>
     with SingleTickerProviderStateMixin {
+  //Single Day data
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _customCategoryController =
-      TextEditingController();
+
+  //Multi Day data
+  final TextEditingController _generalTitleController = TextEditingController();
   final TextEditingController _generalLocationController =
       TextEditingController();
+  final List<Map<String, dynamic>> _multiDayTrips = [];
 
-  final List<File> _images = [];
+  final TextEditingController _customCategoryController =
+      TextEditingController();
   String? _selectedCategory;
+  final List<File> _images = [];
+
+  //Location data
   String? _locationName;
   LatLng? _selectedLocation;
 
   final ApiService apiService = ApiService();
   bool _isLoading = false;
-
- 
 
   final List<String> _categories = [
     'Adventure',
@@ -43,21 +48,26 @@ class _CreatePostPageState extends State<CreatePostPage>
   ];
 
   late TabController _tabController;
-  final TextEditingController _generalTitleController = TextEditingController();
-
-  final List<Map<String, dynamic>> _multiDayTrips = [
-    {
-      'titleController': TextEditingController(),
-      'contentController': TextEditingController(),
-      'locationController': TextEditingController(),
-      'images': <File>[],
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _addNewDayTrip(); // Add the first day by default
+  }
+
+  void _addNewDayTrip() {
+    setState(() {
+      _multiDayTrips.add({
+        'multiTitleController': TextEditingController(),
+        'multiContentController': TextEditingController(),
+        'multiLocationController': TextEditingController(),
+        'multiSelectedLocation': LatLng(0.0, 0.0),
+        'latitude': 0.0,
+        'longitude': 0.0,
+        'images': <File>[],
+      });
+    });
   }
 
   Future<void> _pickImage(Function(File) onImagePicked) async {
@@ -74,7 +84,8 @@ class _CreatePostPageState extends State<CreatePostPage>
     }
   }
 
-  Future<void> _getCurrentLocation() async {
+  Future<void> _getCurrentLocation(
+      TextEditingController controller, int? index) async {
     try {
       // Log initial state
       print('Checking location permissions...');
@@ -118,12 +129,17 @@ class _CreatePostPageState extends State<CreatePostPage>
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
         setState(() {
-          _selectedLocation = LatLng(position.latitude, position.longitude);
-          _locationName = '${place.locality}, ${place.administrativeArea}';
-          _locationController.text = _locationName!;
+          if (index == null) {
+            _selectedLocation = LatLng(position.latitude, position.longitude);
+          } else if (index < _multiDayTrips.length) {
+            _multiDayTrips[index]['multiSelectedLocation'] =
+                LatLng(position.latitude, position.longitude);
+            _multiDayTrips[index]['latitude'] = position.latitude;
+            _multiDayTrips[index]['longitude'] = position.longitude;
+          }
         });
-
-
+        _locationName = '${place.locality}, ${place.administrativeArea}';
+        controller.text = _locationName!;
       }
     } catch (e) {
       print('Error in fetching location: $e');
@@ -137,9 +153,8 @@ class _CreatePostPageState extends State<CreatePostPage>
     }
   }
 
-
-
-  Future<void> _showLocationSearchDialog() async {
+  Future<void> _showLocationSearchDialog(TextEditingController controller,
+      int? index, LatLng? selectedLocation) async {
     TextEditingController searchController = TextEditingController();
     List<Prediction> predictions = [];
 
@@ -157,7 +172,7 @@ class _CreatePostPageState extends State<CreatePostPage>
                   // Current Location Button
                   ElevatedButton.icon(
                     onPressed: () async {
-                      await _getCurrentLocation();
+                      await _getCurrentLocation(controller, index);
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.my_location),
@@ -186,10 +201,24 @@ class _CreatePostPageState extends State<CreatePostPage>
                     countries: ["us", "uk"],
                     isLatLngRequired: true,
                     getPlaceDetailWithLatLng: (Prediction prediction) {
-                      _locationController.text = prediction.description ?? '';
-                      _selectedLocation = LatLng(
-                          double.parse(prediction.lat ?? "0"),
-                          double.parse(prediction.lng ?? "0"));
+                      controller.text = prediction.description ?? '';
+
+                      double latitude =
+                          double.tryParse(prediction.lat ?? "0") ?? 0.0;
+                      double longitude =
+                          double.tryParse(prediction.lng ?? "0") ?? 0.0;
+                      LatLng newLocation = LatLng(latitude, longitude);
+
+                      if (index == null) {
+                        _selectedLocation = newLocation;
+                      } else if (index < _multiDayTrips.length) {
+                        setState(() {
+                          _multiDayTrips[index]['multiSelectedLocation'] =
+                              newLocation;
+                          _multiDayTrips[index]['latitude'] = latitude;
+                          _multiDayTrips[index]['longitude'] = longitude;
+                        });
+                      }
                       _locationName = prediction.description;
                       Navigator.pop(context);
                     },
@@ -235,35 +264,115 @@ class _CreatePostPageState extends State<CreatePostPage>
   }
 
   Future<void> _submitPost() async {
-    if (_titleController.text.isEmpty ||
-        _contentController.text.isEmpty ||
-        _locationController.text.isEmpty ||
-        (_selectedCategory == null && _customCategoryController.text.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields')),
-      );
-      return;
+    //Check required fields
+    if (_tabController.index == 0) {
+      if (_titleController.text.isEmpty ||
+          _contentController.text.isEmpty ||
+          _locationController.text.isEmpty ||
+          _selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill in all required fields')),
+        );
+        return;
+      }
+    } else {
+      // Multi-Day Post Validation
+      bool isValidationFailed = false;
+
+      for (int i = 0; i < _multiDayTrips.length; i++) {
+        final day = _multiDayTrips[i];
+        final multiTitleController =
+            day['multiTitleController'] as TextEditingController?;
+        final multiContentController =
+            day['multiContentController'] as TextEditingController?;
+        final multiLocationController =
+            day['multiLocationController'] as TextEditingController?;
+        final multiSelectedLocation = day['multiSelectedLocation'] as LatLng?;
+
+        // Log all field values for debugging
+        print('Day ${i + 1}');
+        print('  Title: ${multiTitleController?.text}');
+        print('  Content: ${multiContentController?.text}');
+        print('  Location: ${multiLocationController?.text}');
+        print('  Selected Location: ${multiSelectedLocation}');
+
+        if (multiTitleController == null ||
+            multiTitleController.text.isEmpty ||
+            multiContentController == null ||
+            multiContentController.text.isEmpty ||
+            multiLocationController == null ||
+            multiLocationController.text.isEmpty ||
+            multiSelectedLocation == null) {
+          isValidationFailed = true;
+        }
+      }
+
+      if (_titleController.text.isEmpty ||
+          _locationController.text.isEmpty ||
+          _selectedCategory == null ||
+          _multiDayTrips.isEmpty ||
+          isValidationFailed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Please fill in all required fields for multi-day post')),
+        );
+        return;
+      }
     }
 
+    //Submit all data fields
     setState(() {
       _isLoading = true;
     });
-
     try {
       final category = _customCategoryController.text.isNotEmpty
           ? _customCategoryController.text
           : _selectedCategory;
 
-      await apiService.createPost(
-        title: _titleController.text,
-        locationName: _locationName ?? _locationController.text,
-        latitude: _selectedLocation?.latitude ?? 0.0,
-        longitude: _selectedLocation?.longitude ?? 0.0,
-        category: category,
-        content: _contentController.text,
-        imagePaths: _images.map((file) => file.path).toList(),
-        period: 'oneday',
-      );
+      if (_tabController.index == 0) {
+        // Single Day Post Submission
+
+        await apiService.createPost(
+          title: _titleController.text,
+          locationName: _locationController.text,
+          latitude: _selectedLocation?.latitude ?? 0.0,
+          longitude: _selectedLocation?.longitude ?? 0.0,
+          category: category!,
+          content: _contentController.text,
+          imagePaths: _images.map((file) => file.path).toList(),
+          period: 'oneday',
+        );
+      } else {
+        // Multi-Day Post Submission
+        final List<Map<String, dynamic>> multiDayTrips =
+            _multiDayTrips.map((day) {
+          final LatLng selectedLocation =
+              day['multiSelectedLocation'] ?? LatLng(0.0, 0.0);
+          return {
+            'title':
+                (day['multiTitleController'] as TextEditingController).text,
+            'content':
+                (day['multiContentController'] as TextEditingController).text,
+            'location':
+                (day['multiLocationController'] as TextEditingController).text,
+            'latitude': selectedLocation.latitude,
+            'longitude': selectedLocation.longitude,
+            'imagePaths':
+                (day['images'] as List<File>).map((file) => file.path).toList(),
+          };
+        }).toList();
+
+        await apiService.createPost(
+          title: _titleController.text,
+          locationName: _locationController.text,
+          latitude: _selectedLocation?.latitude ?? 0.0,
+          longitude: _selectedLocation?.longitude ?? 0.0,
+          category: category!,
+          multiDayTrips: multiDayTrips,
+          period: 'multipleday',
+        );
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Post created successfully!')),
@@ -285,11 +394,10 @@ class _CreatePostPageState extends State<CreatePostPage>
     _titleController.dispose();
     _contentController.dispose();
     _locationController.dispose();
-    _generalTitleController.dispose();
     for (var day in _multiDayTrips) {
-      (day['titleController'] as TextEditingController).dispose();
-      (day['contentController'] as TextEditingController).dispose();
-      (day['locationController'] as TextEditingController).dispose();
+      (day['multiTitleController'] as TextEditingController).dispose();
+      (day['multiContentController'] as TextEditingController).dispose();
+      (day['multiLocationController'] as TextEditingController).dispose();
     }
     super.dispose();
   }
@@ -307,8 +415,11 @@ class _CreatePostPageState extends State<CreatePostPage>
               });
             }),
             _buildTextField('Title', _titleController),
+            const SizedBox(height: 16),
             _buildTextField('Description', _contentController, maxLines: 5),
-            _buildLocationField(),
+            const SizedBox(height: 16),
+            _buildLocationField('Location', _locationController, null,
+                _selectedLocation ?? LatLng(0.0, 0.0)),
             const SizedBox(height: 16),
             _buildCategorySelector(),
           ],
@@ -317,33 +428,59 @@ class _CreatePostPageState extends State<CreatePostPage>
     );
   }
 
-  Widget _buildLocationField() {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.grey),
+          border: const OutlineInputBorder(),
+        ),
+        maxLines: maxLines,
+      ),
+    );
+  }
+
+  Widget _buildLocationField(String label, TextEditingController controller,
+      int? index, LatLng? selectedLocation) {
     return GestureDetector(
-      onTap: _showLocationSearchDialog,
+      onTap: () {
+        _showLocationSearchDialog(
+            controller, index, selectedLocation ?? LatLng(0, 0));
+      },
       child: AbsorbPointer(
         child: TextField(
-          controller: _locationController,
+          controller: controller,
           decoration: InputDecoration(
-            labelText: 'Location',
+            labelText: label,
             labelStyle: TextStyle(color: Colors.grey),
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.my_location),
-                  onPressed: _getCurrentLocation,
+                  onPressed: () {
+                    _getCurrentLocation(controller, index);
+                  },
                   tooltip: 'Use current location',
                 ),
                 IconButton(
                   icon: const Icon(Icons.search),
-                  onPressed: _showLocationSearchDialog,
+                  onPressed: () {
+                    _showLocationSearchDialog(
+                        controller, index, selectedLocation ?? LatLng(0, 0));
+                  },
                   tooltip: 'Search location',
                 ),
               ],
             ),
-            border: UnderlineInputBorder(
-              borderSide: BorderSide(color: Color.fromARGB(76, 118, 118, 118)),
-            ),
+            // border: UnderlineInputBorder(
+            //   borderSide: BorderSide(color: Color.fromARGB(76, 118, 118, 118)),
+            // ),
+            border: const OutlineInputBorder(),
           ),
         ),
       ),
@@ -357,9 +494,9 @@ class _CreatePostPageState extends State<CreatePostPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTextField('Post Title', _generalTitleController),
-            _buildTextField('General Location', _generalLocationController),
-            const SizedBox(height: 16),
+            _buildTextField('Post Title', _titleController),
+            _buildLocationField("General Location", _locationController, null,
+                _selectedLocation ?? LatLng(0.0, 0.0)),
             _buildCategorySelector(),
             const SizedBox(height: 16),
             ..._multiDayTrips.asMap().entries.map((entry) {
@@ -382,10 +519,15 @@ class _CreatePostPageState extends State<CreatePostPage>
                               fontSize: 18, fontWeight: FontWeight.bold)),
                       _buildImagePickerSection(
                           images, (file) => images.add(file)),
-                      _buildTextField('Day Title', day['titleController']),
-                      _buildTextField('Description', day['contentController'],
+                      _buildTextField('Day Title', day['multiTitleController']),
+                      _buildTextField(
+                          'Description', day['multiContentController'],
                           maxLines: 5),
-                      _buildTextField('Location', day['locationController']),
+                      _buildLocationField(
+                          'Day Location',
+                          day['multiLocationController'],
+                          index,
+                          day['multiSelectedLocation'] ?? LatLng(0.0, 0.0)),
                       if (_multiDayTrips.length > 1)
                         Align(
                           alignment: Alignment.centerRight,
@@ -417,7 +559,7 @@ class _CreatePostPageState extends State<CreatePostPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Category', style: TextStyle(fontSize: 16)),
+        // const Text('Category', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _selectedCategory,
@@ -438,6 +580,7 @@ class _CreatePostPageState extends State<CreatePostPage>
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             hintText: 'Select a category',
+            hintStyle: TextStyle(color: Colors.grey),
           ),
         ),
         const SizedBox(height: 8),
@@ -463,21 +606,6 @@ class _CreatePostPageState extends State<CreatePostPage>
             ],
           ),
       ],
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller,
-      {int maxLines = 1}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        maxLines: maxLines,
-      ),
     );
   }
 
@@ -559,17 +687,6 @@ class _CreatePostPageState extends State<CreatePostPage>
         ),
       ],
     );
-  }
-
-  void _addNewDayTrip() {
-    setState(() {
-      _multiDayTrips.add({
-        'titleController': TextEditingController(),
-        'contentController': TextEditingController(),
-        'locationController': TextEditingController(),
-        'images': <File>[],
-      });
-    });
   }
 
   @override

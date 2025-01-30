@@ -208,6 +208,7 @@ class ApiService {
         // Parse the response into a Post object
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
 
+        print("Fetched post: ${response.body}");
         // Process the childPosts if they exist
         if (jsonData['childPosts'] != null) {
           jsonData['childPosts'] = (jsonData['childPosts'] as List)
@@ -559,7 +560,6 @@ class ApiService {
     double? longitude,
     String? content,
     required String period,
-    String? generalLocation,
     List<Map<String, dynamic>>? multiDayTrips,
   }) async {
     const String url = "$baseApiUrl/posts/";
@@ -582,20 +582,18 @@ class ApiService {
 
       // Common fields
       request.fields['title'] = title;
-      // request.fields['location'] = location;
+      request.fields['location'] = jsonEncode(locationData);
       request.fields['category'] = category ?? '';
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
       request.fields['period'] = period;
-      request.fields['location'] = jsonEncode(locationData);
+      request.fields['content'] = '';
 
       print('API - period: ${period}');
 
       if (period == 'multipleday') {
         // Multi-Day specific fields
-        request.fields['location'] = generalLocation ?? '';
         request.fields['childPosts'] = jsonEncode(multiDayTrips ?? []);
-        request.fields['content'] = '';
       } else {
         // Single-Day specific fields
         request.fields['content'] = content ?? '';
