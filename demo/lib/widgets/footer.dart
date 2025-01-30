@@ -24,6 +24,7 @@ class Footer extends StatelessWidget {
     return Container(
       color: footerColor, // Off-white background color
       padding: const EdgeInsets.symmetric(vertical: 8),
+      height: 60,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [

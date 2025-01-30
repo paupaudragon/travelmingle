@@ -1,3 +1,4 @@
+import 'package:demo/main.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/recap_page.dart';
 import 'package:demo/screens/user_list_page.dart';
@@ -6,6 +7,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
 import '../widgets/post_card.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -448,17 +450,18 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
-  Widget _buildPostGrid(List<Post> posts) {
-    return posts.isEmpty
-        ? const Center(child: Text('No posts to display'))
-        : GridView.builder(
-            padding: const EdgeInsets.all(4.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+Widget _buildPostGrid(List<Post> posts) {
+  return posts.isEmpty
+      ? const Center(child: Text('No posts to display'))
+      : Container(
+          color: gridBackgroundColor,
+          padding: const EdgeInsets.all(4.0),
+          child: MasonryGridView.builder(
+            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 4.0,
-              mainAxisSpacing: 4.0,
-              childAspectRatio: 0.8,
             ),
+            mainAxisSpacing: 4.0,
+            crossAxisSpacing: 4.0,
             itemCount: posts.length,
             itemBuilder: (context, index) {
               final post = posts[index];
@@ -470,8 +473,9 @@ class _ProfilePageState extends State<ProfilePage>
                 ),
               );
             },
-          );
-  }
+          ),
+        );
+}
 
   Future<void> _handleRefresh() async {
     try {

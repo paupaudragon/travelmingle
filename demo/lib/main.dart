@@ -7,6 +7,10 @@ import 'screens/login_page.dart';
 
 const Color headerColor = Color(0xFFfafafa);
 const Color footerColor = Color(0xFFfafafa);
+const Color filterPageColor = Color(0xFFfafafa);
+const Color gridBackgroundColor = Color(0xFFeeeeee);
+const Color colorLike = Color(0xFF747f7f);
+const Color colorLiked = Color(0xFFffad08);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,7 +88,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'My App',
       theme: ThemeData(
-        primaryColor: Color(0xfff6cc50),
+        colorScheme: ColorScheme.fromSeed(
+      seedColor: Color(0xfffadd00), // Change highlight color globally
+    ),
+        primaryColor: Color(0xFFffad08),
         scaffoldBackgroundColor: Color(0xFFfafafa), // default background color
 
         iconTheme: IconThemeData(
@@ -97,7 +104,7 @@ class MyApp extends StatelessWidget {
         '/feed': (context) => Builder(
         builder: (context) => Theme(
           data: Theme.of(context).copyWith(
-            scaffoldBackgroundColor: const Color(0xFFe6e6e6),
+            scaffoldBackgroundColor: gridBackgroundColor,
           ),
           child: const FeedPage(),
         ),
