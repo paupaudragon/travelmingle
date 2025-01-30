@@ -41,10 +41,8 @@ class CommentListCreateView(ListCreateAPIView):
     )
     def post(self, request, *args, **kwargs):
 
-        logger.debug(f"Received request with content type: {
-                     request.content_type}")
-        print(f"Received request with content type: {
-              request.content_type}")  # For immediate console output
+        logger.debug(f"Received request with content type: {request.content_type}")
+        print(f"Received request with content type: {request.content_type}") 
 
         # Check Content-Type
         if request.content_type.startswith('application/json'):
