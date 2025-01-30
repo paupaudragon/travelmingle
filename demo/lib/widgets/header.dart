@@ -68,7 +68,7 @@ class Header extends StatelessWidget {
           top: 3,
           child: IconButton(
                 icon: const Icon(Icons.filter_list, size: 24),
-                onPressed: (){},
+                onPressed: () => onFilterPressed(),
                 tooltip: 'Filter by Categories',
               ),
         ),
