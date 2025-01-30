@@ -29,128 +29,115 @@ class Footer extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Home Button
-          Column(
-            mainAxisSize: MainAxisSize.min, // Ensure compact layout
-            children: [
-              SvgPicture.asset(
-                'assets/icons/home.svg',
-                width: 22,
-                height: 22,
-                colorFilter: ColorFilter.mode(
-                    Colors.black, BlendMode.srcIn), // Change color dynamically
-              ),
-              const SizedBox(height: 2), // Reduce gap between icon and text
-              const Text(
-                "Home",
-                style: TextStyle(
-                  fontSize: 10, // Make text smaller
-                  fontWeight: FontWeight.w400, // Lighter font weight
-                  color: Colors.black, // Text color
+          /// **Home Button**
+          GestureDetector(
+            onTap: () => onHomePressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/home.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
                 ),
-              ),
-            ],
+                const SizedBox(height: 1),
+                const Text(
+                  "Home",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black),
+                ),
+              ],
+            ),
           ),
 
-          // map Button
-          Column(
-            mainAxisSize: MainAxisSize.min, // Ensure compact layout
-            children: [
-              SvgPicture.asset(
-                'assets/icons/map.svg',
-                width: 22,
-                height: 22,
-                colorFilter: ColorFilter.mode(
-                    Colors.black, BlendMode.srcIn), // Change color dynamically
-              ),
-              const SizedBox(height: 2), // Reduce gap between icon and text
-              const Text(
-                "Map",
-                style: TextStyle(
-                  fontSize: 10, // Make text smaller
-                  fontWeight: FontWeight.w400, // Use a lighter font weight
-                  color: Colors.black, // Text color
+          /// **Map Button**
+          GestureDetector(
+            onTap: () => onMapPressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/map.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
                 ),
-              ),
-            ],
+                const SizedBox(height: 1),
+                const Text(
+                  "Map",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black),
+                ),
+              ],
+            ),
           ),
 
-          // // "+" Button (Square Design)
-          // IconButton(
-          //   onPressed: () => onPlusPressed(),
-          //   padding: EdgeInsets.zero, // Remove default padding
-          //   constraints: BoxConstraints(), // Remove default size constraints
-          //   icon: SizedBox(
-          //     width: 50, // Ensure correct size
-          //     height: 50,
-          //     child: SvgPicture.asset(
-          //       'assets/icons/create.svg',
-          //       fit: BoxFit.contain, // Ensure proper scaling
-          //       colorFilter: ColorFilter.mode(
-          //           primaryColor, BlendMode.srcIn), // Change color dynamically
-          //     ),
-          //   ),
-          // ),
-
+          /// **"+" Button (Create)**
           IconButton(
             onPressed: () => onPlusPressed(),
             padding: EdgeInsets.zero, // Remove default padding
-            constraints: BoxConstraints(), // Remove default size constraints
+            constraints: BoxConstraints(), // Remove default constraints
             icon: SizedBox(
-              width: 55, // Ensure correct size
+              width: 55,
               height: 47,
               child: Image.asset(
                 'assets/icons/create.png',
-                fit: BoxFit
-                    .contain, // Ensure proper scaling Change color dynamically
+                fit: BoxFit.contain,
               ),
             ),
           ),
 
-          // Messages Button
-          Column(
-            mainAxisSize: MainAxisSize.min, // Ensure compact layout
-            children: [
-              SvgPicture.asset(
-                'assets/icons/message.svg',
-                width: 22,
-                height: 22,
-                colorFilter: ColorFilter.mode(
-                    Colors.black, BlendMode.srcIn), // Change color dynamically
-              ),
-              const SizedBox(height: 2), // Reduce gap between icon and text
-              const Text(
-                "Messages",
-                style: TextStyle(
-                  fontSize: 10, // Make text smaller
-                  fontWeight: FontWeight.w400, // Lighter font weight
-                  color: Colors.black, // Text color
+          /// **Messages Button**
+          GestureDetector(
+            onTap: () => onMessagesPressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/message.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
                 ),
-              ),
-            ],
+                const SizedBox(height: 1),
+                const Text(
+                  "Messages",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black),
+                ),
+              ],
+            ),
           ),
 
-          // Me Button
-          Column(
-            mainAxisSize: MainAxisSize.min, // Ensure compact layout
-            children: [
-              SvgPicture.asset(
-                'assets/icons/me.svg',
-                width: 22,
-                height: 22,
-                colorFilter: ColorFilter.mode(
-                    Colors.black, BlendMode.srcIn), // Change color dynamically
-              ),
-              const SizedBox(height: 2), // Reduce gap between icon and text
-              const Text(
-                "Me",
-                style: TextStyle(
-                  fontSize: 10, // Make text smaller
-                  fontWeight: FontWeight.w400, // Lighter font weight
-                  color: Colors.black, // Text color
+          /// **Me Button**
+          GestureDetector(
+            onTap: () => onMePressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/me.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
                 ),
-              ),
-            ],
+                const SizedBox(height: 1),
+                const Text(
+                  "Me",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black),
+                ),
+              ],
+            ),
           ),
         ],
       ),
