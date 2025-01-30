@@ -342,7 +342,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFe6e6e6),
       //Header (Tabs)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
@@ -362,6 +361,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
           },
+          onFilterPressed: () => requireLogin(context),
         ),
       ),
       //Row for Filter button
