@@ -1,3 +1,4 @@
+import 'package:demo/main.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
@@ -262,6 +263,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: filterPageColor,
           title: const Text("Filter Posts"),
           content: StatefulBuilder(
             builder: (context, setDialogState) {
@@ -376,7 +378,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                         controller: _refreshController,
                         onRefresh: _onRefresh,
                         child: Padding(
-                          padding: const EdgeInsets.all(8.0),
+                          padding: const EdgeInsets.all(4.0),
                           child: MasonryGridView.count(
                           crossAxisCount: 2,  // Number of columns
                           mainAxisSpacing: 4.0,   // Vertical space between items

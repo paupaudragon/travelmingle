@@ -22,12 +22,10 @@ class Header extends StatelessWidget {
     required this.onFilterPressed, // Add callback
   }) : super(key: key);
 
-  // TODO: move filter button
-
   @override
  Widget build(BuildContext context) {
   return Container(
-    height: 60,
+    height: 65,
     padding: EdgeInsets.only(top: 10), // inside top margin
     decoration: BoxDecoration(
       color: headerColor,
@@ -65,9 +63,9 @@ class Header extends StatelessWidget {
         // filter icon
         Positioned(
           left: 10,
-          top: 3,
+          top: 4,
           child: IconButton(
-                icon: const Icon(Icons.filter_list, size: 24),
+                icon: const Icon(Icons.filter_list, size: 28),
                 onPressed: () => onFilterPressed(),
                 tooltip: 'Filter by Categories',
               ),
