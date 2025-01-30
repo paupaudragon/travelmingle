@@ -55,6 +55,7 @@ class Header extends StatelessWidget {
             height: 35,
             child: DefaultTabController(
               length: 3,
+              initialIndex: 1,
               child: TabBar(
                 labelColor: Colors.black, // Color of selected tab
                 unselectedLabelColor: Colors.grey, // Color of unselected tab
