@@ -209,6 +209,7 @@ class ApiService {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
 
         print("Fetched post: ${response.body}");
+        
         // Process the childPosts if they exist
         if (jsonData['childPosts'] != null) {
           jsonData['childPosts'] = (jsonData['childPosts'] as List)
@@ -591,9 +592,19 @@ class ApiService {
 
       print('API - period: ${period}');
 
+      // ✅ Print Multi-Day Trips Debug Info
+      if (multiDayTrips != null) {
+        print("📤 Sending Multi-Day Trips to Backend:");
+        for (var trip in multiDayTrips) {
+          print("Day: ${jsonEncode(trip)}");
+        }
+      } else {
+        print("❌ No Multi-Day Trips Found!");
+      }
+
       if (period == 'multipleday') {
         // Multi-Day specific fields
-        request.fields['childPosts'] = jsonEncode(multiDayTrips ?? []);
+        request.fields['child_posts '] = jsonEncode(multiDayTrips ?? []);
       } else {
         // Single-Day specific fields
         request.fields['content'] = content ?? '';
@@ -609,9 +620,22 @@ class ApiService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      // ✅ Debugging response
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
       if (response.statusCode != 201) {
         throw Exception('Failed to create post: ${response.body}');
       }
+
+      // ✅ Fetch post details again to ensure `childPosts` are included
+      final responseData = jsonDecode(response.body);
+      int parentPostId = responseData['post']['id'];
+
+      // Fetch the post again to ensure childPosts are present
+      await Future.delayed(
+          Duration(seconds: 1)); // Give backend time to process
+      await fetchPostDetail(parentPostId);
 
       print('Post created successfully: ${response.body}');
     } catch (e) {

@@ -244,15 +244,84 @@ class PostSerializer(serializers.ModelSerializer):
                 {"location": "Location data is required."})
         return data
 
+    def to_internal_value(self, data):
+        """Convert incoming JSON data into a Python dictionary before validation."""
+        data = super().to_internal_value(data)
+
+        # 🔹 Handle `location` JSON parsing
+        location_data = self.initial_data.get('location')
+        if isinstance(location_data, str):
+            import json
+            try:
+                data['location'] = json.loads(location_data)
+            except json.JSONDecodeError:
+                raise serializers.ValidationError({'location': 'Invalid JSON format'})
+
+        # 🔹 Handle `child_posts` JSON parsing
+        child_posts_data = self.initial_data.get('child_posts', '[]')
+        if isinstance(child_posts_data, str):
+            try:
+                data['child_posts'] = json.loads(child_posts_data)
+            except json.JSONDecodeError:
+                raise serializers.ValidationError({'child_posts': 'Invalid JSON format'})
+
+        return data
+
     def create(self, validated_data):
+        print("🚀 Backend create() method is called!")  # Debug log
+
+        request = self.context.get('request')  # Get request for user authentication
+
         location_data = validated_data.pop('location', None)
+        child_posts_data = validated_data.pop('child_posts', [])  # Extract child posts
+
+        print("🚀 Received Post Data in Backend:")
+        print("Title:", validated_data.get('title'))
+        print("Category:", validated_data.get('category'))
+        print("Period:", validated_data.get('period'))
+        print("Child Posts Data:", child_posts_data)  # Print child posts received
+
+
+        # Handle the location creation
         if location_data:
             location, created = Location.objects.get_or_create(
-                place_id=location_data['place_id'],
-                defaults=location_data
+            defaults={
+                'name': location_data['name'],
+                'address': location_data['address'],
+                'latitude': location_data['latitude'],
+                'longitude': location_data['longitude']
+            }
             )
             validated_data['location'] = location
-        return super().create(validated_data)
+
+        # Assign user (since it's required)
+        user = request.user if request else None
+        if not user:
+            raise serializers.ValidationError({"user": "User is required."})
+
+        # Create the main post
+        main_post = Posts.objects.create(user=user, **validated_data)
+
+        # Handle child posts if the main post is multi-day
+        if validated_data.get('period') == 'multipleday':
+            for child_data in child_posts_data:
+                print("📌 Creating Child Post:", child_data)
+                child_location_data = child_data.pop('location', None)
+                if child_location_data:
+                    child_location, created = Location.objects.get_or_create(
+                        place_id=child_location_data['place_id'],
+                        defaults={
+                            'name': location_data['name'],
+                            'address': location_data['address'],
+                            'latitude': location_data['latitude'],
+                            'longitude': location_data['longitude']
+                        }
+                    )
+                    child_data['location'] = child_location
+
+                Posts.objects.create(parent_post=main_post, **child_data)
+
+        return main_post
 
     def get_likes_count(self, obj):
         """Calculate and return the total like count for the post."""

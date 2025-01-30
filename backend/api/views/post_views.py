@@ -66,125 +66,22 @@ class PostListCreateView(APIView):
         }
     )
     def post(self, request):
-        try:
-            # Check if location is provided
-            # location = request.data.get(
-            #     'general_location') or request.data.get('location')
+        print("📥 Incoming Request Data:", request.data)
 
-            # Extract location data from request
-            location_data = request.data.get('location')
-            if not location_data:
-                return Response(
-                    {'error': 'Location is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        serializer = PostSerializer(data=request.data, context={'request': request})
 
-            # Parse location JSON string if necessary
-            if isinstance(location_data, str):
-                import json
-                location_data = json.loads(location_data)
-
-            # Ensure required location fields are present
-            required_fields = ['place_id', 'name',
-                               'address', 'latitude', 'longitude']
-            for field in required_fields:
-                if field not in location_data:
-                    return Response(
-                        {'error': f'Missing location field: {field}'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-            # Get or create location instance
-            location, created = Location.objects.get_or_create(
-                place_id=location_data['place_id'],
-                defaults={
-                    'name': location_data['name'],
-                    'address': location_data['address'],
-                    'latitude': location_data['latitude'],
-                    'longitude': location_data['longitude']
-                }
-            )
-
-            # Retrieve category from request data
-            category = request.data.get('category')
-            content = request.data.get('content', '')
-            period = request.data.get('period')
-            if not location:
-                return Response({'error': 'Location is required'}, status=status.HTTP_400_BAD_REQUEST)
-            if not category:
-                return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-            is_multi_day = period == 'multipleday'
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"is_multi_day: {is_multi_day}")
-
-            # Create the parent post
-            parent_post = Posts.objects.create(
-                user=request.user,
-                title=request.data.get('title'),
-                content=None if is_multi_day else request.data.get('content'),
-                location=location,
-                category=category,
-                period=period,
-                status=request.data.get('status', 'published'),
-                visibility=request.data.get('visibility', 'public')
-            )
-
-            # Handle multiple images
-            images = request.FILES.getlist('image')
-            for image in images:
-                PostImages.objects.create(
-                    post=parent_post,
-                    image=image
-                )
-
-            message = "Post created successfully."
-            # Handle multi-day child posts
-            if is_multi_day:
-                message = "Multi-day post created successfully."
-                for day_content in content:
-                    title = day_content.get('title')
-                    day_content_text = day_content.get('content')
-                    location = day_content.get('location')
-
-                    if not title or not day_content_text or not location:
-                        return Response(
-                            {'error': 'Each day in a multi-day post must include title, content, and location'},
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-
-                    Posts.objects.create(
-                        user=request.user,
-                        title=title,
-                        content=day_content_text,
-                        location=location,
-                        category=category,
-                        period='oneday',
-                        status='published',
-                        visibility=parent_post.visibility,
-                        parent_post=parent_post
-                    )
-
-            # Return the created post with all its data
-            serializer = PostSerializer(
-                parent_post, context={'request': request})
+        if serializer.is_valid():
+            print("✅ Data is valid. Saving post...")
+            post = serializer.save()  # 🔥 Calls create() in serializer!
 
             return Response(
-                {"message": message, "post": serializer.data},
+                {"message": "Post created successfully!", "post": PostSerializer(post, context={'request': request}).data},
                 status=status.HTTP_201_CREATED
             )
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error creating post: {str(e)}")
-
-            return Response(
-                {'error': 'An unexpected error occurred while creating the post'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        else:
+            print("❌ Validation Error:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
 
     @swagger_auto_schema(
         operation_summary="List all posts",
@@ -282,15 +179,21 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         post = get_object_or_404(self.queryset, pk=kwargs['pk'])
 
+        print(f"🔍 Fetching Post ID: {post.id}, Period: {post.period}")
+
+        serializer = self.get_serializer(post)
+        data = serializer.data
+
         # If the post is a multi-day post, include child_posts in the response
         if post.period == 'multipleday':
             child_posts = Posts.objects.filter(parent_post=post).order_by('id')
+            print("✅ Retrieved Child Posts:", list(child_posts.values()))  # Print child posts
             child_posts_serializer = PostSerializer(
                 child_posts, many=True, context=self.get_serializer_context()
             )
-            serializer = self.get_serializer(post)
-            data = serializer.data
-            data['child_posts'] = child_posts_serializer.data
+            # serializer = self.get_serializer(post)
+            # data = serializer.data
+            data['child_posts'] = child_posts_serializer.data # Ensure it's `child_posts`
             return Response(data, status=status.HTTP_200_OK)
 
         # For single-day posts, return the standard serialized data

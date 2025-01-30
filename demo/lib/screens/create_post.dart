@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -354,14 +356,20 @@ class _CreatePostPageState extends State<CreatePostPage>
                 (day['multiTitleController'] as TextEditingController).text,
             'content':
                 (day['multiContentController'] as TextEditingController).text,
-            'location':
+            'locationName':
                 (day['multiLocationController'] as TextEditingController).text,
             'latitude': selectedLocation.latitude,
             'longitude': selectedLocation.longitude,
+            'category': category!,
+            'period': 'oneday',
             'imagePaths':
                 (day['images'] as List<File>).map((file) => file.path).toList(),
           };
         }).toList();
+
+        // ✅ Debugging: Print Multi-Day Trips
+        print("📤 Multi-Day Post Submission Data:");
+        print(jsonEncode(multiDayTrips));
 
         await apiService.createPost(
           title: _titleController.text,
