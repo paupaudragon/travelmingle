@@ -1,32 +1,49 @@
-# Jan 29 2025
-* install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) and select Express install
+# Jan 30
 
-* add System Variables into `Path`
+## How to create an admin user
+
+1. python manage.py shell
+2. AUTH_USER_MODEL = 'api.Users'
+3. from django.contrib.auth import get_user_model
+4. User = get_user_model()
+5. User.objects.create_superuser(username='admin', email='admin@example.com', password='123')
+
+# Jan 29 2025
+
+- install [OSGeo4W](https://trac.osgeo.org/osgeo4w/) and select Express install
+
+- add System Variables into `Path`
+
   ```
   C:\OSGeo4W\bin
   C:\OSGeo4W\apps\gdal\bin
   ```
 
-* create new System variables
-  > name: GDAL_DATA 
+- create new System variables
+
+  > name: GDAL_DATA
   > value: C:\OSGeo4W\share\gdal
-  > 
+  >
   > name: PROJ_LIB
   > value: C:\OSGeo4W\apps\share\proj
 
-* install related PostgreSQL extension
-  > * open Stack Builder app, select current server
-  > * under Spatial Extensions, select PostGIS 3.5 Bundle
-  > * after agree the license agreement, select all components
-  ![PostGIS Bundle](.note_files\PostGIS_Bundle.png)
+- install related PostgreSQL extension
 
-* recreate database
+  > - open Stack Builder app, select current server
+  > - under Spatial Extensions, select PostGIS 3.5 Bundle
+  > - after agree the license agreement, select all components
+  >   ![PostGIS Bundle](.note_files\PostGIS_Bundle.png)
+
+- recreate database
+
   ```
   DROP DATABASE travelmingle;
   CREATE DATABASE travelmingle;
   \dt
   ```
+
   if any table returned, drop them all with
+
   ```
   DROP TABLE auth_group;
   DROP TABLE auth_group_permissions;
@@ -52,12 +69,11 @@
   python manage.py migrate
   ```
 
-* install related packages
+- install related packages
   ```
   cd demo
   flutter pub get
   ```
-
 
 # Nov 24 2024 Recreate the db and load with new data
 
@@ -121,10 +137,9 @@ flutter clean
 flutter pub get
 flutter run
 
-```  
+```
 
 # End of new update
-
 
 # How to run the backend with Django
 
@@ -232,10 +247,12 @@ DB_PORT=5432
 Replace your postgres username, password and port number in the code. Default username is `postgres`. You should see all these three values while setting up your postgres for the first time. Also, you can find those infor by `\conninfo`
 
 ### Test
+
 ```cmd
 cd backend
 python manage.py dbshell
 ```
+
 If the connection is successful, Django will apply the migrations or indicate that everything is up-to-date. If there’s an issue with the credentials, you’ll see an error message.
 
 ### - Automate table creations with Django
