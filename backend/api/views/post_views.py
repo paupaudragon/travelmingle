@@ -29,8 +29,6 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 
-
-
 class PostListCreateView(APIView):
     """
     View for creating and listing posts.
@@ -68,18 +66,18 @@ class PostListCreateView(APIView):
             401: "Unauthorized"
         }
     )
-
     def post(self, request):
         try:
             logger = logging.getLogger(__name__)
-            print("📥 Incoming Request Data:", request.data)  # Debug request data
-            
+            # Debug request data
+            print("📥 Incoming Request Data:", request.data)
+
             # Check if location is provided
             location = request.data.get('location')
-            category = request.data.get('category')  # Retrieve category from request data
+            # Retrieve category from request data
+            category = request.data.get('category')
             content = request.data.get('content', '')
             period = request.data.get('period')
-
 
             if not location:
                 print("❌ Error: Location is missing in request data")
@@ -123,14 +121,14 @@ class PostListCreateView(APIView):
             parent_post = Posts.objects.create(
                 user=request.user,
                 title=request.data.get('title'),
-                content= "" if is_multi_day else request.data.get('content'),
+                content="" if is_multi_day else request.data.get('content'),
                 location=location,
                 category=category,
                 period=period,
                 status=request.data.get('status', 'published'),
                 visibility=request.data.get('visibility', 'public')
             )
-            
+
             # Handle image uploads
             images = request.FILES.getlist('image')
             print(f"📸 Received {len(images)} images for post {parent_post.id}")
@@ -172,9 +170,11 @@ class PostListCreateView(APIView):
 
                     # If any required field is missing, return an error specifying the missing fields
                     if missing_fields:
-                        print(f"❌ Error: Missing fields in child post {i+1}: {', '.join(missing_fields)}")
+                        print(f"❌ Error: Missing fields in child post {
+                              i+1}: {', '.join(missing_fields)}")
                         return Response(
-                            {'error': f'Child post {i+1} is missing required fields: {", ".join(missing_fields)}'},
+                            {'error': f'Child post {
+                                i+1} is missing required fields: {", ".join(missing_fields)}'},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
@@ -184,7 +184,7 @@ class PostListCreateView(APIView):
 
                     # Ensure required location fields are present
                     required_fields = ['place_id', 'name',
-                                    'address', 'latitude', 'longitude']
+                                       'address', 'latitude', 'longitude']
                     for field in required_fields:
                         if field not in child_location:
                             return Response(
@@ -203,11 +203,11 @@ class PostListCreateView(APIView):
                                 'longitude': child_location.get('longitude')
                             }
                         )
-                        print(f"✅ Child location processed: {child_location.name}")
+                        print(f"✅ Child location processed: {
+                              child_location.name}")
                     except (ObjectDoesNotExist, KeyError, TypeError) as e:
                         print("❌ Error processing child location data:", str(e))
                         return Response({'error': 'Invalid child post location data'}, status=status.HTTP_400_BAD_REQUEST)
-
 
                     # Create the child post
                     child_post = Posts.objects.create(
@@ -224,13 +224,16 @@ class PostListCreateView(APIView):
 
                     # ✅ Handle Child Post Images
                     child_images = request.FILES.getlist(f'childImages_{i}')
-                    print(f"📸 Received {len(child_images)} images for child post {child_post.id}")
+                    print(f"📸 Received {len(child_images)
+                                        } images for child post {child_post.id}")
                     if child_images:
                         for image in child_images:
-                            PostImages.objects.create(post=child_post, image=image)
+                            PostImages.objects.create(
+                                post=child_post, image=image)
                         print("✅ Child post images saved successfully")
                     else:
-                        print(f"❌ No images found for child post {child_post.id}")
+                        print(f"❌ No images found for child post {
+                              child_post.id}")
 
                     print(f"""
                     ✅ Child post {i+1} created successfully:
@@ -249,13 +252,13 @@ class PostListCreateView(APIView):
                         - Image Count: {len(child_images)}
                     """)
 
-
             # Return the created post with all its data
-            serializer = PostSerializer(parent_post, context={'request': request})
+            serializer = PostSerializer(
+                parent_post, context={'request': request})
             print("🚀 Successfully created post with child posts")
 
-
-            print(f"🔍 Debug: childPosts Sent in Response -> {serializer.data.get('childPosts')}")
+            print(
+                f"🔍 Debug: childPosts Sent in Response -> {serializer.data.get('childPosts')}")
 
             return Response(
                 {"message": "Post created successfully.", "post": serializer.data},
@@ -270,8 +273,6 @@ class PostListCreateView(APIView):
                 {'error': 'An unexpected error occurred while creating the post'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-            
 
     @swagger_auto_schema(
         operation_summary="List all posts",
@@ -335,6 +336,15 @@ class PostListCreateView(APIView):
 
         serializer = PostSerializer(
             posts, many=True, context={'request': request})
+<<<<<<< Updated upstream
+=======
+
+        # ✅ Debug: Ensure `childPosts` are included in response
+        for post in serializer.data:
+            print(f"🔍 Post {post['id']} has {
+                  len(post['childPosts'])} child posts")
+
+>>>>>>> Stashed changes
         return Response(serializer.data)
 
 
@@ -377,13 +387,15 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
         # If the post is a multi-day post, include child_posts in the response
         if post.period == 'multipleday':
             child_posts = Posts.objects.filter(parent_post=post).order_by('id')
-            print("✅ Retrieved Child Posts:", list(child_posts.values()))  # Print child posts
+            print("✅ Retrieved Child Posts:", list(
+                child_posts.values()))  # Print child posts
             child_posts_serializer = PostSerializer(
                 child_posts, many=True, context=self.get_serializer_context()
             )
             # serializer = self.get_serializer(post)
             # data = serializer.data
-            data['child_posts'] = child_posts_serializer.data # Ensure it's `child_posts`
+            # Ensure it's `child_posts`
+            data['child_posts'] = child_posts_serializer.data
             return Response(data, status=status.HTTP_200_OK)
 
         # For single-day posts, return the standard serialized data
@@ -409,7 +421,7 @@ class PostDetailView(RetrieveUpdateDestroyAPIView):
     )
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
-        if request.user == instance.user or request.user.profile.role == 'admin':
+        if request.user == instance.user or request.user.profile.role == 'user':
             return super().delete(request, *args, **kwargs)
         return Response(
             {"detail": "You do not have permission to delete this post."},

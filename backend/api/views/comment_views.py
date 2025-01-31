@@ -41,8 +41,9 @@ class CommentListCreateView(ListCreateAPIView):
     )
     def post(self, request, *args, **kwargs):
 
-        logger.debug(f"Received request with content type: {request.content_type}")
-        print(f"Received request with content type: {request.content_type}") 
+        logger.debug(f"Received request with content type: {
+                     request.content_type}")
+        print(f"Received request with content type: {request.content_type}")
 
         # Check Content-Type
         if request.content_type.startswith('application/json'):
@@ -99,7 +100,7 @@ class CommentDetailView(RetrieveUpdateDestroyAPIView):
     )
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
-        if request.user == instance.user or request.user.profile.role == 'admin':
+        if request.user == instance.user or request.user.profile.role == 'user':
             return super().delete(request, *args, **kwargs)
         return Response(
             {"detail": "You do not have permission to delete this comment."},
