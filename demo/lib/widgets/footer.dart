@@ -1,5 +1,6 @@
 import 'package:demo/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Footer extends StatelessWidget {
   final Function onHomePressed;
@@ -28,47 +29,118 @@ class Footer extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Home Button
-          IconButton(
-            icon: const Icon(Icons.home_rounded, size: 28),
-            onPressed: () => onHomePressed(),
-          ),
-
-          // map Button
-          IconButton(
-            icon: const Icon(Icons.map),
-            onPressed: () => onMapPressed(),
-          ),
-
-          // "+" Button (Square Design)
+          /// **Home Button**
           GestureDetector(
-            onTap: () => onPlusPressed(),
-            child: Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor, // Background color of the "+" button
-                borderRadius: BorderRadius.circular(
-                    8), // Rounded corners for square button
-              ),
-              child:
-                  const Icon(Icons.add_rounded, size: 28, color: Colors.white),
+            onTap: () => onHomePressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/home.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
+                const SizedBox(height: 1),
+                const Text(
+                  "Home",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: iconColor),
+                ),
+              ],
             ),
           ),
 
-          //Messages Button
-          IconButton(
-            icon: const Icon(Icons.message_rounded,
-                size: 28),
-            onPressed: () => onMessagesPressed(),
+          /// **Map Button**
+          GestureDetector(
+            onTap: () => onMapPressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/map.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
+                const SizedBox(height: 1),
+                const Text(
+                  "Map",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: iconColor),
+                ),
+              ],
+            ),
           ),
 
-          // Me Button
-          IconButton(
-            icon:
-                const Icon(Icons.person_rounded, size: 28),
-            onPressed: () => onMePressed(),
+          /// **"+" Button (Create)**
+          Transform.translate(
+            offset: Offset(0, -1),
+            child: IconButton(
+              onPressed: () => onPlusPressed(),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: SizedBox(
+                width: 55,
+                height: 47,
+                child: Image.asset(
+                  'assets/icons/create.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+
+          /// **Messages Button**
+          GestureDetector(
+            onTap: () => onMessagesPressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/message.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
+                const SizedBox(height: 1),
+                const Text(
+                  "Messages",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: iconColor),
+                ),
+              ],
+            ),
+          ),
+
+          /// **Me Button**
+          GestureDetector(
+            onTap: () => onMePressed(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/me.svg',
+                  width: 22,
+                  height: 22,
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
+                const SizedBox(height: 1),
+                const Text(
+                  "Me",
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: iconColor),
+                ),
+              ],
+            ),
           ),
         ],
       ),

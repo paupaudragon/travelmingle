@@ -286,9 +286,7 @@ class _PostCardState extends State<PostCard> {
 
               // Like button
               Padding(
-                padding: const EdgeInsets.only(
-                    right:
-                        12.0), // Adjust right padding to bring the elements closer
+                padding: const EdgeInsets.only(right: 12.0), // Adjust right padding to bring the elements closer
                 child: Row(
                   mainAxisSize: MainAxisSize
                       .min, // Prevent Row from taking up the entire space
@@ -309,7 +307,7 @@ class _PostCardState extends State<PostCard> {
                     ),
                     Text(
                       '${widget.post.likesCount}',
-                      style: const TextStyle(fontSize: 14),
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ],
                 ),
