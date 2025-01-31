@@ -58,20 +58,28 @@ class _PostPageState extends State<PostPage> {
     super.dispose();
   }
 
-  void _goToPreviousDay(Post post) {
-    setState(() {
-      if (_currentDayIndex > 0) {
+  void _goToPreviousDay() {
+    if (_currentDayIndex > 0) {
+      setState(() {
         _currentDayIndex--;
-      }
-    });
+        _pageController.previousPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
   }
 
-  void _goToNextDay(Post post) {
-    setState(() {
-      if (_currentDayIndex < post.childPosts!.length - 1) {
+  void _goToNextDay(int totalDays) {
+    if (_currentDayIndex < totalDays - 1) {
+      setState(() {
         _currentDayIndex++;
-      }
-    });
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
   }
 
   Future<void> _pickCommentImage() async {
@@ -374,109 +382,6 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-  // Widget buildPostContent(Post post) {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       if (post.images.isNotEmpty)
-  //         Column(
-  //           children: [
-  //             // Swipeable image carousel
-  //             SizedBox(
-  //               height: 200,
-  //               child: PageView.builder(
-  //                 controller: _pageController,
-  //                 itemCount: post.images.length,
-  //                 itemBuilder: (context, index) {
-  //                   final imageUrl = post.images[index].imageUrl;
-  //                   return Image.network(
-  //                     imageUrl,
-  //                     fit: BoxFit.cover,
-  //                   );
-  //                 },
-  //               ),
-  //             ),
-  //             // Dot indicator for the image carousel
-  //             Padding(
-  //               padding: const EdgeInsets.only(top: 8.0),
-  //               child: Center(
-  //                 child: SmoothPageIndicator(
-  //                   controller: _pageController,
-  //                   count: post.images.length,
-  //                   effect: const WormEffect(
-  //                     dotHeight: 8.0,
-  //                     dotWidth: 8.0,
-  //                     activeDotColor: Colors.blue,
-  //                     dotColor: Colors.grey,
-  //                   ),
-  //                 ),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       Padding(
-  //         padding: const EdgeInsets.all(16.0),
-  //         child: Column(
-  //           crossAxisAlignment: CrossAxisAlignment.start,
-  //           children: [
-  //             //Title
-  //             Text(
-  //               post.title,
-  //               style: const TextStyle(
-  //                 fontSize: 24,
-  //                 fontWeight: FontWeight.bold,
-  //               ),
-  //             ),
-  //             const SizedBox(height: 10),
-
-  //             //Content
-  //             Text(
-  //               post.content!,
-  //               style: const TextStyle(
-  //                 fontSize: 18,
-  //               ),
-  //             ),
-  //             // Display location if available
-  //             if (post.location.isNotEmpty)
-  //               Padding(
-  //                 padding: const EdgeInsets.only(
-  //                     top: 8.0), // Small padding for location
-  //                 child: Row(
-  //                   children: [
-  //                     const Icon(
-  //                       Icons.location_on_rounded,
-  //                       color: Colors.grey,
-  //                       size: 17,
-  //                     ),
-  //                     const SizedBox(
-  //                         width: 4), // Space between icon and location text
-  //                     Expanded(
-  //                       child: Text(
-  //                         post.location,
-  //                         style: const TextStyle(
-  //                           fontSize: 16,
-  //                           color: Colors.grey,
-  //                         ),
-  //                         maxLines: 1,
-  //                         overflow: TextOverflow.ellipsis,
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             const SizedBox(height: 10),
-  //             // Created At
-  //             Text(
-  //               formatDate(post.createdAt),
-  //               style: const TextStyle(fontSize: 16, color: Colors.grey),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   Widget buildPostActions(Post post) {
     return Row(
       children: [
@@ -503,22 +408,44 @@ class _PostPageState extends State<PostPage> {
   }
 
   Widget buildSingleDayContent(Post day) {
+    final PageController _imageController = PageController();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (day.images.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  day.images.first.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+            Column(
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: PageView.builder(
+                      controller: _imageController,
+                      itemCount: day.images.length,
+                      itemBuilder: (context, index) {
+                        return Image.network(
+                          day.images[index].imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                SmoothPageIndicator(
+                  controller: _imageController,
+                  count: day.images.length,
+                  effect: const ExpandingDotsEffect(
+                    dotHeight: 8,
+                    dotWidth: 8,
+                    activeDotColor: Colors.blue,
+                  ),
+                ),
+              ],
             ),
           const SizedBox(height: 16),
           Text(
@@ -536,11 +463,9 @@ class _PostPageState extends State<PostPage> {
             ),
           ),
           const SizedBox(height: 16),
-          // Display location if available
           if (day.location.name.isNotEmpty)
             Padding(
-              padding:
-                  const EdgeInsets.only(top: 8.0), // Small padding for location
+              padding: const EdgeInsets.only(top: 8.0),
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -559,17 +484,14 @@ class _PostPageState extends State<PostPage> {
                       color: Colors.grey,
                       size: 17,
                     ),
-                    const SizedBox(
-                        width: 4), // Space between icon and location text
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         day.location.name,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Colors
-                              .blue, // Change color to blue to indicate interactivity
-                          decoration: TextDecoration
-                              .underline, // Underline to show it's clickable
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -586,17 +508,15 @@ class _PostPageState extends State<PostPage> {
 
   Widget buildMultiDayPost(Post post) {
     if (post.childPosts == null || post.childPosts!.isEmpty) {
-      return Center(
+      return const Center(
         child: Text("No content available for this multi-day post."),
       );
     }
 
-    print("Child posts count: ${post.childPosts?.length ?? 0}");
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
+        SizedBox(
+          height: 500, // ✅ Define a fixed height
           child: PageView.builder(
             controller: _pageController,
             itemCount: post.childPosts!.length,
@@ -606,39 +526,53 @@ class _PostPageState extends State<PostPage> {
               });
             },
             itemBuilder: (context, index) {
-              final dayPost = post.childPosts![index];
-              return buildSingleDayContent(dayPost);
+              return buildSingleDayContent(post.childPosts![index]);
             },
           ),
         ),
-        Center(
-          child: SmoothPageIndicator(
-            controller: _pageController,
-            count: post.childPosts!.length,
-            effect: const WormEffect(
-              dotHeight: 8,
-              dotWidth: 8,
-              activeDotColor: Colors.blue,
-              dotColor: Colors.grey,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios),
+              onPressed: _currentDayIndex > 0 ? _goToPreviousDay : null,
             ),
-          ),
+            SmoothPageIndicator(
+              controller: _pageController,
+              count: post.childPosts!.length,
+              effect: const WormEffect(
+                dotHeight: 8,
+                dotWidth: 8,
+                activeDotColor: Colors.blue,
+                dotColor: Colors.grey,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios),
+              onPressed: _currentDayIndex < post.childPosts!.length - 1
+                  ? () => _goToNextDay(post.childPosts!.length)
+                  : null,
+            ),
+          ],
         ),
       ],
     );
   }
 
   Widget buildPostContent(Post post) {
-    final isMultiDay = post.period == 'multipleday';
-    final period = post.period;
-
-    print("period: $period ");
-
-    if (!isMultiDay) {
-      // Render single-day post content as usual
-      return buildSingleDayContent(post);
-    }
-
-    return buildMultiDayPost(post);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: 0,
+        maxHeight: 600, // ✅ Ensures it has a max height
+      ),
+      child: SingleChildScrollView(
+        physics:
+            const NeverScrollableScrollPhysics(), // ✅ Ensures no scrolling conflicts
+        child: post.period == 'multipleday'
+            ? buildMultiDayPost(post)
+            : buildSingleDayContent(post),
+      ),
+    );
   }
 
   Widget buildCommentsSection() {
@@ -900,7 +834,7 @@ class _PostPageState extends State<PostPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: buildPostHeader(postFuture), // Header without padding
+        title: buildPostHeader(postFuture),
       ),
       body: Column(
         children: [
@@ -917,40 +851,77 @@ class _PostPageState extends State<PostPage> {
                 }
 
                 final post = snapshot.data!;
-                final commentCount =
-                    commentsCache?.length ?? 0; // Number of comments
-                return SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      buildPostContent(
-                          post), // Post content (images and main text)
-                      buildPostActions(
-                          post), // Reactions section (like, save, etc.)
-                      const Divider(),
+                final commentCount = commentsCache?.length ?? 0;
+
+                return Column(
+                  children: [
+                    // ✅ Multi-Day Progress Indicator (for Multi-Day Posts)
+                    if (post.period == 'multipleday')
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text(
-                          "$commentCount comments",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
-                            color: Colors.grey[700],
-                          ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 4.0),
+                        child: LinearProgressIndicator(
+                          value:
+                              (_currentDayIndex + 1) / post.childPosts!.length,
+                          backgroundColor: Colors.grey[300],
+                          color: Colors.blue,
+                          minHeight: 4,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: buildCommentsSection(),
+
+                    // ✅ Post Content with Fixed Height
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: 0,
+                        maxHeight: MediaQuery.of(context).size.height * 0.45,
                       ),
-                      const SizedBox(height: 10),
-                    ],
-                  ),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildPostContent(post),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // ✅ Post Actions (Like, Save)
+                    buildPostActions(post),
+
+                    // ✅ Divider
+                    const Divider(),
+
+                    // ✅ Comment Count
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "$commentCount comments",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+
+                    // ✅ Comment Section (Scrollable)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: buildCommentsSection(),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
           ),
+
+          // ✅ Comment Input Always Stays at the Bottom
           buildCommentInput(),
         ],
       ),

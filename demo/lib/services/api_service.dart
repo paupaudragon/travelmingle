@@ -204,9 +204,19 @@ class ApiService {
         method: 'GET',
       );
 
+      print("✅ Raw API Response: ${response.body}"); // Debugging Step
+
       if (response.statusCode == 200) {
         // Parse the response into a Post object
+        if (response.body.isEmpty) {
+          throw Exception("Empty response from the server");
+        }
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
+
+        // ✅ Debug childPosts before parsing
+        print("📌 Child Posts Data: ${jsonData['childPosts']}");
+
+        print("Fetched post: ${response.body}");
 
         // Process the childPosts if they exist
         if (jsonData['childPosts'] != null) {
@@ -214,7 +224,10 @@ class ApiService {
               .map((childJson) => Post.fromJson(childJson))
               .toList();
         } else {
-          jsonData['childPosts'] = [];
+          jsonData['childPosts'] = (jsonData['childPosts'] as List?)
+                  ?.map((childJson) => Post.fromJson(childJson))
+                  .toList() ??
+              [];
         }
 
         return Post.fromJson(jsonData);
@@ -559,7 +572,6 @@ class ApiService {
     double? longitude,
     String? content,
     required String period,
-    String? generalLocation,
     List<Map<String, dynamic>>? multiDayTrips,
   }) async {
     const String url = "$baseApiUrl/posts/";
@@ -580,22 +592,33 @@ class ApiService {
         'longitude': longitude ?? 0.0,
       };
 
+      // ✅ Print Location Data for Debugging
+      print("📍 Constructed Location Data: ${jsonEncode(locationData)}");
+
       // Common fields
       request.fields['title'] = title;
-      // request.fields['location'] = location;
+      request.fields['location'] = jsonEncode(locationData);
       request.fields['category'] = category ?? '';
       request.fields['status'] = 'published';
       request.fields['visibility'] = 'public';
       request.fields['period'] = period;
-      request.fields['location'] = jsonEncode(locationData);
+      request.fields['content'] = '';
 
       print('API - period: ${period}');
 
+      // ✅ Print Multi-Day Trips Debug Info
+      if (multiDayTrips != null) {
+        print("📤 Sending Multi-Day Trips to Backend:");
+        for (var trip in multiDayTrips) {
+          print("Day: ${jsonEncode(trip)}");
+        }
+      } else {
+        print("❌ No Multi-Day Trips Found!");
+      }
+
       if (period == 'multipleday') {
         // Multi-Day specific fields
-        request.fields['location'] = generalLocation ?? '';
-        request.fields['childPosts'] = jsonEncode(multiDayTrips ?? []);
-        request.fields['content'] = '';
+        request.fields['child_posts'] = jsonEncode(multiDayTrips ?? []);
       } else {
         // Single-Day specific fields
         request.fields['content'] = content ?? '';
@@ -608,12 +631,42 @@ class ApiService {
         }
       }
 
+      // ✅ Attach Child Post Images
+      if (multiDayTrips != null) {
+        for (var i = 0; i < multiDayTrips.length; i++) {
+          var day = multiDayTrips[i];
+          var imageList = day['imagePaths'] as List<String>?;
+
+          if (imageList != null) {
+            print("📸 Attaching ${imageList.length} images for child post $i...");
+            for (String imagePath in imageList) {
+              print("✅ Attaching Image Path: $imagePath");  // Debugging print
+              request.files.add(
+                await http.MultipartFile.fromPath('childImages_$i', imagePath),
+              );
+            }
+          }
+        }
+      }
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
+
+      // ✅ Debugging response
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
 
       if (response.statusCode != 201) {
         throw Exception('Failed to create post: ${response.body}');
       }
+
+      // ✅ Fetch post details again to ensure `childPosts` are included
+      final responseData = jsonDecode(response.body);
+      int parentPostId = responseData['post']['id'];
+
+      // Fetch the post again to ensure childPosts are present
+      await Future.delayed(
+          Duration(seconds: 1)); // Give backend time to process
+      await fetchPostDetail(parentPostId);
 
       print('Post created successfully: ${response.body}');
     } catch (e) {
