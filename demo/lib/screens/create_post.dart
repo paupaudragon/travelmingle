@@ -389,6 +389,7 @@ class _CreatePostPageState extends State<CreatePostPage>
           latitude: _selectedLocation?.latitude ?? 0.0,
           longitude: _selectedLocation?.longitude ?? 0.0,
           category: category!,
+          imagePaths: _images.map((file) => file.path).toList(),
           multiDayTrips: multiDayTrips,
           period: 'multipleday',
         );
@@ -442,6 +443,79 @@ class _CreatePostPageState extends State<CreatePostPage>
                 _selectedLocation ?? LatLng(0.0, 0.0)),
             const SizedBox(height: 16),
             _buildCategorySelector(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMultiDayPostUI() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Add Thumbnails Section for Parent Post
+            _buildThumbnailPickerSection(
+              _images,
+              (file) => setState(() => _images.add(file)),
+            ),
+            _buildTextField('Post Title', _titleController),
+            _buildLocationField("General Location", _locationController, null,
+                _selectedLocation ?? LatLng(0.0, 0.0)),
+            _buildCategorySelector(),
+            const SizedBox(height: 16),
+            ..._multiDayTrips.asMap().entries.map((entry) {
+              final index = entry.key;
+              final day = entry.value;
+              final images = day['images'] as List<File>;
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Day ${index + 1}',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      _buildImagePickerSection(
+                          images, (file) => images.add(file)),
+                      _buildTextField('Day Title', day['multiTitleController']),
+                      _buildTextField(
+                          'Description', day['multiContentController'],
+                          maxLines: 5),
+                      _buildLocationField(
+                          'Day Location',
+                          day['multiLocationController'],
+                          index,
+                          day['multiSelectedLocation'] ?? LatLng(0.0, 0.0)),
+                      if (_multiDayTrips.length > 1)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () =>
+                                setState(() => _multiDayTrips.removeAt(index)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _addNewDayTrip,
+              style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50)),
+              child: const Text('Add Day'),
+            ),
           ],
         ),
       ),
@@ -507,74 +581,6 @@ class _CreatePostPageState extends State<CreatePostPage>
     );
   }
 
-  Widget _buildMultiDayPostUI() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTextField('Post Title', _titleController),
-            _buildLocationField("General Location", _locationController, null,
-                _selectedLocation ?? LatLng(0.0, 0.0)),
-            _buildCategorySelector(),
-            const SizedBox(height: 16),
-            ..._multiDayTrips.asMap().entries.map((entry) {
-              final index = entry.key;
-              final day = entry.value;
-              final images = day['images'] as List<File>;
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Day ${index + 1}',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      _buildImagePickerSection(
-                          images, (file) => images.add(file)),
-                      _buildTextField('Day Title', day['multiTitleController']),
-                      _buildTextField(
-                          'Description', day['multiContentController'],
-                          maxLines: 5),
-                      _buildLocationField(
-                          'Day Location',
-                          day['multiLocationController'],
-                          index,
-                          day['multiSelectedLocation'] ?? LatLng(0.0, 0.0)),
-                      if (_multiDayTrips.length > 1)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () =>
-                                setState(() => _multiDayTrips.removeAt(index)),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _addNewDayTrip,
-              style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50)),
-              child: const Text('Add Day'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildCategorySelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -624,6 +630,91 @@ class _CreatePostPageState extends State<CreatePostPage>
                 },
               ),
             ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildThumbnailPickerSection(
+      List<File> images, Function(File) onImagePicked) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Thumbnail",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        if (images.isNotEmpty)
+          Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Container(
+                  width: double.infinity,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      images.first,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 5,
+                right: 5,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      images.clear();
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else
+          GestureDetector(
+            onTap: () => _pickImage((file) {
+              setState(() {
+                images.clear(); // Ensure only one image is selected
+                images.add(file);
+              });
+            }),
+            child: Container(
+              width: double.infinity,
+              height: 120,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey),
+                  SizedBox(height: 8),
+                  Text('Add Image', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ),
           ),
       ],
     );

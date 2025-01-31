@@ -336,15 +336,12 @@ class PostListCreateView(APIView):
 
         serializer = PostSerializer(
             posts, many=True, context={'request': request})
-<<<<<<< Updated upstream
-=======
 
         # ✅ Debug: Ensure `childPosts` are included in response
         for post in serializer.data:
             print(f"🔍 Post {post['id']} has {
                   len(post['childPosts'])} child posts")
 
->>>>>>> Stashed changes
         return Response(serializer.data)
 
 

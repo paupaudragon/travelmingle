@@ -30,7 +30,8 @@ class _PostCardState extends State<PostCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.post.images.isNotEmpty) {
+
+    if (widget.post.images.isNotEmpty || widget.post.period == "multipleday") {
       _loadAndCacheImage();
     } else {
       _isLoadingImage = false; // No need to load if there are no images
@@ -39,19 +40,57 @@ class _PostCardState extends State<PostCard> {
 
   // Download & compress image
   Future<void> _loadAndCacheImage() async {
-    final resizedImage = await CustomCacheManager()
-        .downloadAndCompressImage(widget.post.images.first.imageUrl);
+    String? imageUrl;
 
-    if (resizedImage.existsSync()) {
-      final size = await _getImageDimension(resizedImage);
+    // Check if the post is a multiple-day post and has child posts
+    if (widget.post.childPosts == null) {
+      print("❌ ERROR: childPosts is NULL in Post_Card");
+    } else {
+      print(
+          "✅ childPosts exists in Post_Card: ${widget.post.childPosts!.length} items");
+    }
+    if (widget.post.period == "multipleday" &&
+        widget.post.childPosts != null &&
+        widget.post.childPosts!.isNotEmpty) {
+      // Retrieve the first image of Day 1
+      final day1 = widget.post.childPosts!.first;
+      if (day1.images.isNotEmpty) {
+        imageUrl = day1.images.first.imageUrl;
+        print("Multiple-day post - Day 1 image URL: $imageUrl"); // Debug print
+      }
+    } else if (widget.post.images.isNotEmpty) {
+      // Retrieve the first image for single-day posts
+      imageUrl = widget.post.images.first.imageUrl;
+      print("Single-day post image URL: $imageUrl"); // Debug print
+    }
 
-      if (mounted) {
+    if (imageUrl != null) {
+      try {
+        // Cache and resize the image
+        final resizedImage =
+            await CustomCacheManager().downloadAndCompressImage(imageUrl);
+
+        if (resizedImage.existsSync()) {
+          final size = await _getImageDimension(resizedImage);
+
+          if (mounted) {
+            setState(() {
+              _cachedImage = resizedImage;
+              _imageSize = _clampAspectRatio(size);
+              _isLoadingImage = false;
+            });
+          }
+        }
+      } catch (e) {
+        print("Error loading image: $e");
         setState(() {
-          _cachedImage = resizedImage;
-          _imageSize = _clampAspectRatio(size);
           _isLoadingImage = false;
         });
       }
+    } else {
+      setState(() {
+        _isLoadingImage = false; // No image available
+      });
     }
   }
 
@@ -93,7 +132,11 @@ class _PostCardState extends State<PostCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Cover Photo
-          if (widget.post.images.isNotEmpty)
+          if (widget.post.images.isNotEmpty ||
+              (widget.post.period == "multipleday" &&
+                  widget.post.childPosts != null &&
+                  widget.post.childPosts!.isNotEmpty &&
+                  widget.post.childPosts!.first.images.isNotEmpty))
             _cachedImage != null
                 ? Padding(
                     padding: const EdgeInsets.all(0.0),
@@ -228,7 +271,11 @@ class _PostCardState extends State<PostCard> {
                 ),
 
                 /// **如果没有图片，显示内容**
-                if (widget.post.images.isEmpty && widget.post.content != null)
+                if ((widget.post.images.isEmpty &&
+                        (widget.post.period != "multipleday" ||
+                            widget.post.childPosts == null ||
+                            widget.post.childPosts!.isEmpty)) &&
+                    widget.post.content != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4.0), // 标题和内容之间的间距
                     child: Text(

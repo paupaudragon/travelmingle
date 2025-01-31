@@ -187,7 +187,19 @@ class ApiService {
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       print("Fetched Posts Response: $data"); // Log the full response
-      return data.map((json) => Post.fromJson(json)).toList();
+
+      final posts = data.map((json) => Post.fromJson(json)).toList();
+
+      // 🔥 Force UI update with childPosts if they were null before
+      for (var post in posts) {
+        if (post.period == "multipleday" && post.childPosts!.isEmpty) {
+          print("❌ Missing childPosts in Post ID: ${post.id}");
+        } else {
+          print(
+              "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
+        }
+      }
+      return posts;
     } else {
       print("Error fetching posts: ${response.body}");
       throw Exception("Failed to fetch posts: ${response.body}");
@@ -638,9 +650,10 @@ class ApiService {
           var imageList = day['imagePaths'] as List<String>?;
 
           if (imageList != null) {
-            print("📸 Attaching ${imageList.length} images for child post $i...");
+            print(
+                "📸 Attaching ${imageList.length} images for child post $i...");
             for (String imagePath in imageList) {
-              print("✅ Attaching Image Path: $imagePath");  // Debugging print
+              print("✅ Attaching Image Path: $imagePath"); // Debugging print
               request.files.add(
                 await http.MultipartFile.fromPath('childImages_$i', imagePath),
               );
