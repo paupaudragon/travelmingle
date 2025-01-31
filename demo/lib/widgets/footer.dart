@@ -39,7 +39,7 @@ class Footer extends StatelessWidget {
                   'assets/icons/home.svg',
                   width: 22,
                   height: 22,
-                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
                 const SizedBox(height: 1),
                 const Text(
@@ -47,7 +47,7 @@ class Footer extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
-                      color: Colors.black),
+                      color: iconColor),
                 ),
               ],
             ),
@@ -63,7 +63,7 @@ class Footer extends StatelessWidget {
                   'assets/icons/map.svg',
                   width: 22,
                   height: 22,
-                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
                 const SizedBox(height: 1),
                 const Text(
@@ -71,23 +71,26 @@ class Footer extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
-                      color: Colors.black),
+                      color: iconColor),
                 ),
               ],
             ),
           ),
 
           /// **"+" Button (Create)**
-          IconButton(
-            onPressed: () => onPlusPressed(),
-            padding: EdgeInsets.zero, // Remove default padding
-            constraints: BoxConstraints(), // Remove default constraints
-            icon: SizedBox(
-              width: 55,
-              height: 47,
-              child: Image.asset(
-                'assets/icons/create.png',
-                fit: BoxFit.contain,
+          Transform.translate(
+            offset: Offset(0, -1),
+            child: IconButton(
+              onPressed: () => onPlusPressed(),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: SizedBox(
+                width: 55,
+                height: 47,
+                child: Image.asset(
+                  'assets/icons/create.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -102,7 +105,7 @@ class Footer extends StatelessWidget {
                   'assets/icons/message.svg',
                   width: 22,
                   height: 22,
-                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
                 const SizedBox(height: 1),
                 const Text(
@@ -110,7 +113,7 @@ class Footer extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
-                      color: Colors.black),
+                      color: iconColor),
                 ),
               ],
             ),
@@ -126,7 +129,7 @@ class Footer extends StatelessWidget {
                   'assets/icons/me.svg',
                   width: 22,
                   height: 22,
-                  colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
                 const SizedBox(height: 1),
                 const Text(
@@ -134,7 +137,7 @@ class Footer extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
-                      color: Colors.black),
+                      color: iconColor),
                 ),
               ],
             ),

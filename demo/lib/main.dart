@@ -12,6 +12,7 @@ const Color gridBackgroundColor = Color(0xFFeeeeee);
 const Color colorLike = Color(0xFF747f7f);
 const Color colorLiked = Color(0xFFffad08);
 const Color primaryColor = Color(0xFFffad08);
+const Color iconColor = Color(0xff1d1d1d);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
