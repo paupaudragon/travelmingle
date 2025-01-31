@@ -204,19 +204,30 @@ class ApiService {
         method: 'GET',
       );
 
+      print("✅ Raw API Response: ${response.body}"); // Debugging Step
+
       if (response.statusCode == 200) {
         // Parse the response into a Post object
+        if (response.body.isEmpty) {
+          throw Exception("Empty response from the server");
+        }
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
 
+        // ✅ Debug childPosts before parsing
+        print("📌 Child Posts Data: ${jsonData['childPosts']}");
+
         print("Fetched post: ${response.body}");
-        
+
         // Process the childPosts if they exist
         if (jsonData['childPosts'] != null) {
           jsonData['childPosts'] = (jsonData['childPosts'] as List)
               .map((childJson) => Post.fromJson(childJson))
               .toList();
         } else {
-          jsonData['childPosts'] = [];
+          jsonData['childPosts'] = (jsonData['childPosts'] as List?)
+                  ?.map((childJson) => Post.fromJson(childJson))
+                  .toList() ??
+              [];
         }
 
         return Post.fromJson(jsonData);
@@ -581,6 +592,9 @@ class ApiService {
         'longitude': longitude ?? 0.0,
       };
 
+      // ✅ Print Location Data for Debugging
+      print("📍 Constructed Location Data: ${jsonEncode(locationData)}");
+
       // Common fields
       request.fields['title'] = title;
       request.fields['location'] = jsonEncode(locationData);
@@ -604,7 +618,7 @@ class ApiService {
 
       if (period == 'multipleday') {
         // Multi-Day specific fields
-        request.fields['child_posts '] = jsonEncode(multiDayTrips ?? []);
+        request.fields['child_posts'] = jsonEncode(multiDayTrips ?? []);
       } else {
         // Single-Day specific fields
         request.fields['content'] = content ?? '';
@@ -617,6 +631,23 @@ class ApiService {
         }
       }
 
+      // ✅ Attach Child Post Images
+      if (multiDayTrips != null) {
+        for (var i = 0; i < multiDayTrips.length; i++) {
+          var day = multiDayTrips[i];
+          var imageList = day['imagePaths'] as List<String>?;
+
+          if (imageList != null) {
+            print("📸 Attaching ${imageList.length} images for child post $i...");
+            for (String imagePath in imageList) {
+              print("✅ Attaching Image Path: $imagePath");  // Debugging print
+              request.files.add(
+                await http.MultipartFile.fromPath('childImages_$i', imagePath),
+              );
+            }
+          }
+        }
+      }
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 

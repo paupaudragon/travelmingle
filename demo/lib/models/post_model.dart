@@ -81,9 +81,10 @@ class Post {
       isSaved: json['is_saved'] ?? false,
       category: json['category'] ?? '', // Parse category from JSON
       period: json['period'] ?? '', // Parse period from JSON
-      hashtags: json['hashtags'], // Parse optional hashtags from JSON
+      hashtags: json['hashtags'] ?? '', // Parse optional hashtags from JSON
       parentPostId: json['parent_post'], // Parse parent post ID if provided
       childPosts: (json['child_posts'] as List? ?? []) // Parse child posts
+          .where((child) => child != null)
           .map((childPost) => Post.fromJson(childPost))
           .toList(),
     );

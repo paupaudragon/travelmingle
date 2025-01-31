@@ -351,15 +351,23 @@ class _CreatePostPageState extends State<CreatePostPage>
             _multiDayTrips.map((day) {
           final LatLng selectedLocation =
               day['multiSelectedLocation'] ?? LatLng(0.0, 0.0);
+
+          final childLocationData = {
+            'place_id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
+            'name':
+                (day['multiLocationController'] as TextEditingController).text,
+            'address':
+                (day['multiLocationController'] as TextEditingController).text,
+            'latitude': selectedLocation.latitude ?? 0.0,
+            'longitude': selectedLocation.longitude ?? 0.0,
+          };
+
           return {
             'title':
                 (day['multiTitleController'] as TextEditingController).text,
             'content':
                 (day['multiContentController'] as TextEditingController).text,
-            'locationName':
-                (day['multiLocationController'] as TextEditingController).text,
-            'latitude': selectedLocation.latitude,
-            'longitude': selectedLocation.longitude,
+            'location': childLocationData,
             'category': category!,
             'period': 'oneday',
             'imagePaths':
@@ -369,10 +377,14 @@ class _CreatePostPageState extends State<CreatePostPage>
 
         // ✅ Debugging: Print Multi-Day Trips
         print("📤 Multi-Day Post Submission Data:");
-        print(jsonEncode(multiDayTrips));
+        for (int i = 0; i < _multiDayTrips.length; i++) {
+          print(
+              "📸 Day ${i + 1} has ${_multiDayTrips[i]['images'].length} images.");
+        }
 
         await apiService.createPost(
           title: _titleController.text,
+          content: "",
           locationName: _locationController.text,
           latitude: _selectedLocation?.latitude ?? 0.0,
           longitude: _selectedLocation?.longitude ?? 0.0,

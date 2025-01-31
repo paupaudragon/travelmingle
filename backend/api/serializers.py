@@ -135,10 +135,21 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    
     class Meta:
         model = PostImages
         fields = ['id', 'post', 'image', 'created_at']
 
+    def get_image(self, obj):
+        request = self.context.get('request', None)
+        
+        # ✅ Check if request exists before using it
+        if request and obj.image:
+            return request.build_absolute_uri(obj.image.url)
+        
+        # ✅ Return None if there's no image
+        return None
 
 class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -248,12 +259,17 @@ class PostSerializer(serializers.ModelSerializer):
         """Convert incoming JSON data into a Python dictionary before validation."""
         data = super().to_internal_value(data)
 
+        # Debug: Print received data
+        print("🔍 Raw incoming data:", self.initial_data)
+
         # 🔹 Handle `location` JSON parsing
         location_data = self.initial_data.get('location')
         if isinstance(location_data, str):
             import json
             try:
-                data['location'] = json.loads(location_data)
+                location_data = json.loads(location_data)
+                print("📍 Parsed location:", location_data)  # Debugging line
+                data['location'] = location_data
             except json.JSONDecodeError:
                 raise serializers.ValidationError({'location': 'Invalid JSON format'})
 
@@ -353,9 +369,10 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_childPosts(self, obj):
         if obj.period == 'multipleday':
-            child_posts = obj.child_posts.all()
+            child_posts = Posts.objects.filter(parent_post=obj)
+            print(f"🔎 Found {child_posts.count()} child posts for parent {obj.id}")
             return PostSerializer(child_posts, many=True, context=self.context).data
-        return None
+        return []
 
 
 class LikeSerializer(serializers.ModelSerializer):

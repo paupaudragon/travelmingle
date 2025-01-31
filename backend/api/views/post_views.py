@@ -4,6 +4,7 @@ from drf_yasg.utils import swagger_auto_schema
 import re  # regular expressions
 from django.shortcuts import get_object_or_404
 import logging
+import json
 
 # Serializer
 from ..serializers import PostSerializer
@@ -26,6 +27,8 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+
+
 
 
 class PostListCreateView(APIView):
@@ -65,22 +68,209 @@ class PostListCreateView(APIView):
             401: "Unauthorized"
         }
     )
+
     def post(self, request):
-        print("📥 Incoming Request Data:", request.data)
+        try:
+            logger = logging.getLogger(__name__)
+            print("📥 Incoming Request Data:", request.data)  # Debug request data
+            
+            # Check if location is provided
+            location = request.data.get('location')
+            category = request.data.get('category')  # Retrieve category from request data
+            content = request.data.get('content', '')
+            period = request.data.get('period')
 
-        serializer = PostSerializer(data=request.data, context={'request': request})
 
-        if serializer.is_valid():
-            print("✅ Data is valid. Saving post...")
-            post = serializer.save()  # 🔥 Calls create() in serializer!
+            if not location:
+                print("❌ Error: Location is missing in request data")
+                return Response({'error': 'Location is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if not category:
+                print("❌ Error: Category is missing in request data")
+                return Response({'error': 'Category is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if not period:
+                print("❌ Error: Period is missing in request data")
+                return Response({'error': 'Period is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            is_multi_day = period == 'multipleday'
+            print(f"🔍 is_multi_day: {is_multi_day}")
+
+            # Parse location JSON string if necessary
+            if isinstance(location, str):
+                location = json.loads(location)
+
+            # Ensure required location fields are present
+            required_fields = ['place_id', 'name',
+                               'address', 'latitude', 'longitude']
+            for field in required_fields:
+                if field not in location:
+                    return Response(
+                        {'error': f'Missing location field: {field}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+            # Get or create location instance
+            location, created = Location.objects.get_or_create(
+                place_id=location['place_id'],
+                defaults={
+                    'name': location['name'],
+                    'address': location['address'],
+                    'latitude': location['latitude'],
+                    'longitude': location['longitude']
+                }
+            )
+
+            # Create the parent post
+            parent_post = Posts.objects.create(
+                user=request.user,
+                title=request.data.get('title'),
+                content= "" if is_multi_day else request.data.get('content'),
+                location=location,
+                category=category,
+                period=period,
+                status=request.data.get('status', 'published'),
+                visibility=request.data.get('visibility', 'public')
+            )
+            
+            # Handle image uploads
+            images = request.FILES.getlist('image')
+            print(f"📸 Received {len(images)} images for post {parent_post.id}")
+            for image in images:
+                PostImages.objects.create(post=parent_post, image=image)
+            print("✅ Images saved successfully")
+
+            # Handle multi-day child posts
+            if is_multi_day:
+                print("🔄 Processing multi-day child posts...")
+                child_posts = request.data.get('child_posts', '[]')
+
+                # Convert child_posts to Python list if it's a string
+                try:
+                    if isinstance(child_posts, str):
+                        child_posts = json.loads(child_posts)
+                except json.JSONDecodeError:
+                    print("❌ Error: Invalid child_posts JSON format")
+                    return Response({'error': 'Invalid child_posts JSON format'}, status=status.HTTP_400_BAD_REQUEST)
+
+                print(f"📌 Total child posts received: {len(child_posts)}")
+
+                for i, day_content in enumerate(child_posts):
+                    print(f"📍 Processing child post {i+1}: {day_content}")
+
+                    day_title = day_content.get('title')
+                    day_content_text = day_content.get('content')
+                    # child_location = day_content.get('location')
+                    child_location = day_content.get('location')
+
+                    # Collect missing fields
+                    missing_fields = []
+                    if not day_title:
+                        missing_fields.append('day_title')
+                    if not day_content_text:
+                        missing_fields.append('content')
+                    if not child_location:
+                        missing_fields.append('child_location')
+
+                    # If any required field is missing, return an error specifying the missing fields
+                    if missing_fields:
+                        print(f"❌ Error: Missing fields in child post {i+1}: {', '.join(missing_fields)}")
+                        return Response(
+                            {'error': f'Child post {i+1} is missing required fields: {", ".join(missing_fields)}'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # Parse location JSON string if necessary
+                    if isinstance(child_location, str):
+                        child_location = json.loads(child_location)
+
+                    # Ensure required location fields are present
+                    required_fields = ['place_id', 'name',
+                                    'address', 'latitude', 'longitude']
+                    for field in required_fields:
+                        if field not in child_location:
+                            return Response(
+                                {'error': f'Missing location field: {field}'},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+
+                    # Ensure child location is a valid `Location` instance
+                    try:
+                        child_location, created = Location.objects.get_or_create(
+                            place_id=child_location.get('place_id'),
+                            defaults={
+                                'name': child_location.get('name'),
+                                'address': child_location.get('address'),
+                                'latitude': child_location.get('latitude'),
+                                'longitude': child_location.get('longitude')
+                            }
+                        )
+                        print(f"✅ Child location processed: {child_location.name}")
+                    except (ObjectDoesNotExist, KeyError, TypeError) as e:
+                        print("❌ Error processing child location data:", str(e))
+                        return Response({'error': 'Invalid child post location data'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                    # Create the child post
+                    child_post = Posts.objects.create(
+                        user=request.user,
+                        title=day_title,
+                        content=day_content_text,
+                        location=child_location,
+                        category=category,
+                        period='oneday',
+                        status='published',
+                        visibility=parent_post.visibility,
+                        parent_post=parent_post
+                    )
+
+                    # ✅ Handle Child Post Images
+                    child_images = request.FILES.getlist(f'childImages_{i}')
+                    print(f"📸 Received {len(child_images)} images for child post {child_post.id}")
+                    if child_images:
+                        for image in child_images:
+                            PostImages.objects.create(post=child_post, image=image)
+                        print("✅ Child post images saved successfully")
+                    else:
+                        print(f"❌ No images found for child post {child_post.id}")
+
+                    print(f"""
+                    ✅ Child post {i+1} created successfully:
+                        - ID: {child_post.id}
+                        - Title: {child_post.title}
+                        - Content: {child_post.content}
+                        - Location: {child_location.name}
+                        - Address: {child_location.address}
+                        - Latitude: {child_location.latitude}
+                        - Longitude: {child_location.longitude}
+                        - Category: {child_post.category}
+                        - Period: {child_post.period}
+                        - Status: {child_post.status}
+                        - Visibility: {child_post.visibility}
+                        - Parent Post ID: {parent_post.id}
+                        - Image Count: {len(child_images)}
+                    """)
+
+
+            # Return the created post with all its data
+            serializer = PostSerializer(parent_post, context={'request': request})
+            print("🚀 Successfully created post with child posts")
+
+
+            print(f"🔍 Debug: childPosts Sent in Response -> {serializer.data.get('childPosts')}")
 
             return Response(
-                {"message": "Post created successfully!", "post": PostSerializer(post, context={'request': request}).data},
+                {"message": "Post created successfully.", "post": serializer.data},
                 status=status.HTTP_201_CREATED
             )
-        else:
-            print("❌ Validation Error:", serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Error creating post: {str(e)}")
+            print("❌ Unexpected error:", str(e))
+
+            return Response(
+                {'error': 'An unexpected error occurred while creating the post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
             
 
     @swagger_auto_schema(
