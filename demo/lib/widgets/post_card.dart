@@ -30,7 +30,10 @@ class _PostCardState extends State<PostCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.post.images.isNotEmpty) {
+    if (widget.post.images.isNotEmpty ||
+        (widget.post.period == "multipleday" &&
+            widget.post.childPosts!.isNotEmpty)) {
+        print("widget.post.childPosts: ${widget.post.childPosts}"); // Debug print
       _loadAndCacheImage();
     } else {
       _isLoadingImage = false; // No need to load if there are no images
@@ -39,19 +42,52 @@ class _PostCardState extends State<PostCard> {
 
   // Download & compress image
   Future<void> _loadAndCacheImage() async {
-    final resizedImage = await CustomCacheManager()
-        .downloadAndCompressImage(widget.post.images.first.imageUrl);
+    String? imageUrl;
 
-    if (resizedImage.existsSync()) {
-      final size = await _getImageDimension(resizedImage);
+    // Check if the post is a multiple-day post and has child posts
+    if (widget.post.period == "multipleday" &&
+        widget.post.childPosts != null &&
+        widget.post.childPosts!.isNotEmpty) {
+      // Retrieve the first image of Day 1
+      final day1 = widget.post.childPosts!.first;
+      print("Day 1 - Post_Card: $day1"); // Debug print
+      if (day1.images.isNotEmpty) {
+        imageUrl = day1.images.first.imageUrl;
+        print("Multiple-day post - Day 1 image URL: $imageUrl"); // Debug print
+      }
+    } else if (widget.post.images.isNotEmpty) {
+      // Retrieve the first image for single-day posts
+      imageUrl = widget.post.images.first.imageUrl;
+      print("Single-day post image URL: $imageUrl"); // Debug print
+    }
 
-      if (mounted) {
+    if (imageUrl != null) {
+      try {
+        // Cache and resize the image
+        final resizedImage =
+            await CustomCacheManager().downloadAndCompressImage(imageUrl);
+
+        if (resizedImage.existsSync()) {
+          final size = await _getImageDimension(resizedImage);
+
+          if (mounted) {
+            setState(() {
+              _cachedImage = resizedImage;
+              _imageSize = _clampAspectRatio(size);
+              _isLoadingImage = false;
+            });
+          }
+        }
+      } catch (e) {
+        print("Error loading image: $e");
         setState(() {
-          _cachedImage = resizedImage;
-          _imageSize = _clampAspectRatio(size);
           _isLoadingImage = false;
         });
       }
+    } else {
+      setState(() {
+        _isLoadingImage = false; // No image available
+      });
     }
   }
 

@@ -515,8 +515,8 @@ class _PostPageState extends State<PostPage> {
 
     return Column(
       children: [
-        SizedBox(
-          height: 500, // ✅ Define a fixed height
+        // The expandable PageView content
+        Expanded(
           child: PageView.builder(
             controller: _pageController,
             itemCount: post.childPosts!.length,
@@ -530,48 +530,56 @@ class _PostPageState extends State<PostPage> {
             },
           ),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios),
-              onPressed: _currentDayIndex > 0 ? _goToPreviousDay : null,
-            ),
-            SmoothPageIndicator(
-              controller: _pageController,
-              count: post.childPosts!.length,
-              effect: const WormEffect(
-                dotHeight: 8,
-                dotWidth: 8,
-                activeDotColor: Colors.blue,
-                dotColor: Colors.grey,
+        // Fixed progress indicator and buttons at the bottom
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          color: Colors.white.withOpacity(0.9), // Background for visibility
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Previous button
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios),
+                onPressed: _currentDayIndex > 0 ? _goToPreviousDay : null,
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.arrow_forward_ios),
-              onPressed: _currentDayIndex < post.childPosts!.length - 1
-                  ? () => _goToNextDay(post.childPosts!.length)
-                  : null,
-            ),
-          ],
+              // Centered dots
+              Expanded(
+                child: Center(
+                  child: SmoothPageIndicator(
+                    controller: _pageController,
+                    count: post.childPosts!.length,
+                    effect: const WormEffect(
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      activeDotColor: Colors.blue,
+                      dotColor: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              // Next button
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios),
+                onPressed: _currentDayIndex < post.childPosts!.length - 1
+                    ? () => _goToNextDay(post.childPosts!.length)
+                    : null,
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget buildPostContent(Post post) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: 0,
-        maxHeight: 600, // ✅ Ensures it has a max height
-      ),
-      child: SingleChildScrollView(
-        physics:
-            const NeverScrollableScrollPhysics(), // ✅ Ensures no scrolling conflicts
-        child: post.period == 'multipleday'
-            ? buildMultiDayPost(post)
-            : buildSingleDayContent(post),
-      ),
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.45, // Fixed height
+      child: post.period == 'multipleday'
+          ? buildMultiDayPost(post)
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: buildSingleDayContent(post),
+            ),
     );
   }
 
