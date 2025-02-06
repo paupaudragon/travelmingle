@@ -41,10 +41,10 @@ class Header extends StatelessWidget {
             top: 4,
             child: IconButton(
               icon: SvgPicture.asset(
-              'assets/icons/filter.svg',
-              width: 22,
-              height: 22,
-            ),
+                'assets/icons/filter.svg',
+                width: 22,
+                height: 22,
+              ),
               onPressed: () => onFilterPressed(),
               tooltip: 'Filter by Categories',
             ),
@@ -78,6 +78,19 @@ class Header extends StatelessWidget {
                   Tab(text: "Explore"),
                   Tab(text: "Nearby"),
                 ],
+                onTap: (index) {
+                  switch (index) {
+                    case 0:
+                      onFollowPressed();
+                      break;
+                    case 1:
+                      onExplorePressed();
+                      break;
+                    case 2:
+                      onNearbyPressed();
+                      break;
+                  }
+                },
               ),
             ),
           ),
@@ -88,10 +101,10 @@ class Header extends StatelessWidget {
             top: 3,
             child: IconButton(
               icon: SvgPicture.asset(
-              'assets/icons/search.svg',
-              width: 22,
-              height: 22,
-            ),
+                'assets/icons/search.svg',
+                width: 22,
+                height: 22,
+              ),
               onPressed: () => onSearchPressed(),
             ),
           ),

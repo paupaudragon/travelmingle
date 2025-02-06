@@ -12,7 +12,7 @@ from .views import (
     CollectListCreateView, CollectDetailView,
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
-    FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView
+    FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -82,5 +82,6 @@ urlpatterns = [
     # Map
     path('posts/by-location/', PostListByLocationView.as_view(),
          name='posts-by-location'),
+    path('posts/nearby/', NearbyPostsView.as_view(), name='nearby-posts'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

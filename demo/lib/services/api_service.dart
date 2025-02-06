@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:demo/models/user_model.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/post_model.dart';
@@ -709,5 +710,67 @@ class ApiService {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
     };
+  }
+
+// Get current Location
+  Future<Position> getCurrentLocation() async {
+    // Check if location services are enabled
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Location services are disabled');
+    }
+
+    // Check if we have permission
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permission denied');
+      }
+    }
+
+    // Get current position
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+
+  Future<List<Post>> fetchNearbyPosts({
+    required double latitude,
+    required double longitude,
+    double radius = 5,
+    int limit = 20,
+  }) async {
+    try {
+      final queryParams = {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+        'radius': radius.toString(),
+        'limit': limit.toString(),
+      };
+
+      final String url =
+          '$baseApiUrl/posts/nearby/?${Uri(queryParameters: queryParams).query}';
+      print('🔍 Fetching nearby posts from: $url');
+
+      final response = await makeAuthenticatedRequest(
+        url: url,
+        method: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Found ${data['posts'].length} nearby posts');
+        return (data['posts'] as List)
+            .map((json) => Post.fromJson(json))
+            .toList();
+      } else {
+        print('❌ Error fetching nearby posts: ${response.body}');
+        throw Exception('Failed to fetch nearby posts: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error in fetchNearbyPosts: $e');
+      throw Exception('Failed to fetch nearby posts');
+    }
   }
 }

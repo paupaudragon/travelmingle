@@ -1,5 +1,6 @@
 import 'package:demo/main.dart';
 import 'package:demo/screens/map_page.dart';
+import 'package:demo/screens/nearby_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:demo/screens/search_page.dart';
@@ -350,7 +351,12 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         child: Header(
           onFollowPressed: () => requireLogin(context),
           onExplorePressed: () => requireLogin(context),
-          onNearbyPressed: () => requireLogin(context),
+          onNearbyPressed: () => requireLogin(context, onSuccess: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NearbyPage()),
+            ).then((_) => _loadPosts());
+          }),
           onMenuPressed: () => requireLogin(context),
           onSearchPressed: () {
             requireLogin(context, onSuccess: () {
@@ -363,7 +369,9 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
           },
-          onFilterPressed: (){_showMultiSectionFilterDialog();},
+          onFilterPressed: () {
+            _showMultiSectionFilterDialog();
+          },
         ),
       ),
       //Row for Filter button
@@ -380,22 +388,23 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                         child: Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: MasonryGridView.count(
-                          crossAxisCount: 2,  // Number of columns
-                          mainAxisSpacing: 4.0,   // Vertical space between items
-                          crossAxisSpacing: 4.0,  // Horizontal space between items
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            final post = posts[index];
-                            return GestureDetector(
-                              onTap: () => navigateToPostDetail(post),
-                              child: PostCard(
-                                post: post,
-                                onLikePressed: () => toggleLike(post),
+                            crossAxisCount: 2, // Number of columns
+                            mainAxisSpacing:
+                                4.0, // Vertical space between items
+                            crossAxisSpacing:
+                                4.0, // Horizontal space between items
+                            itemCount: posts.length,
+                            itemBuilder: (context, index) {
+                              final post = posts[index];
+                              return GestureDetector(
+                                onTap: () => navigateToPostDetail(post),
+                                child: PostCard(
+                                  post: post,
+                                  onLikePressed: () => toggleLike(post),
                                 ),
                               );
                             },
                           ),
-
                         ),
                       ),
           ),
