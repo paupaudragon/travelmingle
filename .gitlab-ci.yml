@@ -22,7 +22,7 @@ django-build:
   only:
     - master
     - dev
-    - ci-testing
+    - feature/ci
 
 # Frontend (Flutter) CI Job
 flutter-build:
