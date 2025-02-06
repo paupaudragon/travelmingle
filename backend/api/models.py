@@ -89,6 +89,7 @@ class Location(models.Model):
         indexes = [
             models.Index(fields=["place_id"]),
             models.Index(fields=["name"]),
+            models.Index(fields=['latitude', 'longitude']),
         ]
 
     def __str__(self):
