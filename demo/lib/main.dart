@@ -1,9 +1,11 @@
 import 'package:demo/services/api_service.dart';
 import 'package:demo/screens/map_page.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'screens/feed_page.dart';
 import 'screens/register_page.dart';
 import 'screens/login_page.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 const Color headerColor = Color(0xFFfafafa);
 const Color footerColor = Color(0xFFfafafa);
@@ -18,81 +20,36 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final apiService = ApiService();
   await apiService.initializeCurrentUser();
+  try {
+    await Firebase.initializeApp(
+      options: FirebaseOptions(
+        apiKey: "AIzaSyDSg6nklqNqmsvrBbN6s9kwbLcPmmlanic",
+        appId: "1:788833039521:android:1c383bf2dc497e3f222ce0",
+        messagingSenderId: "788833039521",
+        projectId: "travelmingle-fd7bf",
+      ),
+    );
+    print("✅ Firebase initialized successfully!");
+  } catch (e) {
+    print("❌ Firebase initialization failed: $e");
+  }
+  // Get FCM Token
+  String? token = await FirebaseMessaging.instance.getToken();
+  print("🔥 FCM Token: $token");
+  await apiService.registerDeviceToken();
   runApp(MyApp());
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   return MaterialApp(
-  //     title: 'My App',
-  //     theme: ThemeData(
-  //       primarySwatch: Colors.blue,
-  //       scaffoldBackgroundColor: Color(0xFFfafafa),
-  //       hintColor: Colors.grey,
-  //       inputDecorationTheme: InputDecorationTheme(
-  //         labelStyle: const TextStyle(
-  //           color: Colors.black, // Label text color
-  //         ),
-  //         enabledBorder: const UnderlineInputBorder(
-  //           borderSide: BorderSide(
-  //               color: Colors.blue), // Blue underline when not focused
-  //         ),
-  //         focusedBorder: const UnderlineInputBorder(
-  //           borderSide: BorderSide(
-  //               color: Colors.blue, width: 2), // Blue underline when focused
-  //         ),
-  //         hintStyle: const TextStyle(
-  //           color: Colors.grey, // Hint text color
-  //         ),
-  //       ),
-  //       tabBarTheme: TabBarTheme(
-  //         labelColor: Colors.black, // Selected tab text color
-  //         unselectedLabelColor: Colors.grey, // Unselected tab text color
-  //         indicator: UnderlineTabIndicator(
-  //           borderSide:
-  //               BorderSide(color: Colors.blue, width: 3), // Tab underline
-  //         ),
-  //       ),
-  //       elevatedButtonTheme: ElevatedButtonThemeData(
-  //         style: ElevatedButton.styleFrom(
-  //           backgroundColor: Colors.blue, // Elevated button background
-  //           foregroundColor: Colors.black, // Elevated button text color
-  //         ),
-  //       ),
-  //       textButtonTheme: TextButtonThemeData(
-  //         style: TextButton.styleFrom(
-  //           foregroundColor: Colors.black, // Text button color
-  //         ),
-  //       ),
-  //       floatingActionButtonTheme: FloatingActionButtonThemeData(
-  //         backgroundColor: Colors.black, // Floating action button color
-  //       ),
-  //     ),
-  //     initialRoute: '/login', // Set your initial route
-  //     routes: {
-  //       '/auth-check': (context) => const AuthCheck(),
-  //       '/feed': (context) => const FeedPage(), // Home route
-  //       '/login': (context) => const LoginPage(), // Login route
-  //       '/register': (context) => const RegisterPage(), // Register route
-  //       '/map': (context) => MapTestScreen(),
-  //     },
-  //   );
-  // }
-
-  
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-      seedColor: Color(0xfffadd00), // Change highlight color globally
-    ),
+          seedColor: Color(0xfffadd00), // Change highlight color globally
+        ),
         primaryColor: Color(0xFFffad08),
         scaffoldBackgroundColor: Color(0xFFfafafa), // default background color
 
@@ -104,13 +61,13 @@ class MyApp extends StatelessWidget {
       routes: {
         '/auth-check': (context) => const AuthCheck(),
         '/feed': (context) => Builder(
-        builder: (context) => Theme(
-          data: Theme.of(context).copyWith(
-            scaffoldBackgroundColor: gridBackgroundColor,
-          ),
-          child: const FeedPage(),
-        ),
-      ),
+              builder: (context) => Theme(
+                data: Theme.of(context).copyWith(
+                  scaffoldBackgroundColor: gridBackgroundColor,
+                ),
+                child: const FeedPage(),
+              ),
+            ),
         '/login': (context) => const LoginPage(), // Login route
         '/register': (context) => const RegisterPage(), // Register route
         '/map': (context) => MapTestScreen(),
@@ -134,6 +91,7 @@ class _AuthCheckState extends State<AuthCheck> {
   void initState() {
     super.initState();
     checkAuthStatus();
+    ApiService().registerDeviceToken();
   }
 
   Future<void> checkAuthStatus() async {

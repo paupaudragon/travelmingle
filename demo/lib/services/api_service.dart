@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:demo/models/user_model.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -771,6 +772,45 @@ class ApiService {
     } catch (e) {
       print('❌ Error in fetchNearbyPosts: $e');
       throw Exception('Failed to fetch nearby posts');
+    }
+  }
+
+// Notifications
+
+  Future<void> registerDeviceToken() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    String? token = await messaging.getToken();
+
+    if (token == null) {
+      print("❌ Failed to get FCM Token.");
+      return;
+    }
+
+    print("🔥 FCM Token: $token"); // Debug log
+
+    // Get stored access token
+    String? accessToken = await getAccessToken();
+    if (accessToken == null) {
+      print("❌ User is not authenticated. Cannot register device.");
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse("$baseApiUrl/register-device/"),
+      headers: {
+        "Authorization": "Bearer $accessToken", // Use the stored access token
+        "Content-Type": "application/json"
+      },
+      body: jsonEncode({"token": token}),
+    );
+
+    print("📤 Sending FCM Token to Django...");
+
+    if (response.statusCode == 200) {
+      print("✅ Device registered successfully: ${response.body}");
+    } else {
+      print("❌ Failed to register device. Status: ${response.statusCode}");
+      print("⚠️ Response: ${response.body}");
     }
   }
 }
