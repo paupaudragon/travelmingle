@@ -230,5 +230,6 @@ GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
 # Firebase setup
 FIREBASE_CREDENTIALS_PATH = "firebaseAccount.json"
 
-cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+    firebase_admin.initialize_app(cred)

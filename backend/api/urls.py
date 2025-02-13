@@ -13,7 +13,7 @@ from .views import (
     NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView,
-    RegisterDevice
+    RegisterDevice, SendNotification
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -85,7 +85,9 @@ urlpatterns = [
          name='posts-by-location'),
     path('posts/nearby/', NearbyPostsView.as_view(), name='nearby-posts'),
 
+    # Notification
     path("register-device/", RegisterDevice.as_view(), name="register-device"),
-
+    path("send-notification/", SendNotification.as_view(),
+         name="send-notification"),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
