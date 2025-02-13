@@ -64,22 +64,22 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-//Load, refesh, fetch posts section
-  Future<void> _onRefresh() async {
-    try {
-      final fetchedPosts = await _apiService.fetchPosts();
+//Load, fetch posts section
+  // Future<void> _onRefresh() async {
+  //   try {
+  //     final fetchedPosts = await _apiService.fetchPosts();
 
-      if (!mounted) return;
+  //     if (!mounted) return;
 
-      setState(() {
-        posts = fetchedPosts;
-      });
-      _refreshController.refreshCompleted();
-    } catch (e) {
-      print('Error refreshing posts: $e');
-      _refreshController.refreshFailed();
-    }
-  }
+  //     setState(() {
+  //       posts = fetchedPosts;
+  //     });
+  //     _refreshController.refreshCompleted();
+  //   } catch (e) {
+  //     print('Error refreshing posts: $e');
+  //     _refreshController.refreshFailed();
+  //   }
+  // }
 
   Future<void> _loadPosts() async {
     if (!mounted) return;
@@ -179,14 +179,14 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           },
         ),
       ),
-    ).then((_) => _onRefresh());
+    ).then((_) => _loadPosts());
   }
 
   Future<void> navigateToCreatePost() async {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => CreatePostPage()),
-    ).then((_) => _onRefresh());
+    ).then((_) => _loadPosts());
   }
 
   void navigateToProfilePage() {
@@ -384,7 +384,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                     ? const Center(child: Text("No posts available."))
                     : SmartRefresher(
                         controller: _refreshController,
-                        onRefresh: _onRefresh,
+                        onRefresh: _loadPosts,
                         child: Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: MasonryGridView.count(
@@ -433,10 +433,4 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _navigateToCreatePost() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CreatePostPage()),
-    ).then((_) => _onRefresh());
-  }
 }

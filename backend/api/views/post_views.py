@@ -5,6 +5,7 @@ import re  # regular expressions
 from django.shortcuts import get_object_or_404
 import logging
 import json
+from django.db.models import Func, F, Value
 
 # Serializer
 from ..serializers import PostSerializer
@@ -323,9 +324,19 @@ class PostListCreateView(APIView):
         posts = Posts.objects.all().filter(
             parent_post__isnull=True).order_by('-created_at')
 
+        # Normalize category dynamically using annotate
+        posts = posts.annotate(
+            normalized_category=Func(F('category'), function='LOWER')
+        ).annotate(
+            normalized_category=Func(F('normalized_category'), Value(' '), Value(''), function='REPLACE')
+        )
+
+        for post in posts:
+            print(f"Post ID: {post.id}, Travel Type: {post.category}")
+
         # Filter by travel types if provided
         if travel_types:
-            posts = posts.filter(category__in=travel_types)
+            posts = posts.filter(normalized_category__in=travel_types)
             print("Posts after Travel Types Filter:",
                   posts.count())  # Debugging
 
