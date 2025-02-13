@@ -27,6 +27,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   List<Post> posts = [];
   bool isLoading = true;
   bool isLoggedIn = false;
+  double _radius = 10.0; // this is where the range is
 
   //Category and period filter
   List<String> selectedTravelTypes = [];
@@ -81,6 +82,51 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   //   }
   // }
 
+//Login section
+  void handleLogout(BuildContext context) async {
+    try {
+      await ApiService().logout();
+      print("Logged out successfully.");
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      print("Error during logout: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to log out. Please try again.")),
+      );
+    }
+  }
+
+  void requireLogin(BuildContext context, {Function? onSuccess}) async {
+    final apiService = ApiService();
+    final token = await apiService.getAccessToken();
+
+    if (token == null) {
+      Navigator.pushNamed(context, '/login');
+    } else {
+      if (!mounted) return;
+      setState(() {
+        isLoggedIn = true;
+      });
+
+      if (onSuccess != null) {
+        onSuccess();
+      }
+    }
+  }
+
+  Future<void> checkLoginStatus() async {
+    final token = await _apiService.getAccessToken();
+    if (!mounted) return;
+
+    setState(() {
+      isLoggedIn = token != null;
+    });
+
+    if (!isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
   Future<void> _loadPosts() async {
     if (!mounted) return;
 
@@ -104,6 +150,37 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         isLoading = false;
       });
       print('Error loading posts: $e');
+    }
+  }
+
+  Future<void> _loadNearbyPosts() async {
+    if (!mounted) return;
+
+    try {
+      // Start loading animation
+      setState(() => isLoading = true);
+
+      // Get location asynchronously
+      final position = await _apiService.getCurrentLocation();
+
+      // Begin fetching nearby posts after location retrieval
+      final fetchedPosts = await _apiService.fetchNearbyPosts(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        radius: _radius,
+      );
+
+      // Update UI once posts are fetched
+      if (!mounted) return;
+      setState(() {
+        posts = fetchedPosts;
+        isLoading = false;
+      });
+      _refreshController.refreshCompleted();
+    } catch (e) {
+      setState(() => isLoading = false);
+      _refreshController.refreshFailed();
+      print('Error loading nearby posts: $e');
     }
   }
 
@@ -163,96 +240,61 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
 
 //Navigation section
   void navigateToPostDetail(Post post) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PostPage(
-          postId: post.id,
-          onPostUpdated: (updatedPost) {
-            if (!mounted) return;
-            setState(() {
-              final index = posts.indexWhere((p) => p.id == updatedPost.id);
-              if (index != -1) {
-                posts[index] = updatedPost;
-              }
-            });
-          },
+    requireLogin(context, onSuccess: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PostPage(
+            postId: post.id,
+            onPostUpdated: (updatedPost) {
+              if (!mounted) return;
+              setState(() {
+                final index = posts.indexWhere((p) => p.id == updatedPost.id);
+                if (index != -1) {
+                  posts[index] = updatedPost;
+                }
+              });
+            },
+          ),
         ),
-      ),
-    ).then((_) => _loadPosts());
+      ).then((_) => _loadPosts());
+    });
   }
 
   Future<void> navigateToCreatePost() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CreatePostPage()),
-    ).then((_) => _loadPosts());
+    requireLogin(context, onSuccess: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => CreatePostPage()),
+      ).then((_) => _loadPosts());
+    });
   }
 
   void navigateToProfilePage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const ProfilePage()),
-    ).then((_) => _loadPosts());
+    requireLogin(context, onSuccess: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ProfilePage()),
+      ).then((_) => _loadPosts());
+    });
   }
 
   void navigateToMapPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const MapTestScreen()),
-    ).then((_) => _loadPosts());
+    requireLogin(context, onSuccess: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MapTestScreen()),
+      ).then((_) => _loadPosts());
+    });
   }
 
   void navigateToSearchPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const SearchPage()),
-    ).then((_) => _loadPosts());
-  }
-
-//Login section
-  void handleLogout(BuildContext context) async {
-    try {
-      await ApiService().logout();
-      print("Logged out successfully.");
-      Navigator.pushReplacementNamed(context, '/login');
-    } catch (e) {
-      print("Error during logout: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to log out. Please try again.")),
-      );
-    }
-  }
-
-  void requireLogin(BuildContext context, {Function? onSuccess}) async {
-    final apiService = ApiService();
-    final token = await apiService.getAccessToken();
-
-    if (token == null) {
-      Navigator.pushNamed(context, '/login');
-    } else {
-      if (!mounted) return;
-      setState(() {
-        isLoggedIn = true;
-      });
-
-      if (onSuccess != null) {
-        onSuccess();
-      }
-    }
-  }
-
-  Future<void> checkLoginStatus() async {
-    final token = await _apiService.getAccessToken();
-    if (!mounted) return;
-
-    setState(() {
-      isLoggedIn = token != null;
+    requireLogin(context, onSuccess: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SearchPage()),
+      ).then((_) => _loadPosts());
     });
-
-    if (!isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
   }
 
 //Create UI section
@@ -349,29 +391,14 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: Header(
-          onFollowPressed: () => requireLogin(context),
-          onExplorePressed: () => requireLogin(context),
-          onNearbyPressed: () => requireLogin(context, onSuccess: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const NearbyPage()),
-            ).then((_) => _loadPosts());
-          }),
-          onMenuPressed: () => requireLogin(context),
-          onSearchPressed: () {
-            requireLogin(context, onSuccess: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchPage()),
-              );
-            });
-          },
+          onFollowPressed: () => _loadPosts,
+          onExplorePressed: () => _loadPosts(),
+          onNearbyPressed: () => _loadNearbyPosts(),
+          onSearchPressed: () => navigateToSearchPage(),
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
           },
-          onFilterPressed: () {
-            _showMultiSectionFilterDialog();
-          },
+          onFilterPressed: () =>_showMultiSectionFilterDialog(),
         ),
       ),
       //Row for Filter button
@@ -414,9 +441,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       //Footer (Navigation Bar)
       bottomNavigationBar: Footer(
         onHomePressed: _loadPosts,
-        onSearchPressed: () {
-          navigateToSearchPage();
-        },
+
         onPlusPressed: () {
           navigateToCreatePost();
         },
@@ -432,5 +457,4 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       ),
     );
   }
-
 }

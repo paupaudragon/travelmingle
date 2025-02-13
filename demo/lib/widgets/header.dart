@@ -8,7 +8,6 @@ class Header extends StatelessWidget {
   final Function onFollowPressed;
   final Function onExplorePressed;
   final Function onNearbyPressed;
-  final Function onMenuPressed;
   final Function onSearchPressed;
   final Function onCreateUserPressed; // Callback for creating a user
   final Function onFilterPressed; // Callback for filter action
@@ -18,7 +17,6 @@ class Header extends StatelessWidget {
     required this.onFollowPressed,
     required this.onExplorePressed,
     required this.onNearbyPressed,
-    required this.onMenuPressed,
     required this.onSearchPressed,
     required this.onCreateUserPressed,
     required this.onFilterPressed, // Callback for filter action

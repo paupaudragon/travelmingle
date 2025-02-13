@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class Footer extends StatelessWidget {
   final Function onHomePressed;
-  final Function onSearchPressed;
   final Function onPlusPressed;
   final Function onMessagesPressed;
   final Function onMePressed;
@@ -13,7 +12,6 @@ class Footer extends StatelessWidget {
   const Footer({
     Key? key,
     required this.onHomePressed,
-    required this.onSearchPressed,
     required this.onPlusPressed,
     required this.onMessagesPressed,
     required this.onMePressed,
