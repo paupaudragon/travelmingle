@@ -18,10 +18,10 @@ class _LoginPageState extends State<LoginPage> {
   double cardOffset = 0.0;
   final double threshold = 100.0;
   late String _currentWallpaper;
-  bool isFormVisible = false; // 控制卡片出现
-  bool enableInteraction = false; // 控制表单交互
-  double _wallpaperOpacity = 1.0; // 控制渐变
-  double _wallpaperScale = 1.0; // 控制缩放
+  bool isFormVisible = false; // Control the appearance of the card
+  bool enableInteraction = false; // Control form interaction
+  double _wallpaperOpacity = 1.0; // Control the gradient
+  double _wallpaperScale = 1.0; // Control the scale
 
   final List<String> wallpapers = [
     'assets/wallpapers/sample1.jpg',
@@ -44,23 +44,23 @@ class _LoginPageState extends State<LoginPage> {
 
   void changeWallpaper() {
     setState(() {
-      isFormVisible = false; // 让卡片回到底部
-      enableInteraction = false; // 禁用输入交互
-      cardOffset = 0.0; // 重置滑动状态
-      _wallpaperOpacity = 0.0; // 透明度变为 0，触发渐变
-      _wallpaperScale = 1.1; // 轻微放大
+      isFormVisible = false; // Make the card return to the bottom
+      enableInteraction = false; // Disable input interaction
+      cardOffset = 0.0; // Reset the sliding state
+      _wallpaperOpacity = 0.0; // Set the opacity to 0, triggering the gradient
+      _wallpaperScale = 1.1; // Slightly enlarge
     });
 
     Future.delayed(const Duration(milliseconds: 300), () {
       setState(() {
-        _currentWallpaper = randomWallpaper; // 更新壁纸
+        _currentWallpaper = randomWallpaper; // Update wallpaper
       });
     });
 
     Future.delayed(const Duration(milliseconds: 400), () {
       setState(() {
-        _wallpaperOpacity = 1.0; // 渐变回正常
-        _wallpaperScale = 1.0; // 缩放回正常
+        _wallpaperOpacity = 1.0; // Gradient back to normal
+        _wallpaperScale = 1.0; // Scale back to normal
       });
     });
   }
@@ -85,14 +85,14 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isEmpty || password.isEmpty) {
       showErrorSnackbar('Please fill out all fields');
-      isFormVisible = true; // 确保表单可见
+      isFormVisible = true; // Ensure the form is visible
       return;
     }
 
     setState(() {
       isLoading = true;
       if (triggeredBySwipe) {
-        isFormVisible = false; // 下滑时隐藏卡片
+        isFormVisible = false; // Hide the card when swiping down
       }
     });
 
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
         showErrorSnackbar('Invalid username or password');
         if (triggeredBySwipe) {
           setState(() {
-            isFormVisible = true; // 登录失败时，恢复卡片
+            isFormVisible = true; // Restore the card when login fails
           });
         }
       }
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
       showErrorSnackbar('An error occurred: $e');
       if (triggeredBySwipe) {
         setState(() {
-          isFormVisible = true; // 登录失败时，恢复卡片
+          isFormVisible = true; // Restore the card when login fails
         });
       }
     } finally {
@@ -126,9 +126,9 @@ class _LoginPageState extends State<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent, // 让外层透明
-        elevation: 0, // 去除阴影
-        margin: const EdgeInsets.only(bottom: 10), // 调整底部间距
+        backgroundColor: Colors.transparent, // Make the outer layer transparent
+        elevation: 0, // Remove the shadow
+        margin: const EdgeInsets.only(bottom: 10), // Adjust the bottom spacing
         content: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -141,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             child: Text(
               message,
-              textAlign: TextAlign.center, // 文本居中
+              textAlign: TextAlign.center, // Center the text
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -154,16 +154,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void animateCardToHide() {
-    FocusScope.of(context).unfocus(); // 收起键盘
+    FocusScope.of(context).unfocus(); // Collapse the keyboard
 
     setState(() {
-      cardOffset = 500; // 让卡片直接滑出屏幕
-      isFormVisible = false; // 隐藏表单
+      cardOffset = 500; // Slide the card out of the screen
+      isFormVisible = false; // Hide the form
     });
 
     Future.delayed(const Duration(milliseconds: 500), () {
       setState(() {
-        cardOffset = 0; // 重置偏移，准备下一次登录
+        cardOffset = 0; // Reset the offset, ready for the next login
       });
     });
 
@@ -178,10 +178,10 @@ class _LoginPageState extends State<LoginPage> {
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // **背景图片**
+          // Background image
           Positioned.fill(
             child: TweenAnimationBuilder(
-              duration: const Duration(milliseconds: 600), // 更长时间，动画更平滑
+              duration: const Duration(milliseconds: 600), // Longer time for smoother animation
               tween:
                   Tween<double>(begin: _wallpaperScale, end: _wallpaperScale),
               curve: Curves.easeInOut,
@@ -201,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // **更换壁纸按钮**
+          // Change wallpaper button
           Positioned(
             top: 40,
             right: 20,
@@ -215,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // **底部 Login 按钮**
+          // Bottom Login button
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -258,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // **登录卡片（动画从底部滑入）**
+          // Login card (animated from the bottom)
           AnimatedPositioned(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
@@ -275,10 +275,10 @@ class _LoginPageState extends State<LoginPage> {
               onVerticalDragEnd: (details) {
                 if (!enableInteraction) return;
                 if (cardOffset > threshold) {
-                  animateCardToHide(); // 直接隐藏卡片
+                  animateCardToHide(); // Hide the card directly
                 } else {
                   setState(() {
-                    cardOffset = 0; // 否则回归原位
+                    cardOffset = 0; // Otherwise, return to the original position
                   });
                 }
               },
@@ -313,20 +313,20 @@ class _LoginPageState extends State<LoginPage> {
                               filled: true,
                               fillColor: Colors.transparent,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(17), // 设置圆角
+                                borderRadius: BorderRadius.circular(17), // Set the corner radius
                                 borderSide: const BorderSide(
-                                    color: greyColor), // 默认灰色边框
+                                    color: greyColor), // Default gray border
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(17),
                                 borderSide: const BorderSide(
-                                    color: greyColor), // 未选中状态
+                                    color: greyColor), // Unselected state
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(17),
                                 borderSide: BorderSide(
                                     color: primaryColor,
-                                    width: 2), // 选中时变为 primaryColor
+                                    width: 2), // Change to primaryColor when selected
                               ),
                             ),
                             enabled: enableInteraction,
