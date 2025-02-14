@@ -1,4 +1,3 @@
-// lib/services/notification_state.dart
 import 'dart:async';
 
 class NotificationState {
