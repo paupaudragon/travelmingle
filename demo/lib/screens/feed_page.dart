@@ -1,5 +1,6 @@
 import 'package:demo/main.dart';
 import 'package:demo/screens/map_page.dart';
+import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/nearby_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
@@ -279,6 +280,22 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     });
   }
 
+  void navigateToMessagePage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationsScreen(
+          onHomePressed: _loadPosts,
+          onSearchPressed: navigateToSearchPage,
+          onPlusPressed: navigateToCreatePost,
+          onMessagesPressed: () {},
+          onMePressed: navigateToProfilePage,
+          onMapPressed: navigateToMapPage,
+        ),
+      ),
+    );
+  }
+
   void navigateToMapPage() {
     requireLogin(context, onSuccess: () {
       Navigator.push(
@@ -446,7 +463,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           navigateToCreatePost();
         },
         onMessagesPressed: () {
-          _loadPosts(); // TO-DO
+          navigateToMessagePage();
         },
         onMePressed: () {
           navigateToProfilePage();

@@ -1,3 +1,4 @@
+from .models import Device
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import Follow, Users, Posts, Location, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
@@ -6,6 +7,8 @@ from django.db.models import Prefetch
 
 import logging
 logger = logging.getLogger(__name__)
+
+# notification
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -136,20 +139,21 @@ class UserSerializer(serializers.ModelSerializer):
 
 class PostImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = PostImages
         fields = ['id', 'post', 'image', 'created_at']
 
     def get_image(self, obj):
         request = self.context.get('request', None)
-        
+
         # ✅ Check if request exists before using it
         if request and obj.image:
             return request.build_absolute_uri(obj.image.url)
-        
+
         # ✅ Return None if there's no image
         return None
+
 
 class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -271,7 +275,8 @@ class PostSerializer(serializers.ModelSerializer):
                 print("📍 Parsed location:", location_data)  # Debugging line
                 data['location'] = location_data
             except json.JSONDecodeError:
-                raise serializers.ValidationError({'location': 'Invalid JSON format'})
+                raise serializers.ValidationError(
+                    {'location': 'Invalid JSON format'})
 
         # 🔹 Handle `child_posts` JSON parsing
         child_posts_data = self.initial_data.get('child_posts', '[]')
@@ -279,34 +284,37 @@ class PostSerializer(serializers.ModelSerializer):
             try:
                 data['child_posts'] = json.loads(child_posts_data)
             except json.JSONDecodeError:
-                raise serializers.ValidationError({'child_posts': 'Invalid JSON format'})
+                raise serializers.ValidationError(
+                    {'child_posts': 'Invalid JSON format'})
 
         return data
 
     def create(self, validated_data):
         print("🚀 Backend create() method is called!")  # Debug log
 
-        request = self.context.get('request')  # Get request for user authentication
+        # Get request for user authentication
+        request = self.context.get('request')
 
         location_data = validated_data.pop('location', None)
-        child_posts_data = validated_data.pop('child_posts', [])  # Extract child posts
+        child_posts_data = validated_data.pop(
+            'child_posts', [])  # Extract child posts
 
         print("🚀 Received Post Data in Backend:")
         print("Title:", validated_data.get('title'))
         print("Category:", validated_data.get('category'))
         print("Period:", validated_data.get('period'))
-        print("Child Posts Data:", child_posts_data)  # Print child posts received
-
+        # Print child posts received
+        print("Child Posts Data:", child_posts_data)
 
         # Handle the location creation
         if location_data:
             location, created = Location.objects.get_or_create(
-            defaults={
-                'name': location_data['name'],
-                'address': location_data['address'],
-                'latitude': location_data['latitude'],
-                'longitude': location_data['longitude']
-            }
+                defaults={
+                    'name': location_data['name'],
+                    'address': location_data['address'],
+                    'latitude': location_data['latitude'],
+                    'longitude': location_data['longitude']
+                }
             )
             validated_data['location'] = location
 
@@ -370,7 +378,8 @@ class PostSerializer(serializers.ModelSerializer):
     def get_childPosts(self, obj):
         if obj.period == 'multipleday':
             child_posts = Posts.objects.filter(parent_post=obj)
-            print(f"🔎 Found {child_posts.count()} child posts for parent {obj.id}")
+            print(
+                f"🔎 Found {child_posts.count()} child posts for parent {obj.id}")
             return PostSerializer(child_posts, many=True, context=self.context).data
         return []
 
@@ -438,3 +447,10 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ['id', 'follower', 'following', 'created_at']
         read_only_fields = ['created_at']
+
+
+# Notification
+class DeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Device
+        fields = ["user", "token"]

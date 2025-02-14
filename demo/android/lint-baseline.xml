@@ -1,0 +1,6 @@
+<issues format="6" by="lint 8.1.0">
+    <issue
+        id="MissingPermission"
+        message="Missing permissions required by NotificationManagerCompat.notify: android.permission.POST_NOTIFICATIONS">
+    </issue>
+</issues>
