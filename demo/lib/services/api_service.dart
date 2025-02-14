@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:demo/models/user_model.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
@@ -72,25 +71,40 @@ class ApiService {
 // Token Management, log in, log out
   Future<String?> getAccessToken() async {
     if (_cachedToken != null) {
+      print('🔐 Using cached token');
       return _cachedToken;
     }
 
     String? token = await _storage.read(key: "access_token");
-    if (token == null) return null;
-
-    // Decode and check expiration
-    final parts = token.split('.');
-    if (parts.length == 3) {
-      final payload = jsonDecode(
-          utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
-      final exp = payload["exp"];
-      final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-      if (exp != null && exp < currentTime) {
-        await refreshAccessToken();
-        token = await _storage.read(key: "access_token");
-      }
+    if (token == null) {
+      print('❌ No access token found');
+      return null;
     }
+
+    print('🔍 Token details:');
+    try {
+      final parts = token.split('.');
+      if (parts.length == 3) {
+        final payload = jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+
+        print('Token Payload: $payload');
+        final exp = payload["exp"];
+        final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        print('Expiration: $exp');
+        print('Current Time: $currentTime');
+
+        if (exp != null && exp < currentTime) {
+          print('🕰️ Token expired, refreshing...');
+          await refreshAccessToken();
+          token = await _storage.read(key: "access_token");
+        }
+      }
+    } catch (e) {
+      print('❌ Error parsing token: $e');
+    }
+
     _cachedToken = token;
     return token;
   }
@@ -188,22 +202,22 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      print("Fetched Posts Response: $data"); // Log the full response
+      // print("Fetched Posts Response: $data"); // Log the full response
 
       final posts = data.map((json) => Post.fromJson(json)).toList();
 
       // 🔥 Force UI update with childPosts if they were null before
-      for (var post in posts) {
-        if (post.period == "multipleday" && post.childPosts!.isEmpty) {
-          print("❌ Missing childPosts in Post ID: ${post.id}");
-        } else {
-          print(
-              "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
-        }
-      }
+      // for (var post in posts) {
+      //   if (post.period == "multipleday" && post.childPosts!.isEmpty) {
+      //     print("❌ Missing childPosts in Post ID: ${post.id}");
+      //   } else {
+      //     print(
+      //         "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
+      //   }
+      // }
       return posts;
     } else {
-      print("Error fetching posts: ${response.body}");
+      // print("Error fetching posts: ${response.body}");
       throw Exception("Failed to fetch posts: ${response.body}");
     }
   }
@@ -777,40 +791,57 @@ class ApiService {
 
 // Notifications
 
-  Future<void> registerDeviceToken() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    String? token = await messaging.getToken();
+  Future<void> registerDeviceToken({int retryCount = 3}) async {
+    for (int i = 0; i < retryCount; i++) {
+      try {
+        FirebaseMessaging messaging = FirebaseMessaging.instance;
+        String? token = await messaging.getToken();
 
-    if (token == null) {
-      print("❌ Failed to get FCM Token.");
-      return;
+        if (token == null) {
+          print("❌ Failed to get FCM Token.");
+          continue;
+        }
+
+        print("🔥 FCM Token: $token");
+
+        String? accessToken = await getAccessToken();
+        if (accessToken == null) {
+          print("❌ User is not authenticated. Cannot register device.");
+          return;
+        }
+
+        final response = await http.post(
+          Uri.parse("$baseApiUrl/register-device/"),
+          headers: {
+            "Authorization": "Bearer $accessToken",
+            "Content-Type": "application/json"
+          },
+          body: jsonEncode({
+            "token": token,
+            "device_type": "android", // Add device type
+            "app_version": "1.0.0" // Add app version
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          print("✅ Device registered successfully: ${response.body}");
+          return; // Success, exit the function
+        } else {
+          print("⚠️ Failed to register device. Status: ${response.statusCode}");
+          print("⚠️ Response: ${response.body}");
+          if (i < retryCount - 1) {
+            await Future.delayed(
+                Duration(seconds: 2 * (i + 1))); // Exponential backoff
+          }
+        }
+      } catch (e) {
+        print("❌ Error registering device: $e");
+        if (i < retryCount - 1) {
+          await Future.delayed(Duration(seconds: 2 * (i + 1)));
+        }
+      }
     }
 
-    print("🔥 FCM Token: $token"); // Debug log
-
-    // Get stored access token
-    String? accessToken = await getAccessToken();
-    if (accessToken == null) {
-      print("❌ User is not authenticated. Cannot register device.");
-      return;
-    }
-
-    final response = await http.post(
-      Uri.parse("$baseApiUrl/register-device/"),
-      headers: {
-        "Authorization": "Bearer $accessToken", // Use the stored access token
-        "Content-Type": "application/json"
-      },
-      body: jsonEncode({"token": token}),
-    );
-
-    print("📤 Sending FCM Token to Django...");
-
-    if (response.statusCode == 200) {
-      print("✅ Device registered successfully: ${response.body}");
-    } else {
-      print("❌ Failed to register device. Status: ${response.statusCode}");
-      print("⚠️ Response: ${response.body}");
-    }
+    print("❌ Failed to register device after $retryCount attempts");
   }
 }

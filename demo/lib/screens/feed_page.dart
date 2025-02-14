@@ -1,5 +1,6 @@
 import 'package:demo/main.dart';
 import 'package:demo/screens/map_page.dart';
+import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/nearby_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
@@ -194,6 +195,22 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       context,
       MaterialPageRoute(builder: (context) => const ProfilePage()),
     ).then((_) => _loadPosts());
+  }
+
+  void navigateToMessagePage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationsScreen(
+          onHomePressed: _loadPosts,
+          onSearchPressed: navigateToSearchPage,
+          onPlusPressed: navigateToCreatePost,
+          onMessagesPressed: () {},
+          onMePressed: navigateToProfilePage,
+          onMapPressed: navigateToMapPage,
+        ),
+      ),
+    );
   }
 
   void navigateToMapPage() {
@@ -421,7 +438,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           navigateToCreatePost();
         },
         onMessagesPressed: () {
-          _loadPosts(); // TO-DO
+          navigateToMessagePage();
         },
         onMePressed: () {
           navigateToProfilePage();

@@ -31,12 +31,13 @@ class SendNotification(APIView):
                     title=title,
                     body=body,
                 ),
+                data={"click_action": "FLUTTER_NOTIFICATION_CLICK",
+                      "custom_data": "any_value"},
                 token=fcm_token,
             )
-
             # Send the notification
             response = messaging.send(message)
-
+            print("Sending .....", response)
             return Response({"message": "Notification sent successfully!", "firebase_response": response})
         except Exception as e:
             return Response({"error": str(e)}, status=500)

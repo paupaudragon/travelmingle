@@ -66,11 +66,13 @@ dependencies:
 
   # svg icon support
   flutter_svg: ^2.0.9
-  firebase_core: ^3.11.0
-  firebase_messaging: ^15.2.2
 
   #notification
-  flutter_local_notifications: 18.0.0
+  flutter_local_notifications: 18.0.1
+  firebase_core: ^3.11.0
+  firebase_messaging: ^15.2.2
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.5.2
 
 dev_dependencies:
   flutter_test:

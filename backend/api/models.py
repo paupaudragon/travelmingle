@@ -403,49 +403,44 @@ class Collects(models.Model):
 
 
 class Notifications(models.Model):
-    """
-    Notifications model to store information about notifications sent to users.
-    Attributes:
-        id (BigAutoField): Primary key for the notification.
-        recipient (ForeignKey): The user who will receive the notification.
-        sender (ForeignKey): The user who triggered this notification.
-        post (ForeignKey): The post associated with the notification (optional).
-        comment (ForeignKey): The comment associated with the notification (optional).
-        notification_type (CharField): Type of notification (e.g., reply, mention, collection).
-        message (CharField): Notification message for display.
-        is_read (BooleanField): Track if the user has read the notification.
-        created_at (DateTimeField): Timestamp when the notification was created.
-    Meta:
-        db_table (str): Name of the database table.
-        indexes (list): List of indexes for the model.
-    Methods:
-        __str__: Returns a string representation of the notification.
-    """
     id = models.BigAutoField(primary_key=True)
     recipient = models.ForeignKey(
-        Users, on_delete=models.CASCADE, related_name="notifications"
-    )  # The user who will receive the notification
+        Users,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
     sender = models.ForeignKey(
-        Users, on_delete=models.CASCADE, related_name="sent_notifications"
-    )  # The user who triggered this notification
+        Users,
+        on_delete=models.CASCADE,
+        related_name="sent_notifications"
+    )
     post = models.ForeignKey(
-        Posts, on_delete=models.CASCADE, null=True, blank=True, related_name="notifications"
-    )  # The post associated with the notification
+        Posts,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications"
+    )
     comment = models.ForeignKey(
-        Comments, on_delete=models.CASCADE, null=True, blank=True, related_name="notifications"
-    )  # The comment associated with the notification (if applicable)
+        Comments,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications"
+    )
     notification_type = models.CharField(
         max_length=50,
         choices=[
+            ("like_post", "Like Post"),
+            ("like_comment", "Like Comment"),
+            ("comment", "Comment"),
             ("reply", "Reply"),
             ("mention", "Mention"),
-            # New type for collection notifications
-            ("collection", "Collection"),
+            ("collect", "Collect"),
+            ("follow", "Follow"),
         ]
-    )  # Type of notification
-    # Notification message for display
+    )
     message = models.CharField(max_length=255)
-    # Track if the user has read the notification
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -456,6 +451,7 @@ class Notifications(models.Model):
             models.Index(fields=["is_read"]),
             models.Index(fields=["created_at"]),
         ]
+        ordering = ['-created_at']  # Show newest notifications first
 
     def __str__(self):
         return f"Notification for {self.recipient.username}: {self.notification_type}"

@@ -10,10 +10,10 @@ from .views import (
     LikeListCreateView, LikeDetailView,
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
-    NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
+    NotificationListView,  RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView,
-    RegisterDevice, SendNotification
+    NotificationMarkReadView, RegisterDevice, SendNotification
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -65,10 +65,8 @@ urlpatterns = [
     # Notification Endpoints
     path('notifications/', NotificationListView.as_view(),
          name='notification-list'),
-    path('notifications/<int:pk>/',
-         NotificationDetailView.as_view(), name='notification-detail'),
-    path('notifications/<int:pk>/mark-read/',
-         MarkNotificationAsReadView.as_view(), name='notification-mark-read'),
+    path('notifications/mark-read/', NotificationMarkReadView.as_view(),
+         name='notification-mark-read'),
     # Only for development
 
     path('users/me/', UserInfoView.as_view(), name='user-info'),
