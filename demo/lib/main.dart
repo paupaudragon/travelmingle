@@ -7,8 +7,10 @@ import 'screens/login_page.dart';
 
 const Color headerColor = Color(0xFFfafafa);
 const Color footerColor = Color(0xFFfafafa);
+const Color whiteColor = Color(0xFFfafafa);
 const Color filterPageColor = Color(0xFFfafafa);
 const Color gridBackgroundColor = Color(0xFFeeeeee);
+const Color greyColor = Color(0xFF486966);
 const Color colorLike = Color(0xFF747f7f);
 const Color colorLiked = Color(0xFFffad08);
 const Color primaryColor = Color(0xFFffad08);
