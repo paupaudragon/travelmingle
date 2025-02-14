@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 import 'package:demo/services/notification_service.dart';
@@ -32,11 +34,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<dynamic> _notifications = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchNotifications();
+
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _fetchNotifications();
+    });
   }
 
   Future<void> _fetchNotifications() async {
