@@ -415,7 +415,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
           },
-          onFilterPressed: () =>_showMultiSectionFilterDialog(),
+          onFilterPressed: () => _showMultiSectionFilterDialog(),
         ),
       ),
       //Row for Filter button
@@ -457,8 +457,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
 
       //Footer (Navigation Bar)
       bottomNavigationBar: Footer(
+        onSearchPressed: () => navigateToSearchPage(),
         onHomePressed: _loadPosts,
-
         onPlusPressed: () {
           navigateToCreatePost();
         },

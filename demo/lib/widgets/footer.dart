@@ -17,6 +17,7 @@ class Footer extends StatelessWidget {
     required this.onMessagesPressed,
     required this.onMePressed,
     required this.onMapPressed,
+    required Function() onSearchPressed,
   }) : super(key: key);
 
   @override
@@ -93,30 +94,6 @@ class Footer extends StatelessWidget {
               ),
             ),
           ),
-
-          /// **Messages Button**
-          // GestureDetector(
-          //   onTap: () => onMessagesPressed(),
-          //   child: Column(
-          //     mainAxisSize: MainAxisSize.min,
-          //     children: [
-          //       SvgPicture.asset(
-          //         'assets/icons/message.svg',
-          //         width: 22,
-          //         height: 22,
-          //         colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-          //       ),
-          //       const SizedBox(height: 1),
-          //       const Text(
-          //         "Messages",
-          //         style: TextStyle(
-          //             fontSize: 10,
-          //             fontWeight: FontWeight.w400,
-          //             color: iconColor),
-          //       ),
-          //     ],
-          //   ),
-          // ),
           MessageIconWithStatus(
             onTap: () => onMessagesPressed(),
             iconColor: iconColor,
