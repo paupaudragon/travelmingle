@@ -1,0 +1,38 @@
+stages:
+  - build_backend
+  - build_frontend
+
+# Backend (Django) CI Job
+django-build:
+  stage: build_backend
+  image: python:3.11
+  services:
+    - postgres:14
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    DB_HOST: postgres
+  script:
+    - echo "Setting up Django backend CI"
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    - python manage.py migrate
+    - python manage.py check
+  only:
+    - master
+    - dev
+    - ci-testing
+
+# Frontend (Flutter) CI Job
+flutter-build:
+  stage: build_frontend
+  image: cirrusci/flutter:stable
+  script:
+    - echo "Setting up Flutter frontend CI"
+    - flutter pub get
+    - flutter build apk --debug
+  only:
+    - master
+    - dev
+    - ci-testing
