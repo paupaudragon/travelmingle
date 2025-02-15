@@ -44,6 +44,7 @@ class NotificationListView(APIView):
 
 
 class NotificationMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """Mark notifications as read"""

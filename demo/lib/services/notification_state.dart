@@ -12,9 +12,11 @@ class NotificationState {
   bool get hasUnread => _hasUnread;
 
   void setUnreadStatus(bool hasUnread) {
-    print('Setting unread status: $hasUnread'); // Debug log
-    _hasUnread = hasUnread;
-    _hasUnreadController.add(hasUnread);
+    print('Message icon state - hasUnread: $hasUnread');
+    if (_hasUnread != hasUnread) {
+      _hasUnread = hasUnread;
+      _hasUnreadController.add(hasUnread);
+    }
   }
 
   void dispose() {
