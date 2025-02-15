@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:demo/models/user_model.dart';
+import 'package:demo/services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -133,6 +134,7 @@ class ApiService {
 
   Future<bool> login(String username, String password) async {
     const String url = "$baseApiUrl/token/";
+    final NotificationService notificationService = NotificationService();
 
     final response = await http.post(
       Uri.parse(url),
@@ -154,6 +156,8 @@ class ApiService {
           await _storage.write(
               key: "current_user_id", value: _currentUserId.toString());
         }
+
+        await notificationService.checkUnreadNotifications();
       } catch (e) {
         print("Error fetching user info after login: $e");
       }
