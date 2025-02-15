@@ -42,11 +42,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _fetchNotifications();
 
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _fetchNotifications();
+      if (mounted) {
+        _fetchNotifications();
+      }
     });
   }
 
   Future<void> _fetchNotifications() async {
+    if (!mounted) return;
+
     try {
       setState(() {
         _isLoading = true;
@@ -58,17 +62,68 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         method: 'GET',
       );
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
+        final rawNotifications = decodedData['notifications'] as List;
+        final serverUnreadCount = decodedData['unread_count'] as int;
+
+        print('📱 Server unread count: $serverUnreadCount');
+        print('📱 Total notifications: ${rawNotifications.length}');
+
+        // Group notifications by semantic action
+        final Map<String, dynamic> uniqueNotifications = {};
+
+        for (var notification in rawNotifications) {
+          final timestamp = notification['created_at']?.toString() ?? '';
+          final sender =
+              notification['sender']?['username']?.toString() ?? 'unknown';
+          final type = notification['notification_type']?.toString() ?? '';
+          final postId = notification['post']?['id']?.toString() ?? '';
+          final isRead = notification['is_read'] ?? false;
+
+          if (timestamp.isNotEmpty) {
+            try {
+              final DateTime parsedTime = DateTime.parse(timestamp);
+              String actionKey =
+                  '$sender:$type:$postId:${parsedTime.millisecondsSinceEpoch ~/ 1000}';
+
+              // Keep the unread version if it exists
+              if (!uniqueNotifications.containsKey(actionKey) ||
+                  (uniqueNotifications[actionKey]['is_read'] == true &&
+                      !isRead)) {
+                uniqueNotifications[actionKey] = notification;
+              }
+            } catch (e) {
+              print('Error parsing timestamp: $e');
+              continue;
+            }
+          }
+        }
+
+        final notificationsList = uniqueNotifications.values.toList()
+          ..sort((a, b) => DateTime.parse(b['created_at'].toString())
+              .compareTo(DateTime.parse(a['created_at'].toString())));
+
+        // Count unread after deduplication
+        final actualUnreadCount =
+            notificationsList.where((n) => n['is_read'] == false).length;
+        print('📱 Actual unread count after deduplication: $actualUnreadCount');
+
+        // Update notification state based on actual unread count
+        _notificationService.notificationState
+            .setUnreadStatus(actualUnreadCount > 0);
+
+        if (!mounted) return;
         setState(() {
-          _notifications = decodedData['notifications'];
+          _notifications = notificationsList;
           _isLoading = false;
         });
-      } else {
-        throw Exception(
-            'Failed to fetch notifications: ${response.statusCode}');
       }
     } catch (e) {
+      print('❌ Error in _fetchNotifications: $e');
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -87,7 +142,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
 
       if (response.statusCode == 200) {
-        await _fetchNotifications(); // Refresh the list
+        // Update the local state of the notification
+        setState(() {
+          final index =
+              _notifications.indexWhere((n) => n['id'] == notificationId);
+          if (index != -1) {
+            _notifications[index]['is_read'] = true;
+          }
+        });
       }
     } catch (e) {
       print('Error marking notification as read: $e');
@@ -105,7 +167,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _handleNotificationTap(dynamic notification) async {
     if (notification['is_read'] == false) {
-      await _markNotificationAsRead(notification['id']);
+      try {
+        print('🔔 Tapping notification: ${notification['id']}');
+
+        // Update local state immediately
+        setState(() {
+          final index =
+              _notifications.indexWhere((n) => n['id'] == notification['id']);
+          if (index != -1) {
+            _notifications[index]['is_read'] = true;
+          }
+        });
+
+        // Mark as read in backend
+        await _markNotificationAsRead(notification['id']);
+
+        // Short delay to allow server processing
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        // Count remaining unread
+        final remainingUnread =
+            _notifications.where((n) => n['is_read'] == false).length;
+        print('📱 Remaining unread after tap: $remainingUnread');
+
+        // Update icon state
+        _notificationService.notificationState
+            .setUnreadStatus(remainingUnread > 0);
+
+        // If this was the last unread, do a final refresh
+        if (remainingUnread == 0) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          await _fetchNotifications();
+        }
+      } catch (e) {
+        print('❌ Error handling notification tap: $e');
+        // Refresh to ensure consistent state
+        await _fetchNotifications();
+      }
     }
   }
 
@@ -173,5 +271,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         onMapPressed: () => widget.onMapPressed?.call(),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Cancel timer if it exists
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 }

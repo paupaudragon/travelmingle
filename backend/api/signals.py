@@ -120,3 +120,14 @@ def create_like_notification(sender, instance, created, **kwargs):
                 notification_type='like_comment',
                 message=f"{instance.user.username} liked your comment"
             )
+
+
+@receiver(post_save, sender=Follow)
+def create_follow_notification(sender, instance, created, **kwargs):
+    if created:
+        Notifications.objects.create(
+            recipient=instance.following,
+            sender=instance.follower,
+            notification_type='follow',
+            message=f"{instance.follower.username} started following you"
+        )

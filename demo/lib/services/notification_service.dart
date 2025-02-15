@@ -17,6 +17,8 @@ class NotificationService {
   final NotificationState _notificationState = NotificationState();
   Timer? _periodicTimer;
 
+  NotificationState get notificationState => _notificationState;
+
   @pragma('vm:entry-point')
   static Future<void> handleBackgroundMessage(RemoteMessage message) async {
     print("📱 Background message received:");
@@ -118,59 +120,8 @@ class NotificationService {
     );
   }
 
-  Future<void> checkUnreadNotifications() async {
-    try {
-      print('📱 Checking notifications...');
-      // Get and print headers for debugging
-      final headers = await _apiService.getHeaders();
-      print('📱 Request headers: $headers');
-
-      final response = await _apiService.makeAuthenticatedRequest(
-        url: '${ApiService.baseApiUrl}/notifications/',
-        method: 'GET',
-      );
-
-      print('📱 Response status: ${response.statusCode}');
-      print('📱 Response headers: ${response.headers}');
-      print('📱 Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final unreadCount = data['unread_count'] ?? 0;
-        print('📱 Unread count from API: $unreadCount');
-
-        // Print notifications details
-        if (data['notifications'] != null) {
-          final notifications = data['notifications'] as List;
-          print('📱 Total notifications: ${notifications.length}');
-          print(
-              '📱 Unread notifications: ${notifications.where((n) => n['is_read'] == false).length}');
-
-          // Print the first 3 notifications for debugging
-          final numberOfNotificationsToPrint =
-              notifications.length < 3 ? notifications.length : 3;
-          for (var i = 0; i < numberOfNotificationsToPrint; i++) {
-            print('📱 Notification ${i + 1}:');
-            print('   - Message: ${notifications[i]['message']}');
-            print('   - Is Read: ${notifications[i]['is_read']}');
-            print('   - Created At: ${notifications[i]['created_at']}');
-          }
-        }
-
-        _notificationState.setUnreadStatus(unreadCount > 0);
-        print('📱 Set unread status to: ${unreadCount > 0}');
-      }
-    } catch (e, stackTrace) {
-      print('❌ Error checking notifications:');
-      print(e);
-      print('Stack trace:');
-      print(stackTrace);
-    }
-  }
-
   Future<void> markAllAsRead() async {
     try {
-      print('📱 Marking all notifications as read...');
       final response = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/notifications/mark-read/',
         method: 'POST',
@@ -178,13 +129,42 @@ class NotificationService {
       );
 
       if (response.statusCode == 200) {
+        // Update state immediately
         _notificationState.setUnreadStatus(false);
-        print('📱 Successfully marked all as read');
-        await checkUnreadNotifications(); // Refresh notification state
+
+        // Double check server state after a short delay
+        await Future.delayed(const Duration(milliseconds: 500));
+        await checkUnreadNotifications();
       }
     } catch (e) {
-      print('❌ Error marking notifications as read: $e');
-      rethrow;
+      print('❌ Error marking all as read: $e');
+      // Recheck state on error
+      await checkUnreadNotifications();
+    }
+  }
+
+  Future checkUnreadNotifications() async {
+    try {
+      print('📱 Checking notifications...');
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/notifications/',
+        method: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final unreadCount = data['unread_count'] ?? 0;
+        print('📱 Unread count from API: $unreadCount');
+
+        // Update notification state
+        _notificationState.setUnreadStatus(unreadCount > 0);
+
+        print('📱 Updated notification state - hasUnread: ${unreadCount > 0}');
+        return unreadCount;
+      }
+    } catch (e) {
+      print('❌ Error checking notifications: $e');
+      return 0;
     }
   }
 
@@ -210,11 +190,17 @@ class NotificationService {
 
       if (response.statusCode == 200) {
         print('📱 Successfully marked notification as read');
-        await checkUnreadNotifications(); // Update unread status
+        // Get the updated unread count from the response
+        final data = json.decode(response.body);
+        final unreadCount = data['unread_count'] ?? 0;
+
+        // Update state immediately
+        _notificationState.setUnreadStatus(unreadCount > 0);
       }
     } catch (e) {
       print('❌ Error marking notification as read: $e');
-      rethrow;
+      // On error, refresh the notification state
+      await checkUnreadNotifications();
     }
   }
 }
