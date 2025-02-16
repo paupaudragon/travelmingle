@@ -35,8 +35,6 @@ void main() async {
 
   final notificationService = NotificationService();
   await notificationService.initialize();
-  await notificationService.checkUnreadNotifications();
-
   runApp(MyApp());
 }
 
@@ -46,6 +44,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorObservers: [RouteObserver<PageRoute>()],
       navigatorKey: navigatorKey,
       title: 'My App',
       theme: ThemeData(
