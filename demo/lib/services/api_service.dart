@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:demo/models/user_model.dart';
 import 'package:demo/services/notification_service.dart';
+import 'package:demo/services/notification_state.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -157,7 +158,7 @@ class ApiService {
               key: "current_user_id", value: _currentUserId.toString());
         }
 
-        await notificationService.checkUnreadNotifications();
+        await notificationService.fetchNotifications();
       } catch (e) {
         print("Error fetching user info after login: $e");
       }
@@ -169,6 +170,9 @@ class ApiService {
   }
 
   Future<void> logout() async {
+    NotificationService().reset();
+    var notificationState = NotificationState();
+    notificationState.setUnreadStatus(false);
     await _storage.delete(key: "access_token");
     await _storage.delete(key: "refresh_token");
     await _storage.delete(key: "current_user_id");

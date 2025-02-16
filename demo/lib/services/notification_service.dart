@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
 
 class NotificationService {
+  List<Map<String, dynamic>> _cachedNotifications = [];
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -19,6 +20,12 @@ class NotificationService {
 
   NotificationState get notificationState => _notificationState;
 
+  void reset() {
+    _notificationState.setUnreadStatus(false);
+    _periodicTimer?.cancel();
+    _periodicTimer = null;
+  }
+
   @pragma('vm:entry-point')
   static Future<void> handleBackgroundMessage(RemoteMessage message) async {
     print("📱 Background message received:");
@@ -28,6 +35,9 @@ class NotificationService {
   }
 
   Future<void> initialize() async {
+    print('🔄 Initializing NotificationService...');
+    reset(); // ✅ Clear old notifications on start
+
     // Request permission
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
@@ -52,23 +62,21 @@ class NotificationService {
       },
     );
 
-    // Get FCM token
+    // Ensure we get the correct FCM token for this user
     String? token = await _firebaseMessaging.getToken();
     if (token != null) {
-      print('FCM Token: $token');
+      print('🔥 FCM Token: $token');
       await registerDeviceToken(token);
     }
 
-    // Handle foreground messages
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    // Initial check for unread notifications
-    await checkUnreadNotifications();
+    // ✅ Ensure correct user data before fetching notifications
+    await Future.delayed(const Duration(seconds: 2));
+    await NotificationService().fetchNotifications();
 
     // Start periodic check (every 30 seconds)
     _periodicTimer?.cancel();
     _periodicTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      checkUnreadNotifications();
+      NotificationService().fetchNotifications();
     });
   }
 
@@ -94,7 +102,7 @@ class NotificationService {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print('Received foreground message: ${message.notification?.title}');
     await _showLocalNotification(message);
-    await checkUnreadNotifications();
+    await NotificationService().fetchNotifications();
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -133,44 +141,15 @@ class NotificationService {
         _notificationState.setUnreadStatus(false);
 
         // Double check server state after a short delay
-        await Future.delayed(const Duration(milliseconds: 500));
-        await checkUnreadNotifications();
+        await Future.delayed(const Duration(milliseconds: 1000));
+        // await checkUnreadNotifications();
+        await NotificationService().fetchNotifications();
       }
     } catch (e) {
       print('❌ Error marking all as read: $e');
       // Recheck state on error
-      await checkUnreadNotifications();
+      await NotificationService().fetchNotifications();
     }
-  }
-
-  Future checkUnreadNotifications() async {
-    try {
-      print('📱 Checking notifications...');
-      final response = await _apiService.makeAuthenticatedRequest(
-        url: '${ApiService.baseApiUrl}/notifications/',
-        method: 'GET',
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final unreadCount = data['unread_count'] ?? 0;
-        print('📱 Unread count from API: $unreadCount');
-
-        // Update notification state
-        _notificationState.setUnreadStatus(unreadCount > 0);
-
-        print('📱 Updated notification state - hasUnread: ${unreadCount > 0}');
-        return unreadCount;
-      }
-    } catch (e) {
-      print('❌ Error checking notifications: $e');
-      return 0;
-    }
-  }
-
-  Future<void> refreshNotificationState() async {
-    print('📱 Manually refreshing notification state...');
-    await checkUnreadNotifications();
   }
 
   void dispose() {
@@ -179,6 +158,16 @@ class NotificationService {
 
   Future<void> markNotificationAsRead(int notificationId) async {
     try {
+      for (var notification in _cachedNotifications) {
+        if (notification['id'] == notificationId) {
+          notification['is_read'] = true;
+        }
+      }
+      notificationState.setUnreadStatus(
+          _cachedNotifications.any((n) => n['is_read'] == false));
+
+      print(
+          '📱 Instant UI update - Marked notification $notificationId as read');
       print('📱 Marking notification $notificationId as read...');
       final response = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/notifications/mark-read/',
@@ -194,13 +183,54 @@ class NotificationService {
         final data = json.decode(response.body);
         final unreadCount = data['unread_count'] ?? 0;
 
+        // ignore: prefer_interpolation_to_compose_strings
+        print("===== mark read ===" + unreadCount.toString());
         // Update state immediately
         _notificationState.setUnreadStatus(unreadCount > 0);
       }
     } catch (e) {
       print('❌ Error marking notification as read: $e');
       // On error, refresh the notification state
-      await checkUnreadNotifications();
+      await NotificationService().fetchNotifications();
+    }
+  }
+
+  Future<void> fetchNotifications() async {
+    try {
+      _notificationState.setUnreadStatus(false);
+
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/notifications/',
+        method: 'GET',
+      );
+
+      final Map<String, dynamic>? userInfo = await _apiService.getUserInfo();
+      if (userInfo == null || userInfo['id'] == null) {
+        print('❌ No logged-in user found.');
+        return;
+      }
+      final int currentUserId = userInfo['id'];
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        _cachedNotifications =
+            List<Map<String, dynamic>>.from(data['notifications']);
+        final unreadNotifications = (data['notifications'] as List)
+            .where((n) =>
+                n['is_read'] == false && n['recipient']['id'] == currentUserId)
+            .toList();
+
+        _cachedNotifications =
+            List<Map<String, dynamic>>.from(data['notifications']);
+
+        final unreadCount = unreadNotifications.length;
+        print('📱 Updated unread count: $unreadCount');
+
+        // ✅ Update notification state so the message icon updates
+        notificationState.setUnreadStatus(unreadCount > 0);
+      }
+    } catch (e) {
+      print('❌ Error fetching notifications: $e');
     }
   }
 }
