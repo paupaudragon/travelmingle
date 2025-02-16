@@ -1,12 +1,14 @@
+import 'package:demo/services/notification_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import '../services/notification_state.dart';
+import 'package:flutter_svg/svg.dart';
 
 class MessageIconWithStatus extends StatelessWidget {
   final VoidCallback onTap;
   final Color iconColor;
+  final NotificationState _notificationState =
+      NotificationState(); // ✅ Use Singleton
 
-  const MessageIconWithStatus({
+  MessageIconWithStatus({
     Key? key,
     required this.onTap,
     required this.iconColor,
@@ -15,11 +17,11 @@ class MessageIconWithStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
-      stream: NotificationState().hasUnreadStream,
-      initialData: NotificationState().hasUnread,
+      stream:
+          _notificationState.hasUnreadStream, // ✅ Use the singleton instance
+      initialData: _notificationState.hasUnread, // ✅ Use the singleton instance
       builder: (context, snapshot) {
         final hasUnread = snapshot.data ?? false;
-        print('Message icon state - hasUnread: $hasUnread'); // Debug log
 
         return GestureDetector(
           onTap: onTap,

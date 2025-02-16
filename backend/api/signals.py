@@ -95,39 +95,3 @@ def create_follow_notification(sender, instance, created, **kwargs):
             notification_type='follow',
             message=f"{instance.follower.username} started following you"
         )
-
-
-@receiver(post_save, sender=Likes)
-def create_like_notification(sender, instance, created, **kwargs):
-    """Create a notification when a like is created"""
-    if created:  # Only when the like is first created
-        if instance.post:
-            # Like on a post
-            Notifications.objects.create(
-                recipient=instance.post.user,  # Post owner
-                sender=instance.user,         # User who liked
-                post=instance.post,
-                notification_type='like_post',
-                message=f"{instance.user.username} liked your post"
-            )
-        elif instance.comment:
-            # Like on a comment
-            Notifications.objects.create(
-                recipient=instance.comment.user,  # Comment owner
-                sender=instance.user,            # User who liked
-                comment=instance.comment,
-                post=instance.comment.post,
-                notification_type='like_comment',
-                message=f"{instance.user.username} liked your comment"
-            )
-
-
-@receiver(post_save, sender=Follow)
-def create_follow_notification(sender, instance, created, **kwargs):
-    if created:
-        Notifications.objects.create(
-            recipient=instance.following,
-            sender=instance.follower,
-            notification_type='follow',
-            message=f"{instance.follower.username} started following you"
-        )

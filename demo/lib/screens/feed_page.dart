@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:demo/main.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/screens/message_page.dart';
@@ -5,6 +7,7 @@ import 'package:demo/screens/nearby_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:demo/screens/search_page.dart';
+import 'package:demo/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../widgets/header.dart';
@@ -29,6 +32,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   bool isLoading = true;
   bool isLoggedIn = false;
   double _radius = 10.0; // this is where the range is
+  Timer? _refreshTimer;
+  final NotificationService _notificationService = NotificationService();
 
   //Category and period filter
   List<String> selectedTravelTypes = [];
@@ -50,12 +55,31 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     checkLoginStatus();
     _loadPosts();
+    _startPollingNotifications;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    NotificationService()
+        .fetchNotifications(); // ✅ Replaces checkUnreadNotifications()
+  }
+
+  void _startPollingNotifications() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (mounted) {
+        await _notificationService.fetchNotifications();
+        (); // ✅ Background refresh
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _refreshController.dispose();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -65,23 +89,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       _loadPosts();
     }
   }
-
-//Load, fetch posts section
-  // Future<void> _onRefresh() async {
-  //   try {
-  //     final fetchedPosts = await _apiService.fetchPosts();
-
-  //     if (!mounted) return;
-
-  //     setState(() {
-  //       posts = fetchedPosts;
-  //     });
-  //     _refreshController.refreshCompleted();
-  //   } catch (e) {
-  //     print('Error refreshing posts: $e');
-  //     _refreshController.refreshFailed();
-  //   }
-  // }
 
 //Login section
   void handleLogout(BuildContext context) async {

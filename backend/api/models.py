@@ -203,7 +203,7 @@ class PostImages(models.Model):
     Attributes:
         id (BigAutoField): Primary key for the PostImages model.
         post (ForeignKey): Foreign key to the Posts model, with a cascade delete option and a related name of 'images'.
-        image (ImageField): Field to store the URL/path of the image, with upload location set to 'post_images/' and 
+        image (ImageField): Field to store the URL/path of the image, with upload location set to 'post_images/' and
                             validators to allow only 'jpg', 'jpeg', and 'png' file extensions.
         created_at (DateTimeField): Timestamp indicating when the image was created, automatically set to the current date and time.
     Meta:
@@ -445,6 +445,15 @@ class Notifications(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipient', 'sender', 'post', 'comment',
+                        'notification_type', 'created_at'],
+                name='unique_notification_constraint',
+                # allow exact duplicates after a certain time
+                deferrable=models.Deferrable.DEFERRED
+            )
+        ]
         db_table = "notifications"
         indexes = [
             models.Index(fields=["recipient"]),
