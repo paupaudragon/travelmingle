@@ -1,12 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:demo/enums/notification_types.dart';
 import 'package:demo/models/message_category.dart';
 import 'package:demo/screens/message_detail_page.dart';
-import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 import 'package:demo/services/notification_service.dart';
-import '../widgets/footer.dart';
-import 'dart:convert';
+import 'package:demo/widgets/footer.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final VoidCallback? onHomePressed;
@@ -42,14 +42,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<dynamic> _directMessages = [];
   bool _isLoading = true;
   String? _error;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(_onFocusChange);
     _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
-      _fetchNotifications();
-      if (mounted) {
-        setState(() {}); // Triggers UI update
+      if (mounted && !_isRefreshing) {
+        _fetchNotifications();
       }
     });
   }
@@ -57,12 +58,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    NotificationService().fetchNotifications();
-    ;
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _fetchNotifications();
+    }
   }
 
   void _onFocusChange() {
-    if (_focusNode.hasFocus) {
+    if (_focusNode.hasFocus && !_isRefreshing) {
       _fetchNotifications();
     }
   }
@@ -70,11 +73,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _fetchNotifications() async {
     if (!mounted || _isRefreshing) return;
 
+    setState(() {
+      _isRefreshing = true;
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
-      setState(() {
-        _isRefreshing = true;
-        _isLoading = true; // ✅ Start loading
-      });
       print('🔄 Fetching notifications...');
 
       final response = await _apiService.makeAuthenticatedRequest(
@@ -86,37 +91,41 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       if (response.statusCode != 200) {
         print('❌ API Error: ${response.statusCode}');
-        setState(() {
-          _error = 'Failed to load notifications';
-          _isLoading = false;
-        });
-        return;
+        throw Exception('Failed to load notifications');
       }
 
       final Map<String, dynamic>? userInfo = await _apiService.getUserInfo();
       if (userInfo == null || userInfo['id'] == null) {
         print('❌ No logged-in user found.');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+        throw Exception('No logged-in user found');
       }
 
       final int currentUserId = userInfo['id'];
       final data = json.decode(response.body);
+      final notifications = data['notifications'] as List;
 
-      print('📩 Notifications fetched: ${data['notifications'].length}');
+      print('📩 Notifications fetched: ${notifications.length}');
 
-      final unreadNotifications = (data['notifications'] as List)
+      // Update categories with all notifications
+      final updatedCategories = NotificationCategory.updateWithNotifications(
+        NotificationCategory.getDefaultCategories(),
+        notifications,
+      );
+
+      // Count unread notifications
+      final unreadNotifications = notifications
           .where((n) =>
               n['is_read'] == false && n['recipient']['id'] == currentUserId)
           .toList();
 
-      setState(() {
-        _categories = NotificationCategory.updateWithNotifications(
-            NotificationCategory.getDefaultCategories(), unreadNotifications);
-        _isLoading = false; // ✅ Ensure UI updates
-      });
+      if (mounted) {
+        setState(() {
+          _categories = updatedCategories;
+          _isLoading = false;
+          _isRefreshing = false;
+          _error = null;
+        });
+      }
 
       final unreadCount = unreadNotifications.length;
       _notificationService.notificationState.setUnreadStatus(unreadCount > 0);
@@ -124,78 +133,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } catch (e, stackTrace) {
       print('❌ Error in _fetchNotifications: $e');
       print(stackTrace);
-      setState(() {
-        _error = 'Error loading notifications';
-        _isLoading = false; // ✅ Prevent infinite loading
-      });
-    } finally {
-      setState(() {
-        _isRefreshing = false;
-        _isLoading = false; // ✅ Ensure loading is disabled
-      });
-      print('✅ Fetch completed, _isLoading = $_isLoading');
+
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _categories = NotificationCategory.getDefaultCategories();
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
     }
-  }
-
-  Future<void> _handleNotificationRead(NotificationType type, String id) async {
-    try {
-      await _notificationService.markNotificationAsRead(int.parse(id));
-      await _fetchNotifications();
-    } catch (e) {
-      print('Error marking notification as read: $e');
-    }
-  }
-
-  void _onCategoryTap(NotificationCategory category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CategoryDetailScreen(
-          category: category,
-          onMessageRead: _handleNotificationRead,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    print('🔍 Building Message Page - isLoading: $_isLoading, error: $_error');
-    return Focus(
-      focusNode: _focusNode,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Messages'),
-              TextButton(
-                onPressed: () {},
-                child: const Text('More Groups'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          automaticallyImplyLeading: false,
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator()) // ✅ Stuck here?
-            : _error != null
-                ? _buildErrorView()
-                : _buildNotificationsView(),
-        bottomNavigationBar: Footer(
-          onHomePressed: widget.onHomePressed ?? () => Navigator.pop(context),
-          onSearchPressed: widget.onSearchPressed ?? () {},
-          onPlusPressed: widget.onPlusPressed ?? () {},
-          onMessagesPressed: _fetchNotifications,
-          onMePressed: widget.onMePressed ?? () {},
-          onMapPressed: widget.onMapPressed ?? () {},
-          hasUnreadMessages: NotificationService().notificationState.hasUnread,
-        ),
-      ),
-    );
   }
 
   Widget _buildErrorView() {
@@ -298,6 +245,69 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           },
         );
       },
+    );
+  }
+
+  void _onCategoryTap(NotificationCategory category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryDetailScreen(
+          category: category,
+          onMessageRead: _handleNotificationRead,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleNotificationRead(NotificationType type, String id) async {
+    try {
+      await _notificationService.markNotificationAsRead(int.parse(id));
+      await _fetchNotifications();
+    } catch (e) {
+      print('Error marking notification as read: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: _focusNode,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Messages'),
+              TextButton(
+                onPressed: () {},
+                child: const Text('More Groups'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          automaticallyImplyLeading: false,
+        ),
+        body: RefreshIndicator(
+          onRefresh: _fetchNotifications,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? _buildErrorView()
+                  : _buildNotificationsView(),
+        ),
+        bottomNavigationBar: Footer(
+          onHomePressed: widget.onHomePressed ?? () => Navigator.pop(context),
+          onSearchPressed: widget.onSearchPressed ?? () {},
+          onPlusPressed: widget.onPlusPressed ?? () {},
+          onMessagesPressed: _fetchNotifications,
+          onMePressed: widget.onMePressed ?? () {},
+          onMapPressed: widget.onMapPressed ?? () {},
+          hasUnreadMessages: NotificationService().notificationState.hasUnread,
+        ),
+      ),
     );
   }
 
