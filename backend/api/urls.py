@@ -10,9 +10,10 @@ from .views import (
     LikeListCreateView, LikeDetailView,
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
-    NotificationListView, NotificationDetailView, MarkNotificationAsReadView, RegisterView,
+    NotificationListView,  RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
-    FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView
+    FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView,
+    NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -64,10 +65,8 @@ urlpatterns = [
     # Notification Endpoints
     path('notifications/', NotificationListView.as_view(),
          name='notification-list'),
-    path('notifications/<int:pk>/',
-         NotificationDetailView.as_view(), name='notification-detail'),
-    path('notifications/<int:pk>/mark-read/',
-         MarkNotificationAsReadView.as_view(), name='notification-mark-read'),
+    path('notifications/mark-read/', NotificationMarkReadView.as_view(),
+         name='notification-mark-read'),
     # Only for development
 
     path('users/me/', UserInfoView.as_view(), name='user-info'),
@@ -83,5 +82,12 @@ urlpatterns = [
     path('posts/by-location/', PostListByLocationView.as_view(),
          name='posts-by-location'),
     path('posts/nearby/', NearbyPostsView.as_view(), name='nearby-posts'),
+
+    # Notification
+    path("register-device/", RegisterDevice.as_view(), name="register-device"),
+    path("send-notification/", SendNotification.as_view(),
+         name="send-notification"),
+    path('test-notification/', TestFirebaseNotification.as_view(),
+         name='test-notification'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   intl: ^0.20.1
-  http: ^1.1.0
+  http: ^1.3.0
   # flutter_secure_storage: 9.2.2
   flutter_secure_storage: ^9.2.2
   provider: ^6.0.5
@@ -67,6 +67,13 @@ dependencies:
   # svg icon support
   flutter_svg: ^2.0.9
 
+  #notification
+  flutter_local_notifications: 18.0.1
+  firebase_core: ^3.11.0
+  firebase_messaging: ^15.2.2
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.5.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -90,6 +97,12 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/wallpapers/sample1.jpg
+    - assets/wallpapers/sample2.jpg
+    - assets/wallpapers/sample3.jpg
+    - assets/wallpapers/sample4.jpg
+    - assets/wallpapers/sample5.jpg
+
     - assets/icons/filter_filled.svg
     - assets/icons/filter.svg
     - assets/icons/home_filled.svg
@@ -104,7 +117,7 @@ flutter:
     - assets/icons/create.svg
     - assets/icons/create.png
     - assets/icons/create2.svg
-
+    - assets/tm_logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

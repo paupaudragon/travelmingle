@@ -1,8 +1,11 @@
 
+from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from ..models import Device
 from ..serializers import UserSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -33,14 +36,23 @@ class RegisterView(APIView):
             400: openapi.Response(description="Validation error")
         }
     )
-    def post(self, request, *args, **kwargs):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'User registered successfully'}, status=status.HTTP_201_CREATED)
-        errors = serializer.errors
-        if 'username' in errors:
-            return Response({'error': errors['username'][0]}, status=status.HTTP_400_BAD_REQUEST)
-        if 'email' in errors:
-            return Response({'error': errors['email'][0]}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({'error': 'Validation error'}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        try:
+            user = request.user
+            token = request.POST.get('token')
+
+            # Try to find existing device
+            device = Device.objects.filter(token=token).first()
+
+            if device:
+                # Update existing device if needed
+                device.user = user
+                device.save()
+            else:
+                # Create new device
+                Device.objects.create(user=user, token=token)
+
+            return JsonResponse({'status': 'success'})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)

@@ -1,131 +1,76 @@
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import UpdateAPIView
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+# notification_views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from ..models import Notifications
 from ..serializers import NotificationSerializer
 
 
-class NotificationListView(ListCreateAPIView):
-    """
-    Handles listing notifications for a user.
-    """
-    serializer_class = NotificationSerializer
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        operation_summary="List notifications for a user",
-        operation_description=(
-            "Retrieve a list of notifications for a specific user. You can optionally filter "
-            "by `is_read` (true/false) and `notification_type` (e.g., reply, mention, collection)."
-        ),
-        manual_parameters=[
-            openapi.Parameter(
-                "user_id", openapi.IN_QUERY, description="ID of the recipient user", type=openapi.TYPE_INTEGER, required=True
-            ),
-            openapi.Parameter(
-                "is_read", openapi.IN_QUERY, description="Filter by read status (true/false)", type=openapi.TYPE_BOOLEAN, required=False
-            ),
-            openapi.Parameter(
-                "notification_type", openapi.IN_QUERY, description="Filter by notification type (e.g., reply, mention, collection)", type=openapi.TYPE_STRING, required=False
-            ),
-        ],
-        responses={200: NotificationSerializer(many=True)}
-    )
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+    def get(self, request):
+        print(f"🔍 Notification Request by User: {request.user.username}")
 
-    def get_queryset(self):
-        """
-        Filter notifications for the current user.
-        Optionally filter by `is_read` or `notification_type`.
-        """
-        user_id = self.request.query_params.get('user_id')
-        is_read = self.request.query_params.get('is_read')
-        notification_type = self.request.query_params.get('notification_type')
+        try:
+            notifications = Notifications.objects.filter(
+                recipient=request.user
+            ).select_related(
+                'sender',
+                'post',
+                'comment'
+            )[:50]  # Limit to last 50 notifications
 
-        if not user_id:
-            return Notifications.objects.none()  # Return empty if user_id is not provided
-
-        queryset = Notifications.objects.filter(
-            recipient_id=user_id).order_by('-created_at')
-
-        if is_read is not None:
-            queryset = queryset.filter(is_read=is_read.lower() == 'true')
-
-        if notification_type:
-            queryset = queryset.filter(notification_type=notification_type)
-
-        return queryset
-
-
-class NotificationDetailView(RetrieveUpdateDestroyAPIView):
-    """
-    Handles retrieving, updating, or deleting a single notification.
-    """
-    queryset = Notifications.objects.select_related(
-        'recipient', 'sender', 'post', 'comment').all()
-    serializer_class = NotificationSerializer
-
-    @swagger_auto_schema(
-        operation_summary="Retrieve a notification",
-        operation_description="Retrieve details of a specific notification by its ID.",
-        responses={200: NotificationSerializer}
-    )
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_summary="Update a notification",
-        operation_description="Update the fields of a notification (e.g., mark it as read).",
-        request_body=NotificationSerializer,
-        responses={200: NotificationSerializer}
-    )
-    def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_summary="Delete a notification",
-        operation_description="Delete a specific notification by its ID.",
-        responses={204: "Notification deleted successfully."}
-    )
-    def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
-
-
-class MarkNotificationAsReadView(UpdateAPIView):
-    """
-    Marks a single notification as read.
-    """
-    queryset = Notifications.objects.all()
-    serializer_class = NotificationSerializer
-
-    @swagger_auto_schema(
-        operation_summary="Mark a notification as read",
-        operation_description="Update the `is_read` field of a specific notification to `true`.",
-        responses={
-            200: openapi.Response(
-                description="Notification marked as read.",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "message": openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description="Confirmation message"
-                        )
-                    }
-                )
+            serializer = NotificationSerializer(
+                notifications,
+                many=True,
+                context={'request': request}
             )
-        }
-    )
-    def patch(self, request, *args, **kwargs):
-        """
-        Update the `is_read` field for the notification.
-        """
-        notification = self.get_object()
-        notification.is_read = True
-        notification.save()
 
-        return Response(
-            {"message": f"Notification {notification.id} marked as read."},
-            status=status.HTTP_200_OK
-        )
+            # Get count of unread notifications
+            unread_count = Notifications.objects.filter(
+                recipient=request.user,
+                is_read=False
+            ).count()
+
+            return Response({
+                'notifications': serializer.data,
+                'unread_count': unread_count
+            })
+        except Exception as e:
+            print(f"❌ Error in NotificationListView: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Mark notifications as read"""
+        notification_ids = request.data.get('notification_ids', [])
+        mark_all = request.data.get('mark_all', False)
+
+        if mark_all:
+            # Mark all notifications as read
+            Notifications.objects.filter(
+                recipient=request.user,
+                is_read=False
+            ).update(is_read=True)
+        elif notification_ids:
+            # Mark specific notifications as read
+            Notifications.objects.filter(
+                recipient=request.user,
+                id__in=notification_ids,
+                is_read=False
+            ).update(is_read=True)
+
+        unread_count = Notifications.objects.filter(
+            recipient=request.user,
+            is_read=False
+        ).count()
+
+        return Response({
+            'status': 'success',
+            'unread_count': unread_count
+        })

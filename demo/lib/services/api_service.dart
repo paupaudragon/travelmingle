@@ -1,6 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:demo/models/user_model.dart';
+import 'package:demo/services/notification_service.dart';
+import 'package:demo/services/notification_state.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -71,25 +73,40 @@ class ApiService {
 // Token Management, log in, log out
   Future<String?> getAccessToken() async {
     if (_cachedToken != null) {
+      print('🔐 Using cached token');
       return _cachedToken;
     }
 
     String? token = await _storage.read(key: "access_token");
-    if (token == null) return null;
-
-    // Decode and check expiration
-    final parts = token.split('.');
-    if (parts.length == 3) {
-      final payload = jsonDecode(
-          utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
-      final exp = payload["exp"];
-      final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-      if (exp != null && exp < currentTime) {
-        await refreshAccessToken();
-        token = await _storage.read(key: "access_token");
-      }
+    if (token == null) {
+      print('❌ No access token found');
+      return null;
     }
+
+    print('🔍 Token details:');
+    try {
+      final parts = token.split('.');
+      if (parts.length == 3) {
+        final payload = jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+
+        print('Token Payload: $payload');
+        final exp = payload["exp"];
+        final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        print('Expiration: $exp');
+        print('Current Time: $currentTime');
+
+        if (exp != null && exp < currentTime) {
+          print('🕰️ Token expired, refreshing...');
+          await refreshAccessToken();
+          token = await _storage.read(key: "access_token");
+        }
+      }
+    } catch (e) {
+      print('❌ Error parsing token: $e');
+    }
+
     _cachedToken = token;
     return token;
   }
@@ -118,6 +135,7 @@ class ApiService {
 
   Future<bool> login(String username, String password) async {
     const String url = "$baseApiUrl/token/";
+    final NotificationService notificationService = NotificationService();
 
     final response = await http.post(
       Uri.parse(url),
@@ -139,6 +157,8 @@ class ApiService {
           await _storage.write(
               key: "current_user_id", value: _currentUserId.toString());
         }
+
+        await notificationService.fetchNotifications();
       } catch (e) {
         print("Error fetching user info after login: $e");
       }
@@ -150,6 +170,9 @@ class ApiService {
   }
 
   Future<void> logout() async {
+    NotificationService().reset();
+    var notificationState = NotificationState();
+    notificationState.setUnreadStatus(false);
     await _storage.delete(key: "access_token");
     await _storage.delete(key: "refresh_token");
     await _storage.delete(key: "current_user_id");
@@ -187,22 +210,22 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      print("Fetched Posts Response: $data"); // Log the full response
+      // print("Fetched Posts Response: $data"); // Log the full response
 
       final posts = data.map((json) => Post.fromJson(json)).toList();
 
       // 🔥 Force UI update with childPosts if they were null before
-      for (var post in posts) {
-        if (post.period == "multipleday" && post.childPosts!.isEmpty) {
-          print("❌ Missing childPosts in Post ID: ${post.id}");
-        } else {
-          print(
-              "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
-        }
-      }
+      // for (var post in posts) {
+      //   if (post.period == "multipleday" && post.childPosts!.isEmpty) {
+      //     print("❌ Missing childPosts in Post ID: ${post.id}");
+      //   } else {
+      //     print(
+      //         "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
+      //   }
+      // }
       return posts;
     } else {
-      print("Error fetching posts: ${response.body}");
+      // print("Error fetching posts: ${response.body}");
       throw Exception("Failed to fetch posts: ${response.body}");
     }
   }
