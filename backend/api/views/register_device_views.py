@@ -1,7 +1,8 @@
+# views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from ..models import Device
+from ..device_management import DeviceManager
 
 
 class RegisterDevice(APIView):
@@ -9,28 +10,27 @@ class RegisterDevice(APIView):
 
     def post(self, request):
         token = request.data.get("token")
-        user = request.user  # Authenticated user
+        user = request.user
 
         if not token:
             return Response({"error": "Token is required"}, status=400)
 
         try:
-            # Instead of get_or_create, try to update existing device
-            device, created = Device.objects.get_or_create(
-                token=token,
-                defaults={'user': user}
-            )
+            # Clean up any invalid tokens first
+            DeviceManager.clean_invalid_tokens(user)
 
-            if not created:
-                # If device exists, update the user if different
-                if device.user != user:
-                    device.user = user
-                    device.save()
+            # Register new token
+            success, message = DeviceManager.register_device(user, token)
 
-            return Response({
-                "message": "Device registered successfully",
-                "status": "created" if created else "updated"
-            })
+            if success:
+                return Response({
+                    "message": message,
+                    "status": "success"
+                })
+            else:
+                return Response({
+                    "error": message
+                }, status=400)
 
         except Exception as e:
             print(f"Device registration error: {e}")
