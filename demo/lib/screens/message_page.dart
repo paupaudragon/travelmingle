@@ -47,11 +47,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
-      setState(() {}); // Force UI update
+      _fetchNotifications();
+      if (mounted) {
+        setState(() {}); // Triggers UI update
+      }
     });
-    _fetchNotifications();
-    _startPeriodicRefresh();
-    _focusNode.addListener(_onFocusChange);
   }
 
   @override
@@ -61,25 +61,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     ;
   }
 
-  // void _refreshNotifications() async {
-  //   print('🔄 Refreshing message page...');
-  //   await _notificationService.fetchNotifications();
-  //   ();
-  // }
-
   void _onFocusChange() {
     if (_focusNode.hasFocus) {
       _fetchNotifications();
     }
-  }
-
-  void _startPeriodicRefresh() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        _fetchNotifications();
-      }
-    });
   }
 
   Future<void> _fetchNotifications() async {
@@ -88,58 +73,67 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       setState(() {
         _isRefreshing = true;
+        _isLoading = true; // ✅ Start loading
       });
+      print('🔄 Fetching notifications...');
 
       final response = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/notifications/',
         method: 'GET',
       );
 
-      if (!mounted) return; // ✅ Prevents calling setState() if widget is gone
+      if (!mounted) return;
 
-      final ApiService apiService = ApiService(); // ✅ Create an instance
-      final Map<String, dynamic>? userInfo = await apiService.getUserInfo();
-      if (userInfo == null || userInfo['id'] == null) {
-        print('❌ No logged-in user found.');
+      if (response.statusCode != 200) {
+        print('❌ API Error: ${response.statusCode}');
+        setState(() {
+          _error = 'Failed to load notifications';
+          _isLoading = false;
+        });
         return;
       }
-      final int currentUserId = userInfo['id'];
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final unreadNotifications = (data['notifications'] as List)
-            .where((n) =>
-                n['is_read'] == false && n['recipient']['id'] == currentUserId)
-            .toList();
 
-        final unreadCount = unreadNotifications.length;
-
-        print('📱 Server unread count: $unreadCount');
-        print('📱 Total notifications received: ${unreadNotifications.length}');
-        _notificationService.notificationState.setUnreadStatus(unreadCount > 0);
-
-        if (mounted) {
-          // ✅ Ensure widget is still active
-          setState(() {
-            _categories = unreadNotifications.isNotEmpty
-                ? NotificationCategory.updateWithNotifications(
-                    _categories, unreadNotifications)
-                : NotificationCategory.getDefaultCategories();
-            _isLoading = false;
-          });
-        }
-      } else {
-        print('❌ API Error: ${response.statusCode}');
+      final Map<String, dynamic>? userInfo = await _apiService.getUserInfo();
+      if (userInfo == null || userInfo['id'] == null) {
+        print('❌ No logged-in user found.');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
+
+      final int currentUserId = userInfo['id'];
+      final data = json.decode(response.body);
+
+      print('📩 Notifications fetched: ${data['notifications'].length}');
+
+      final unreadNotifications = (data['notifications'] as List)
+          .where((n) =>
+              n['is_read'] == false && n['recipient']['id'] == currentUserId)
+          .toList();
+
+      setState(() {
+        _categories = NotificationCategory.updateWithNotifications(
+            NotificationCategory.getDefaultCategories(), unreadNotifications);
+        _isLoading = false; // ✅ Ensure UI updates
+      });
+
+      final unreadCount = unreadNotifications.length;
+      _notificationService.notificationState.setUnreadStatus(unreadCount > 0);
+      print('✅ Notifications updated, unread count: $unreadCount');
     } catch (e, stackTrace) {
       print('❌ Error in _fetchNotifications: $e');
       print(stackTrace);
+      setState(() {
+        _error = 'Error loading notifications';
+        _isLoading = false; // ✅ Prevent infinite loading
+      });
     } finally {
-      if (mounted) {
-        // ✅ Ensure widget is still active
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
+      setState(() {
+        _isRefreshing = false;
+        _isLoading = false; // ✅ Ensure loading is disabled
+      });
+      print('✅ Fetch completed, _isLoading = $_isLoading');
     }
   }
 
@@ -166,6 +160,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 Building Message Page - isLoading: $_isLoading, error: $_error');
     return Focus(
       focusNode: _focusNode,
       child: Scaffold(
@@ -186,7 +181,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           automaticallyImplyLeading: false,
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator()) // ✅ Stuck here?
             : _error != null
                 ? _buildErrorView()
                 : _buildNotificationsView(),
@@ -197,6 +192,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           onMessagesPressed: _fetchNotifications,
           onMePressed: widget.onMePressed ?? () {},
           onMapPressed: widget.onMapPressed ?? () {},
+          hasUnreadMessages: NotificationService().notificationState.hasUnread,
         ),
       ),
     );

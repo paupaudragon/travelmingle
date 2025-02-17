@@ -13,7 +13,7 @@ from .views import (
     NotificationListView,  RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView,
-    NotificationMarkReadView, RegisterDevice, SendNotification
+    NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -87,5 +87,7 @@ urlpatterns = [
     path("register-device/", RegisterDevice.as_view(), name="register-device"),
     path("send-notification/", SendNotification.as_view(),
          name="send-notification"),
+    path('test-notification/', TestFirebaseNotification.as_view(),
+         name='test-notification'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

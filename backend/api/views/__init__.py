@@ -13,3 +13,4 @@ from .location_posts_views import PostListByLocationView
 from .nearby_posts_views import NearbyPostsView
 from .register_device_views import RegisterDevice
 from .send_notofication_views import SendNotification
+from .firebase_test import TestFirebaseNotification
