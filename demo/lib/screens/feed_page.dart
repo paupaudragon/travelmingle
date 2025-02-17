@@ -55,7 +55,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     checkLoginStatus();
     _loadPosts();
-    _startPollingNotifications;
+    // _startPollingNotifications;
   }
 
   @override
@@ -63,16 +63,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     super.didChangeDependencies();
     NotificationService()
         .fetchNotifications(); // ✅ Replaces checkUnreadNotifications()
-  }
-
-  void _startPollingNotifications() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      if (mounted) {
-        await _notificationService.fetchNotifications();
-        (); // ✅ Background refresh
-      }
-    });
   }
 
   @override
@@ -478,6 +468,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         onMapPressed: () => requireLogin(context, onSuccess: () {
           Navigator.pushNamed(context, '/map');
         }),
+        hasUnreadMessages: NotificationService().notificationState.hasUnread,
       ),
     );
   }

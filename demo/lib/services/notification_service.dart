@@ -20,6 +20,21 @@ class NotificationService {
 
   NotificationState get notificationState => _notificationState;
 
+  void _setupTokenListeners() async {
+    // Get initial token
+    String? token = await _firebaseMessaging.getToken();
+    if (token != null) {
+      print('🔥 Initial FCM Token: $token');
+      await registerDeviceToken(token);
+    }
+
+    // Listen for token refresh
+    _firebaseMessaging.onTokenRefresh.listen((String newToken) async {
+      print('🔄 FCM Token refreshed: $newToken');
+      await registerDeviceToken(newToken);
+    });
+  }
+
   void reset() {
     _notificationState.setUnreadStatus(false);
     _periodicTimer?.cancel();
@@ -46,6 +61,8 @@ class NotificationService {
     );
     print('User granted permission: ${settings.authorizationStatus}');
 
+    _setupTokenListeners();
+
     // Initialize local notifications
     const initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -69,6 +86,9 @@ class NotificationService {
       await registerDeviceToken(token);
     }
 
+    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
+
     // ✅ Ensure correct user data before fetching notifications
     await Future.delayed(const Duration(seconds: 2));
     await NotificationService().fetchNotifications();
@@ -82,6 +102,7 @@ class NotificationService {
 
   Future<void> registerDeviceToken(String token) async {
     try {
+      print('🔄 Registering FCM token with backend...');
       final response = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/register-device/',
         method: 'POST',
@@ -89,20 +110,43 @@ class NotificationService {
       );
 
       if (response.statusCode == 200) {
-        print('✅ Device registered successfully');
+        print(
+            '✅ Device registered successfully with token: ${token.substring(0, 20)}...');
+        final responseData = json.decode(response.body);
+        print('📱 Registration status: ${responseData['status']}');
       } else {
         print('❌ Failed to register device. Status: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        print('Error response: ${response.body}');
+
+        // If authentication error, might need to refresh token
+        if (response.statusCode == 401) {
+          print('🔑 Authentication error - might need to re-authenticate');
+        }
       }
     } catch (e) {
-      print('❌ Error registering device: $e');
+      print('❌ Error registering device token: $e');
+      // You might want to retry after a delay
+      await Future.delayed(Duration(seconds: 5));
+      // Only retry once to avoid infinite loops
+      try {
+        await registerDeviceToken(token);
+      } catch (retryError) {
+        print('❌ Final error registering device token: $retryError');
+      }
     }
   }
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    print('Received foreground message: ${message.notification?.title}');
+    print('📩 New message received: ${message.notification?.title}');
+
+    // Extract message details from payload
+    final messageData = message.data;
+
+    // Update unread message count
+    _notificationState.setUnreadStatus(true);
+
+    // Trigger local notification (optional)
     await _showLocalNotification(message);
-    await NotificationService().fetchNotifications();
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
