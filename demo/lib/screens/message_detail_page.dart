@@ -55,9 +55,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       final unreadItems =
           _items.where((item) => item['is_read'] == false).toList();
 
-      if (unreadItems.isEmpty) return;
+      if (unreadItems.isEmpty) {
+        setState(() {
+          _isMarking = false; // ✅ Ensure we reset UI state
+        });
+        return;
+      }
 
-      // ✅ Batch mark all items as read before calling API
+      // ✅ Update local UI instantly before hitting backend
       setState(() {
         for (final item in unreadItems) {
           final index = _items.indexWhere((i) => i['id'] == item['id']);
@@ -68,10 +73,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       });
 
       NotificationService notificationService = NotificationService();
+
+      // ✅ Immediately update the unread status globally
+      notificationService.notificationState.setUnreadStatus(false);
+
+      // ✅ Make the API call to mark all notifications as read
       await notificationService.markAllAsRead();
 
-      // ✅ Refresh notification state once at the end
+      // ✅ Refresh UI after backend confirms update
       await notificationService.fetchNotifications();
+    } catch (e) {
+      print('❌ Error marking all as read: $e');
     } finally {
       setState(() {
         _isMarking = false;
@@ -83,7 +95,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     final type = NotificationCategory.typeFromString(item['notification_type']);
     if (type != null) {
       await widget.onMessageRead(type, item['id'].toString());
-      // Update local state
+
+      // ✅ Notify FCM & backend
+      await NotificationService().fetchNotifications();
+
+      // ✅ Update UI instantly
       final index = _items.indexWhere((i) => i['id'] == item['id']);
       if (index != -1) {
         setState(() {

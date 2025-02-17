@@ -137,9 +137,16 @@ class NotificationService {
   }
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    print('Received foreground message: ${message.notification?.title}');
+    print('📩 New message received: ${message.notification?.title}');
+
+    // Extract message details from payload
+    final messageData = message.data;
+
+    // Update unread message count
+    _notificationState.setUnreadStatus(true);
+
+    // Trigger local notification (optional)
     await _showLocalNotification(message);
-    await NotificationService().fetchNotifications();
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {

@@ -18,6 +18,7 @@ class Footer extends StatelessWidget {
     required this.onMePressed,
     required this.onMapPressed,
     required Function() onSearchPressed,
+    required bool hasUnreadMessages,
   }) : super(key: key);
 
   @override
