@@ -104,7 +104,9 @@ class _ProfilePageState extends State<ProfilePage>
         }
       }
 
-      final posts = await _apiService.fetchPosts();
+      final posts = await _apiService.fetchPostsBySource(
+        source: "explore",
+      );
 
       if (mounted) {
         setState(() {

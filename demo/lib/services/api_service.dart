@@ -181,52 +181,177 @@ class ApiService {
     print("Logged out successfully.");
   }
 
-// Fetch data section
-  Future<List<Post>> fetchPosts({
+// // Fetch data section
+//   Future<List<Post>> fetchPosts({
+//     List<String>? travelTypes,
+//     List<String>? periods,
+//   }) async {
+//     String? url = "$baseApiUrl/posts/";
+
+//     // Add travel types and periods as query parameters
+//     final queryParams = <String>[];
+//     if (travelTypes != null && travelTypes.isNotEmpty) {
+//       queryParams.add("travel_types=${travelTypes.join(',')}");
+//     }
+//     if (periods != null && periods.isNotEmpty) {
+//       queryParams.add("periods=${periods.join(',')}");
+//     }
+
+//     if (queryParams.isNotEmpty) {
+//       url += "?${queryParams.join('&')}";
+//     }
+
+//     print("Request URL: $url"); // Debug the URL
+
+//     final response = await makeAuthenticatedRequest(
+//       url: url,
+//       method: 'GET',
+//     );
+
+//     if (response.statusCode == 200) {
+//       final List<dynamic> data = jsonDecode(response.body);
+//       // print("Fetched Posts Response: $data"); // Log the full response
+
+//       final posts = data.map((json) => Post.fromJson(json)).toList();
+
+//       // 🔥 Force UI update with childPosts if they were null before
+//       // for (var post in posts) {
+//       //   if (post.period == "multipleday" && post.childPosts!.isEmpty) {
+//       //     print("❌ Missing childPosts in Post ID: ${post.id}");
+//       //   } else {
+//       //     print(
+//       //         "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
+//       //   }
+//       // }
+//       return posts;
+//     } else {
+//       // print("Error fetching posts: ${response.body}");
+//       throw Exception("Failed to fetch posts: ${response.body}");
+//     }
+//   }
+
+  // Future<List<Post>> fetchNearbyPosts({
+  //   required double latitude,
+  //   required double longitude,
+  //   double radius = 5,
+  //   int limit = 20,
+  // }) async {
+  //   try {
+  //     final queryParams = {
+  //       'latitude': latitude.toString(),
+  //       'longitude': longitude.toString(),
+  //       'radius': radius.toString(),
+  //       'limit': limit.toString(),
+  //     };
+
+  //     final String url =
+  //         '$baseApiUrl/posts/nearby/?${Uri(queryParameters: queryParams).query}';
+  //     print('🔍 Fetching nearby posts from: $url');
+
+  //     final response = await makeAuthenticatedRequest(
+  //       url: url,
+  //       method: 'GET',
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       final data = jsonDecode(response.body);
+  //       print('✅ Found ${data['posts'].length} nearby posts');
+  //       return (data['posts'] as List)
+  //           .map((json) => Post.fromJson(json))
+  //           .toList();
+  //     } else {
+  //       print('❌ Error fetching nearby posts: ${response.body}');
+  //       throw Exception('Failed to fetch nearby posts: ${response.body}');
+  //     }
+  //   } catch (e) {
+  //     print('❌ Error in fetchNearbyPosts: $e');
+  //     throw Exception('Failed to fetch nearby posts');
+  //   }
+  // }
+
+  Future<List<Post>> fetchPostsBySource({
+    required String source, // 'explore', 'nearby', 'follow'
+    double? latitude,
+    double? longitude,
+    double radius = 5,
+    int limit = 20,
     List<String>? travelTypes,
     List<String>? periods,
   }) async {
-    String? url = "$baseApiUrl/posts/";
+    try {
+      String url = '$baseApiUrl/posts/'; // Default to 'explore'
 
-    // Add travel types and periods as query parameters
-    final queryParams = <String>[];
-    if (travelTypes != null && travelTypes.isNotEmpty) {
-      queryParams.add("travel_types=${travelTypes.join(',')}");
-    }
-    if (periods != null && periods.isNotEmpty) {
-      queryParams.add("periods=${periods.join(',')}");
-    }
+      // Handle different sources
+      if (source == 'nearby') {
+        if (latitude == null || longitude == null) {
+          throw Exception(
+              'Latitude and Longitude are required for nearby posts');
+        }
+        url =
+            '$baseApiUrl/posts/nearby/?latitude=$latitude&longitude=$longitude&radius=$radius';
+      } else if (source == 'follow') {
+        url = '$baseApiUrl/posts/follow/';
+      }
 
-    if (queryParams.isNotEmpty) {
-      url += "?${queryParams.join('&')}";
-    }
+      // Attach filters dynamically
+      final Map<String, String> queryParams = {
+        if (travelTypes != null && travelTypes.isNotEmpty)
+          'travel_types': travelTypes.join(','),
+        if (periods != null && periods.isNotEmpty) 'periods': periods.join(','),
+        'limit': limit.toString(),
+      };
 
-    print("Request URL: $url"); // Debug the URL
+      // Ensure URL formatting is correct
+      if (queryParams.isNotEmpty) {
+        final queryString = Uri(queryParameters: queryParams).query;
+        url += url.contains('?') ? '&$queryString' : '?$queryString';
+      }
 
-    final response = await makeAuthenticatedRequest(
-      url: url,
-      method: 'GET',
-    );
+      print('🔍 Fetching $source posts from: $url');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      // print("Fetched Posts Response: $data"); // Log the full response
+      final response = await makeAuthenticatedRequest(
+        url: url,
+        method: 'GET',
+      );
 
-      final posts = data.map((json) => Post.fromJson(json)).toList();
+      if (response.statusCode == 200) {
+        final String responseBody = response.body;
 
-      // 🔥 Force UI update with childPosts if they were null before
-      // for (var post in posts) {
-      //   if (post.period == "multipleday" && post.childPosts!.isEmpty) {
-      //     print("❌ Missing childPosts in Post ID: ${post.id}");
-      //   } else {
-      //     print(
-      //         "✅ Post ID: ${post.id} has ${post.childPosts!.length} child posts");
-      //   }
-      // }
-      return posts;
-    } else {
-      // print("Error fetching posts: ${response.body}");
-      throw Exception("Failed to fetch posts: ${response.body}");
+        // Debug response body (prints first 200 characters)
+        print(
+            "✅ API Response: ${responseBody.substring(0, responseBody.length > 200 ? 200 : responseBody.length)}");
+
+        final dynamic data = jsonDecode(responseBody);
+
+        // ✅ Handling LIST response (if API returns a list of posts directly)
+        if (data is List) {
+          final List<Post> posts = data
+              .map((json) => Post.fromJson(json as Map<String, dynamic>))
+              .toList();
+          print('✅ Found ${posts.length} $source posts');
+          return posts;
+        }
+
+        // ✅ Handling MAP response (if API wraps posts inside a key)
+        else if (data is Map<String, dynamic> &&
+            data.containsKey('posts') &&
+            data['posts'] is List) {
+          final List<Post> posts = (data['posts'] as List)
+              .map((json) => Post.fromJson(json as Map<String, dynamic>))
+              .toList();
+          print('✅ Found ${posts.length} $source posts');
+          return posts;
+        } else {
+          print('❌ Unexpected API response structure: $data');
+          throw Exception('Unexpected API response format');
+        }
+      } else {
+        print('❌ Error fetching $source posts: ${response.body}');
+        throw Exception('Failed to fetch $source posts: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error in fetchPostsBySource: $e');
+      return [];
     }
   }
 
@@ -756,44 +881,5 @@ class ApiService {
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
-  }
-
-  Future<List<Post>> fetchNearbyPosts({
-    required double latitude,
-    required double longitude,
-    double radius = 5,
-    int limit = 20,
-  }) async {
-    try {
-      final queryParams = {
-        'latitude': latitude.toString(),
-        'longitude': longitude.toString(),
-        'radius': radius.toString(),
-        'limit': limit.toString(),
-      };
-
-      final String url =
-          '$baseApiUrl/posts/nearby/?${Uri(queryParameters: queryParams).query}';
-      print('🔍 Fetching nearby posts from: $url');
-
-      final response = await makeAuthenticatedRequest(
-        url: url,
-        method: 'GET',
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print('✅ Found ${data['posts'].length} nearby posts');
-        return (data['posts'] as List)
-            .map((json) => Post.fromJson(json))
-            .toList();
-      } else {
-        print('❌ Error fetching nearby posts: ${response.body}');
-        throw Exception('Failed to fetch nearby posts: ${response.body}');
-      }
-    } catch (e) {
-      print('❌ Error in fetchNearbyPosts: $e');
-      throw Exception('Failed to fetch nearby posts');
-    }
   }
 }

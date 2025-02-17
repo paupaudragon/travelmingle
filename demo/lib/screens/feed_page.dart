@@ -35,6 +35,10 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   Timer? _refreshTimer;
   final NotificationService _notificationService = NotificationService();
 
+  String source = "explore";
+  List<String> travelFilters = [];
+  List<String> periodFilters = [];
+
   //Category and period filter
   List<String> selectedTravelTypes = [];
   List<String> selectedPeriods = [];
@@ -54,7 +58,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     checkLoginStatus();
-    _loadPosts();
+    _loadPosts("explore");
     // _startPollingNotifications;
   }
 
@@ -76,7 +80,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _loadPosts();
+      _loadPosts(source);
     }
   }
 
@@ -125,7 +129,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _loadPosts() async {
+  Future<void> _loadPosts(String source) async {
     if (!mounted) return;
 
     try {
@@ -133,7 +137,40 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         isLoading = true;
       });
 
-      final fetchedPosts = await _apiService.fetchPosts();
+      this.source = source;
+
+      // Store filters properly
+      travelFilters =
+          selectedTravelTypes.map((type) => type.toLowerCase()).toList();
+      periodFilters = selectedPeriods
+          .map((period) => period.toLowerCase().replaceAll(' ', ''))
+          .toList();
+
+      List<Post> fetchedPosts = [];
+
+      if (source == "nearby") {
+        // Get user's current location
+        final position = await _apiService.getCurrentLocation();
+
+        // Fetch nearby posts
+        fetchedPosts = await _apiService.fetchPostsBySource(
+          source: "nearby",
+          latitude: position.latitude,
+          longitude: position.longitude,
+          radius: _radius,
+          travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+          periods: periodFilters.isNotEmpty ? periodFilters : null,
+        );
+      } else {
+        // Fetch other types (explore, follow)
+        fetchedPosts = await _apiService.fetchPostsBySource(
+          source: source,
+          travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+          periods: periodFilters.isNotEmpty ? periodFilters : null,
+        );
+      }
+
+      // Update UI once posts are fetched
 
       if (!mounted) return;
 
@@ -151,38 +188,41 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _loadNearbyPosts() async {
-    if (!mounted) return;
+  // Future<void> _loadNearbyPosts() async {
+  //   if (!mounted) return;
 
-    try {
-      // Start loading animation
-      setState(() => isLoading = true);
+  //   try {
+  //     // Start loading animation
+  //     setState(() => isLoading = true);
 
-      // Get location asynchronously
-      final position = await _apiService.getCurrentLocation();
+  //     // Get location asynchronously
+  //     final position = await _apiService.getCurrentLocation();
 
-      // Begin fetching nearby posts after location retrieval
-      final fetchedPosts = await _apiService.fetchNearbyPosts(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        radius: _radius,
-      );
+  //     source = "nearby";
 
-      // Update UI once posts are fetched
-      if (!mounted) return;
-      setState(() {
-        posts = fetchedPosts;
-        isLoading = false;
-      });
-      _refreshController.refreshCompleted();
-    } catch (e) {
-      setState(() => isLoading = false);
-      _refreshController.refreshFailed();
-      print('Error loading nearby posts: $e');
-    }
-  }
+  //     // Begin fetching nearby posts after location retrieval
+  //     final fetchedPosts = await _apiService.fetchPostsBySource(
+  //       source: source,
+  //       latitude: position.latitude,
+  //       longitude: position.longitude,
+  //       radius: _radius,
+  //     );
 
-  Future<void> _fetchPosts() async {
+  //     // Update UI once posts are fetched
+  //     if (!mounted) return;
+  //     setState(() {
+  //       posts = fetchedPosts;
+  //       isLoading = false;
+  //     });
+  //     _refreshController.refreshCompleted();
+  //   } catch (e) {
+  //     setState(() => isLoading = false);
+  //     _refreshController.refreshFailed();
+  //     print('Error loading nearby posts: $e');
+  //   }
+  // }
+
+  Future<void> _filterAndFetchPost() async {
     if (!mounted) return;
 
     try {
@@ -190,27 +230,16 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         isLoading = true;
       });
       // Ensure filters are properly formatted
-      final travelFilters =
+      travelFilters =
           selectedTravelTypes.map((type) => type.toLowerCase()).toList();
-      final periodFilters = selectedPeriods
+      periodFilters = selectedPeriods
           .map((period) => period.toLowerCase().replaceAll(' ', ''))
           .toList();
 
+      _loadPosts(source);
+
       print(
           'Fetching posts with filters - Travel Types: $travelFilters, Periods: $periodFilters'); // Debug print
-
-      // Fetch posts from the API
-      final fetchedPosts = await _apiService.fetchPosts(
-        travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
-        periods: periodFilters.isNotEmpty ? periodFilters : null,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        posts = fetchedPosts;
-        isLoading = false;
-      });
     } catch (e) {
       if (!mounted) return;
 
@@ -237,6 +266,15 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   }
 
 //Navigation section
+  Future<void> navigateToFeedPage() async {
+    requireLogin(context, onSuccess: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => FeedPage()),
+      );
+    });
+  }
+
   void navigateToPostDetail(Post post) async {
     requireLogin(context, onSuccess: () async {
       await Navigator.push(
@@ -255,7 +293,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
             },
           ),
         ),
-      ).then((_) => _loadPosts());
+      ).then((_) => _loadPosts(source));
     });
   }
 
@@ -264,7 +302,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => CreatePostPage()),
-      ).then((_) => _loadPosts());
+      ).then((_) => _loadPosts(source));
     });
   }
 
@@ -273,24 +311,34 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) => _loadPosts());
+      ).then((_) => _loadPosts(source));
     });
   }
 
   void navigateToMessagePage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => NotificationsScreen(
-          onHomePressed: _loadPosts,
-          onSearchPressed: navigateToSearchPage,
-          onPlusPressed: navigateToCreatePost,
-          onMessagesPressed: () {},
-          onMePressed: navigateToProfilePage,
-          onMapPressed: navigateToMapPage,
+    requireLogin(context, onSuccess: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NotificationsScreen(
+            onHomePressed: () {
+              Navigator.pop(context); // Ensure we return to FeedPage
+              setState(() {
+                _loadPosts(source); // Refresh FeedPage when returning
+              });
+            },
+            onSearchPressed: navigateToSearchPage,
+            onPlusPressed: navigateToCreatePost,
+            onMessagesPressed: navigateToMessagePage,
+            onMePressed: navigateToProfilePage,
+            onMapPressed: navigateToMapPage,
+          ),
         ),
-      ),
-    );
+      ).then((_) {
+        // Ensures feed refreshes when returning
+        _loadPosts(source);
+      });
+    });
   }
 
   void navigateToMapPage() {
@@ -298,7 +346,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const MapTestScreen()),
-      ).then((_) => _loadPosts());
+      ).then((_) => _loadPosts(source));
     });
   }
 
@@ -307,7 +355,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const SearchPage()),
-      ).then((_) => _loadPosts());
+      ).then((_) => _loadPosts(source));
     });
   }
 
@@ -388,7 +436,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                 print('Selected Travel Types: $selectedTravelTypes'); // Debug
                 print('Selected Periods: $selectedPeriods'); // Debug
                 Navigator.pop(context);
-                _fetchPosts(); // Refresh posts with the selected filters
+                _filterAndFetchPost(); // Refresh posts with the selected filters
               },
               child: const Text("Apply"),
             ),
@@ -405,9 +453,9 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: Header(
-          onFollowPressed: () => _loadPosts,
-          onExplorePressed: () => _loadPosts(),
-          onNearbyPressed: () => _loadNearbyPosts(),
+          onFollowPressed: () => _loadPosts("follow"),
+          onExplorePressed: () => _loadPosts("explore"),
+          onNearbyPressed: () => _loadPosts("nearby"),
           onSearchPressed: () => navigateToSearchPage(),
           onCreateUserPressed: () {
             Navigator.pushNamed(context, '/register');
@@ -425,7 +473,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                     ? const Center(child: Text("No posts available."))
                     : SmartRefresher(
                         controller: _refreshController,
-                        onRefresh: _loadPosts,
+                        onRefresh: () => _loadPosts(source),
                         child: Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: MasonryGridView.count(
@@ -455,7 +503,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       //Footer (Navigation Bar)
       bottomNavigationBar: Footer(
         onSearchPressed: () => navigateToSearchPage(),
-        onHomePressed: _loadPosts,
+        onHomePressed: () => _loadPosts("explore"),
         onPlusPressed: () {
           navigateToCreatePost();
         },
