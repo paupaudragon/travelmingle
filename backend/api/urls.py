@@ -36,7 +36,7 @@ urlpatterns = [
     path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),
     path('posts/<int:post_id>/save/', ToggleSaveView.as_view(), name='post-save'),
     #Followed User's Post
-    path('posts/follow', FollowPostView.as_view(), name='follow-posts'),
+    path('posts/follow/', FollowPostView.as_view(), name='follow-posts'),
     #Nearby Post
     path('posts/nearby/', NearbyPostsView.as_view(), name='nearby-posts'),
     #By Location Post

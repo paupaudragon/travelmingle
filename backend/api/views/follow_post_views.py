@@ -4,11 +4,27 @@ from rest_framework import status, permissions
 from ..models import Posts, Follow
 from ..serializers import PostSerializer
 
+import re  # regular expressions
+from django.db.models import Func, F, Value
+
 class FollowPostView(APIView):
     """
     API view to fetch posts from users the authenticated user follows.
     """
     permission_classes = [permissions.IsAuthenticated]
+
+    def preprocess_filter_values(self, values):
+        """
+        Helper function to preprocess filter values by removing spaces,
+        special characters, and converting to lowercase.
+        """
+        processed = []
+        for value in values:
+            value = re.sub(r'[^\w]', '', value)  # Remove non-alphanumeric characters
+            value = value.strip().lower()  # Trim and convert to lowercase
+            if value:  # Add only if not empty
+                processed.append(value)
+        return processed
 
     def get(self, request):
         user = request.user
@@ -25,19 +41,6 @@ class FollowPostView(APIView):
         # Retrieve filter parameters
         travel_types = request.query_params.get('travel_types', '').split(',')
         periods = request.query_params.get('periods', '').split(',')
-
-        def preprocess_filter_values(self, values):
-            """
-            Helper function to preprocess filter values by removing spaces,
-            special characters, and converting to lowercase.
-            """
-            processed = []
-            for value in values:
-                value = re.sub(r'[^\w]', '', value)  # Remove non-alphanumeric characters
-                value = value.strip().lower()  # Trim and convert to lowercase
-                if value:  # Add only if not empty
-                    processed.append(value)
-            return processed
 
         # Process filter values
         travel_types = self.preprocess_filter_values(travel_types)
