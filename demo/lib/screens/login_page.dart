@@ -206,11 +206,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               },
             ),
           ),
+          // Refresh button
           Positioned(
             top: 40,
             right: 20,
             child: Opacity(
-              opacity: 0.6,
+              opacity: 0.8,
               child: IconButton(
                 icon: SvgPicture.asset(
                   'assets/icons/refresh.svg',
