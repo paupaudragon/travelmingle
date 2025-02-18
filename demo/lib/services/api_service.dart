@@ -908,4 +908,9 @@ class ApiService {
       desiredAccuracy: LocationAccuracy.high,
     );
   }
+
+  Future<void> saveToken(String token) async {
+    await _storage.write(key: "access_token", value: token);
+    _cachedToken = token;
+  }
 }
