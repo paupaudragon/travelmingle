@@ -96,7 +96,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => FollowListPage(
-                userId: item['sender']['id'],
+                userId: item['recipient']['id'],
                 initialTabIndex: 1,
               ),
             ),
@@ -271,7 +271,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
                 return ListTile(
                   onTap: () => _handleItemTap(item),
-                  title: Text(item['message'] ?? 'No message'),
+                  title: Text(_getNotificationMessage(item)),
                   subtitle: Text(item['created_at'] ?? ''),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -293,5 +293,16 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               },
             ),
     );
+  }
+
+  String _getNotificationMessage(Map<String, dynamic> item) {
+    final notificationType = item['notification_type'];
+
+    if (notificationType == 'follow') {
+      final senderUsername = item['sender']?['username'] ?? 'Someone';
+      return '$senderUsername started following you';
+    }
+
+    return item['message'] ?? 'New notification';
   }
 }
