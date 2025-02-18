@@ -54,3 +54,16 @@ class DeviceManager:
             if 'SenderId mismatch' in str(e):
                 return False, "Invalid token: Sender ID mismatch"
             return False, f"Token validation failed: {str(e)}"
+
+    @staticmethod
+    def unregister_device(user, token):
+        """Remove the device token from the database"""
+        try:
+            device = Device.objects.filter(user=user, token=token).first()
+            if device:
+                device.delete()
+                return True, "Device unregistered successfully"
+            return False, "Device token not found"
+        except Exception as e:
+            print(f"Error unregistering device: {e}")
+            return False, "An error occurred while unregistering the device"
