@@ -103,6 +103,14 @@ class NotificationService {
   Future<void> registerDeviceToken(String token) async {
     try {
       print('🔄 Registering FCM token with backend...');
+
+      // Ensure user is authenticated before proceeding
+      final authToken = await _apiService.getAccessToken();
+      if (authToken == null) {
+        print('❌ Skipping FCM token registration: User not authenticated.');
+        return; // Stop execution if no auth token is available
+      }
+
       final response = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/register-device/',
         method: 'POST',
@@ -112,27 +120,11 @@ class NotificationService {
       if (response.statusCode == 200) {
         print(
             '✅ Device registered successfully with token: ${token.substring(0, 20)}...');
-        final responseData = json.decode(response.body);
-        print('📱 Registration status: ${responseData['status']}');
       } else {
         print('❌ Failed to register device. Status: ${response.statusCode}');
-        print('Error response: ${response.body}');
-
-        // If authentication error, might need to refresh token
-        if (response.statusCode == 401) {
-          print('🔑 Authentication error - might need to re-authenticate');
-        }
       }
     } catch (e) {
       print('❌ Error registering device token: $e');
-      // You might want to retry after a delay
-      await Future.delayed(Duration(seconds: 5));
-      // Only retry once to avoid infinite loops
-      try {
-        await registerDeviceToken(token);
-      } catch (retryError) {
-        print('❌ Final error registering device token: $retryError');
-      }
     }
   }
 
