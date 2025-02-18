@@ -40,7 +40,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     try {
       await _notificationService.fetchNotifications();
       setState(() {
-        _items = List.from(widget.category.items);
+        _items = widget.category.items.map((item) {
+          if (item is Map) {
+            return Map<String, dynamic>.from(item);
+          }
+          return <String, dynamic>{};
+        }).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -52,73 +57,98 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     }
   }
 
-  Future<void> _handleItemTap(dynamic item) async {
-    // Prevent double navigation
+  Future<void> _handleItemTap(dynamic rawItem) async {
     if (_isNavigating) return;
     _isNavigating = true;
 
     try {
-      // Mark as read if needed
+      // Helper function to recursively convert maps
+      Map<String, dynamic> convertMap(Map map) {
+        return map.map((key, value) {
+          if (value is Map) {
+            return MapEntry(key.toString(), convertMap(value));
+          } else if (value is List) {
+            return MapEntry(
+                key.toString(),
+                value.map((item) {
+                  if (item is Map) {
+                    return convertMap(item);
+                  }
+                  return item;
+                }).toList());
+          }
+          return MapEntry(key.toString(), value);
+        });
+      }
+
+      // Convert the raw item
+      final Map<String, dynamic> item = convertMap(rawItem as Map);
+
+      // Mark notification as read if it's unread
       if (item['is_read'] == false) {
-        final type =
-            NotificationCategory.typeFromString(item['notification_type']);
-        if (type != null) {
-          // Update local state
-          final index = _items.indexWhere((i) => i['id'] == item['id']);
+        final notificationId = item['id'];
+        print('📱 Marking notification $notificationId as read');
+
+        try {
+          // Call the notification service to mark as read
+          await NotificationService().markNotificationAsRead(notificationId);
+
+          // Update local state after successful API call
+          final index = _items.indexWhere((i) => i['id'] == notificationId);
           if (index != -1) {
             setState(() {
-              _items[index] = Map.from(_items[index])..['is_read'] = true;
+              _items[index] = Map<String, dynamic>.from(_items[index])
+                ..['is_read'] = true;
             });
           }
-
-          // Call the notification service in the background
-          NotificationService()
-              .markNotificationAsRead(item['id'])
-              .catchError((e) {
-            print('❌ Error marking notification as read: $e');
-          });
+        } catch (e) {
+          print('❌ Error marking notification as read: $e');
         }
       }
 
-      if (!mounted) return;
-
-      // Handle navigation based on notification type
       final notificationType = item['notification_type'];
-      final postData = item['post'];
-
-      print('📱 Notification type: $notificationType');
-      print('📱 Post data: $postData');
+      print('📱 Processing notification type: $notificationType');
 
       if (notificationType == 'follow') {
-        if (item['sender'] != null && item['sender']['id'] != null) {
+        final recipientData = item['recipient'] as Map<String, dynamic>;
+        final recipientId = recipientData['id'];
+
+        print('📱 Navigating to follower list for user ID: $recipientId');
+
+        if (recipientId != null) {
           if (!mounted) return;
-          Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => FollowListPage(
-                userId: item['recipient']['id'],
+                userId: recipientId,
                 initialTabIndex: 1,
               ),
             ),
           );
+          // Reload notifications after returning
+          await _loadAllNotifications();
         }
-      } else if (postData != null && postData['id'] != null) {
+      } else if (item['post'] != null) {
+        final postData = item['post'] as Map<String, dynamic>;
         final postId = postData['id'];
-        print('📱 Navigating to post: $postId');
 
-        if (!mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PostPage(
-              postId: postId,
-              onPostUpdated: (updatedPost) {
-                print('📱 Post updated: ${updatedPost.id}');
-                _loadAllNotifications();
-              },
+        if (postId != null) {
+          print('📱 Navigating to post: $postId');
+          if (!mounted) return;
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostPage(
+                postId: postId,
+                onPostUpdated: (updatedPost) {
+                  print('📱 Post updated: ${updatedPost.id}');
+                  _loadAllNotifications();
+                },
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
       print('❌ Error in _handleItemTap: $e');
@@ -131,7 +161,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         );
       }
     } finally {
-      _isNavigating = false; // Reset the navigation flag
+      _isNavigating = false;
     }
   }
 
