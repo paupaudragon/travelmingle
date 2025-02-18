@@ -1,4 +1,5 @@
 import 'package:demo/main.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:ui';
@@ -11,7 +12,7 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool isLoading = false;
@@ -85,7 +86,11 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isEmpty || password.isEmpty) {
       showErrorSnackbar('Please fill out all fields');
-      isFormVisible = true; // Ensure the form is visible
+      Future.delayed(const Duration(milliseconds: 300), () {
+        setState(() {
+          isFormVisible = true; // Ensure the form is visible
+        });
+      });
       return;
     }
 
@@ -181,7 +186,8 @@ class _LoginPageState extends State<LoginPage> {
           // Background image
           Positioned.fill(
             child: TweenAnimationBuilder(
-              duration: const Duration(milliseconds: 600), // Longer time for smoother animation
+              duration: const Duration(
+                  milliseconds: 600), // Longer time for smoother animation
               tween:
                   Tween<double>(begin: _wallpaperScale, end: _wallpaperScale),
               curve: Curves.easeInOut,
@@ -200,15 +206,18 @@ class _LoginPageState extends State<LoginPage> {
               },
             ),
           ),
-
-          // Change wallpaper button
           Positioned(
             top: 40,
             right: 20,
             child: Opacity(
               opacity: 0.6,
               child: IconButton(
-                icon: const Icon(Icons.image, size: 28, color: Colors.white),
+                icon: SvgPicture.asset(
+                  'assets/icons/refresh.svg',
+                  width: 28,
+                  height: 28,
+                  colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
                 onPressed: changeWallpaper,
                 tooltip: "Change Wallpaper",
               ),
@@ -278,7 +287,8 @@ class _LoginPageState extends State<LoginPage> {
                   animateCardToHide(); // Hide the card directly
                 } else {
                   setState(() {
-                    cardOffset = 0; // Otherwise, return to the original position
+                    cardOffset =
+                        0; // Otherwise, return to the original position
                   });
                 }
               },
@@ -313,7 +323,8 @@ class _LoginPageState extends State<LoginPage> {
                               filled: true,
                               fillColor: Colors.transparent,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(17), // Set the corner radius
+                                borderRadius: BorderRadius.circular(
+                                    17), // Set the corner radius
                                 borderSide: const BorderSide(
                                     color: greyColor), // Default gray border
                               ),
@@ -326,14 +337,13 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(17),
                                 borderSide: BorderSide(
                                     color: primaryColor,
-                                    width: 2), // Change to primaryColor when selected
+                                    width:
+                                        2), // Change to primaryColor when selected
                               ),
                             ),
                             enabled: enableInteraction,
                           ),
-
-const SizedBox(height: 20),
-
+                          const SizedBox(height: 20),
                           TextField(
                             controller: _passwordController,
                             obscureText: true,
@@ -343,13 +353,11 @@ const SizedBox(height: 20),
                               fillColor: Colors.transparent,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(17),
-                                borderSide:
-                                    const BorderSide(color: greyColor),
+                                borderSide: const BorderSide(color: greyColor),
                               ),
                               enabledBorder: OutlineInputBorder(
-borderRadius: BorderRadius.circular(17),
-                                borderSide:
-                                    const BorderSide(color: greyColor),
+                                borderRadius: BorderRadius.circular(17),
+                                borderSide: const BorderSide(color: greyColor),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(17),

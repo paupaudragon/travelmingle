@@ -96,20 +96,7 @@ flutter:
     - assets/wallpapers/sample4.jpg
     - assets/wallpapers/sample5.jpg
 
-    - assets/icons/filter_filled.svg
-    - assets/icons/filter.svg
-    - assets/icons/home_filled.svg
-    - assets/icons/home.svg
-    - assets/icons/map_filled.svg
-    - assets/icons/map.svg
-    - assets/icons/me_filled.svg
-    - assets/icons/me.svg
-    - assets/icons/message_filled.svg
-    - assets/icons/message.svg
-    - assets/icons/search.svg
-    - assets/icons/create.svg
-    - assets/icons/create.png
-    - assets/icons/create2.svg
+    - assets/icons/
     - assets/tm_logo.png
 
 
