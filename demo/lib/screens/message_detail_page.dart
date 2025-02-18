@@ -24,6 +24,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   bool _isMarking = false;
   List<dynamic> _items = [];
   bool _isLoading = true;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -52,83 +53,85 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   Future<void> _handleItemTap(dynamic item) async {
-    // Debug print to see the full notification item
-    print('Tapped notification item: $item');
+    // Prevent double navigation
+    if (_isNavigating) return;
+    _isNavigating = true;
 
-    // Mark as read if unread
-    if (item['is_read'] == false) {
-      await _markItemAsRead(item);
-    }
+    try {
+      // Mark as read if needed
+      if (item['is_read'] == false) {
+        final type =
+            NotificationCategory.typeFromString(item['notification_type']);
+        if (type != null) {
+          // Update local state
+          final index = _items.indexWhere((i) => i['id'] == item['id']);
+          if (index != -1) {
+            setState(() {
+              _items[index] = Map.from(_items[index])..['is_read'] = true;
+            });
+          }
 
-    if (!mounted) return;
-
-    // Check notification type
-    final notificationType = item['notification_type'];
-
-    if (notificationType == 'follow') {
-      // For follow notifications, navigate to the current user's follower list
-      if (item['recipient'] != null && item['recipient']['id'] != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FollowListPage(
-              userId: item['recipient']['id'],
-              initialTabIndex: 1, // 1 is for followers tab
-            ),
-          ),
-        );
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Cannot navigate to followers list - User info not found'),
-            ),
-          );
+          // Call the notification service in the background
+          NotificationService()
+              .markNotificationAsRead(item['id'])
+              .catchError((e) {
+            print('❌ Error marking notification as read: $e');
+          });
         }
       }
-    } else {
-      // Handle post-related notifications (likes, comments, etc.)
-      final postData = item['post'];
-      if (postData != null) {
-        final postId = postData['id'];
-        print('Extracted post_id: $postId');
 
-        try {
+      if (!mounted) return;
+
+      // Handle navigation based on notification type
+      final notificationType = item['notification_type'];
+      final postData = item['post'];
+
+      print('📱 Notification type: $notificationType');
+      print('📱 Post data: $postData');
+
+      if (notificationType == 'follow') {
+        if (item['sender'] != null && item['sender']['id'] != null) {
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PostPage(
-                postId: postId,
-                onPostUpdated: (updatedPost) {
-                  print('Post updated: ${updatedPost.id}');
-                  _loadAllNotifications();
-                },
+              builder: (context) => FollowListPage(
+                userId: item['sender']['id'],
+                initialTabIndex: 1,
               ),
             ),
           );
-        } catch (e) {
-          print('Error navigating to post: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error navigating to post: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
         }
-      } else {
-        print('No post data found in notification item');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Cannot navigate to this notification content - No post data found'),
+      } else if (postData != null && postData['id'] != null) {
+        final postId = postData['id'];
+        print('📱 Navigating to post: $postId');
+
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostPage(
+              postId: postId,
+              onPostUpdated: (updatedPost) {
+                print('📱 Post updated: ${updatedPost.id}');
+                _loadAllNotifications();
+              },
             ),
-          );
-        }
+          ),
+        );
       }
+    } catch (e) {
+      print('❌ Error in _handleItemTap: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing notification: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      _isNavigating = false; // Reset the navigation flag
     }
   }
 
@@ -173,17 +176,34 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   Future<void> _markItemAsRead(dynamic item) async {
-    final type = NotificationCategory.typeFromString(item['notification_type']);
-    if (type != null) {
-      await widget.onMessageRead(type, item['id'].toString());
-      await NotificationService().fetchNotifications();
+    try {
+      final type =
+          NotificationCategory.typeFromString(item['notification_type']);
+      if (type != null) {
+        final notificationId = item['id'];
+        print('📱 Marking notification $notificationId as read'); // Debug print
 
-      final index = _items.indexWhere((i) => i['id'] == item['id']);
-      if (index != -1) {
-        setState(() {
-          _items[index] = Map.from(_items[index])..['is_read'] = true;
-        });
+        // Update local state first for immediate UI feedback
+        final index = _items.indexWhere((i) => i['id'] == notificationId);
+        if (index != -1) {
+          setState(() {
+            _items[index] = Map.from(_items[index])..['is_read'] = true;
+          });
+        }
+
+        // Call the notification service
+        await NotificationService().markNotificationAsRead(notificationId);
+
+        // Update the UI callback
+        await widget.onMessageRead(type, notificationId.toString());
+
+        // Refresh notifications
+        await _loadAllNotifications();
       }
+    } catch (e) {
+      print('❌ Error marking item as read: $e');
+      // Refresh notifications on error to ensure consistent state
+      await _loadAllNotifications();
     }
   }
 

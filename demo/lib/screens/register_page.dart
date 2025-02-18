@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:demo/services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
@@ -55,7 +57,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         : ClipOval(
                             child: Image.file(
                               _profileImage!,
-                              width: 80, 
+                              width: 80,
                               height: 80,
                               fit: BoxFit
                                   .cover, // This ensures the image covers the circle properly
@@ -128,7 +130,7 @@ class _RegisterPageState extends State<RegisterPage> {
       });
 
       try {
-        final errorMessage = await ApiService.registerAUser(
+        final response = await ApiService.registerAUser(
           username: _usernameController.text,
           email: _emailController.text,
           password: _passwordController.text,
@@ -140,14 +142,31 @@ class _RegisterPageState extends State<RegisterPage> {
           isLoading = false;
         });
 
-        if (errorMessage == null) {
+        if (response != null && response["access_token"] != null) {
+          await ApiService().saveToken(response["access_token"]);
+
+          // Ensure user is authenticated before registering FCM token
+          String? fcmToken = await FirebaseMessaging.instance.getToken();
+          if (fcmToken != null) {
+            final authToken = await ApiService().getAccessToken();
+            if (authToken != null) {
+              await NotificationService().registerDeviceToken(fcmToken);
+            } else {
+              print(
+                  '⚠️ Skipping FCM registration, user not authenticated yet.');
+            }
+          }
+
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful!')),
+            const SnackBar(
+                content: Text('Registration successful! Logging in...')),
           );
-          Navigator.pop(context);
+
+          await Navigator.pushReplacementNamed(context, "/feed");
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage)),
+            SnackBar(content: Text(response?["error"] ?? "Unknown error")),
           );
         }
       } catch (e) {

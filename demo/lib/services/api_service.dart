@@ -178,6 +178,28 @@ class ApiService {
     await _storage.delete(key: "current_user_id");
     _cachedToken = null;
     _currentUserId = null;
+
+    // Unregister FCM Token
+    String? fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      print('🔄 Unregistering FCM token on logout...');
+      try {
+        final response = await makeAuthenticatedRequest(
+          url: '${ApiService.baseApiUrl}/register-device/',
+          method: 'DELETE',
+          body: {"token": fcmToken},
+        );
+
+        if (response.statusCode == 200) {
+          print('✅ Device unregistered successfully');
+        } else {
+          print('⚠️ Failed to unregister device. Response: ${response.body}');
+        }
+      } catch (e) {
+        print('❌ Failed to unregister device: $e');
+      }
+    }
+
     print("Logged out successfully.");
   }
 
@@ -565,7 +587,7 @@ class ApiService {
     }
   }
 
-  static Future<String?> registerAUser({
+  static Future<Map<String, dynamic>?> registerAUser({
     required String username,
     required String email,
     required String password,
@@ -573,6 +595,7 @@ class ApiService {
     String? profileImagePath,
   }) async {
     const String url = "$baseApiUrl/register/";
+
     final request = http.MultipartRequest('POST', Uri.parse(url))
       ..fields['username'] = username
       ..fields['email'] = email
@@ -586,13 +609,16 @@ class ApiService {
       ));
     }
 
-    final response = await request.send();
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    final Map<String, dynamic> responseData = jsonDecode(response.body);
+
     if (response.statusCode == 201) {
-      return null; // Registration successful
+      return responseData; // ✅ Return full response as Map
     } else {
-      final responseBody = await response.stream.bytesToString();
-      final Map<String, dynamic> responseData = jsonDecode(responseBody);
-      return responseData['error'] ?? 'Unknown error occurred';
+      print("❌ Registration failed: ${response.body}");
+      return {"error": responseData['error'] ?? 'Unknown error occurred'};
     }
   }
 
@@ -881,5 +907,10 @@ class ApiService {
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
+  }
+
+  Future<void> saveToken(String token) async {
+    await _storage.write(key: "access_token", value: token);
+    _cachedToken = token;
   }
 }

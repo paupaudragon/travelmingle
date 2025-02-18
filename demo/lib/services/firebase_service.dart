@@ -36,6 +36,7 @@ class FirebaseMessagingService {
         });
       } else {
         print('❌ Failed to get FCM token');
+        return;
       }
     } catch (e) {
       print('❌ Error initializing Firebase Messaging: $e');
