@@ -12,7 +12,7 @@ from .views import (
     CollectListCreateView, CollectDetailView,
     NotificationListView,  RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
-    FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView,
+    FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView, FollowPostView,
     NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification
 )
 
@@ -35,6 +35,15 @@ urlpatterns = [
          PostCommentsView.as_view(), name='post-comments'),
     path('posts/<int:post_id>/like/', ToggleLikeView.as_view(), name='post-like'),
     path('posts/<int:post_id>/save/', ToggleSaveView.as_view(), name='post-save'),
+    #Followed User's Post
+    path('posts/follow', FollowPostView.as_view(), name='follow-posts'),
+    #Nearby Post
+    path('posts/nearby/', NearbyPostsView.as_view(), name='nearby-posts'),
+    #By Location Post
+    path('posts/by-location/', PostListByLocationView.as_view(),
+         name='posts-by-location'),
+    
+     
 
     # Comment Endpoints
     path('comments/', CommentListCreateView.as_view(),
@@ -78,10 +87,6 @@ urlpatterns = [
          UserFollowingListView.as_view(), name='user-following'),
     path('users/<int:user_id>/followers/',
          UserFollowersListView.as_view(), name='user-followers'),
-    # Map
-    path('posts/by-location/', PostListByLocationView.as_view(),
-         name='posts-by-location'),
-    path('posts/nearby/', NearbyPostsView.as_view(), name='nearby-posts'),
 
     # Notification
     path("register-device/", RegisterDevice.as_view(), name="register-device"),

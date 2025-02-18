@@ -161,6 +161,13 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
           periods: periodFilters.isNotEmpty ? periodFilters : null,
         );
+      } else if (source == "follow") {
+        // ✅ Fetch followed users' posts
+        fetchedPosts = await _apiService.fetchPostsBySource(
+          source: "follow",
+          travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+          periods: periodFilters.isNotEmpty ? periodFilters : null,
+        );
       } else {
         // Fetch other types (explore, follow)
         fetchedPosts = await _apiService.fetchPostsBySource(
