@@ -32,7 +32,9 @@ class _SearchPageState extends State<SearchPage> {
 
   Future<void> _loadPosts() async {
     try {
-      final fetchedPosts = await _apiService.fetchPosts();
+      final fetchedPosts = await _apiService.fetchPostsBySource(
+        source: "explore",
+      );
       setState(() {
         posts = fetchedPosts;
         filteredPosts = fetchedPosts;
