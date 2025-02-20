@@ -15,3 +15,4 @@ from .follow_post_views import FollowPostView
 from .register_device_views import RegisterDevice
 from .send_notofication_views import SendNotification
 from .firebase_test import TestFirebaseNotification
+from .message_views import MessageListView, SendMessageView, MarkMessageReadView, ConversationsListView

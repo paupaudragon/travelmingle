@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db import models
-
+from django.contrib.auth import get_user_model
 
 class Users(AbstractUser):
     """
@@ -528,3 +528,28 @@ class Device(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.token}"
+
+
+############ Messenger ##################
+User = get_user_model()  # Get the correct user model dynamically
+class Message(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    @classmethod
+    def get_latest_messages_per_conversation(cls, user):
+        """
+        Fetch the latest message from each conversation (either sender or receiver is the user).
+        """
+        latest_messages = (
+            cls.objects.filter(Q(sender=user) | Q(receiver=user))
+            .order_by("sender", "receiver", "-timestamp")
+            .distinct("sender", "receiver")  # Get the latest for each user pair
+        )
+        return latest_messages
+
+    def __str__(self):
+        return f"{self.sender} -> {self.receiver}: {self.content[:30]}"

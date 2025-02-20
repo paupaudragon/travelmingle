@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:demo/screens/message_detail_page.dart';
 
 class DirectMessagesList extends StatelessWidget {
   final List<dynamic> messages;
@@ -16,14 +17,28 @@ class DirectMessagesList extends StatelessWidget {
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
+        final sender = message['sender'];
+        final receiver = message['receiver'];
+        final content = message['content'] ?? '';
+        final timestamp = message['timestamp'] ?? message['created_at'] ?? '';
+
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: NetworkImage(message['sender']?['avatar'] ?? ''),
+            backgroundImage: NetworkImage(sender?['avatar'] ?? ''),
           ),
-          title: Text(message['sender']?['username'] ?? 'Unknown'),
-          subtitle: Text(message['message'] ?? ''),
-          trailing: Text(message['created_at'] ?? ''),
-          onTap: () => onMessageTap(message),
+          title: Text(sender?['username'] ?? 'Unknown'),
+          subtitle: Text(content),
+          trailing: Text(timestamp),
+          onTap: () {
+            final chatPartnerId = sender['id'];  // Navigate to chat with sender
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MessageDetailPage(userId: chatPartnerId),
+              ),
+            );
+          },
         );
       },
     );

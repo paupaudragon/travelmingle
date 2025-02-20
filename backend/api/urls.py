@@ -13,7 +13,8 @@ from .views import (
     NotificationListView,  RegisterView,
     UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView, FollowPostView,
-    NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification
+    NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification,
+    MessageListView, SendMessageView, MarkMessageReadView, ConversationsListView,
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -95,4 +96,9 @@ urlpatterns = [
     path('test-notification/', TestFirebaseNotification.as_view(),
          name='test-notification'),
 
+     # Messenger
+     path("messages/", MessageListView.as_view(), name="message-list"),
+     path("messages/send/", SendMessageView.as_view(), name="send-message"),
+     path("messages/<int:message_id>/mark-read/", MarkMessageReadView.as_view(), name="mark-message-read"),
+     path("messages/conversations/", ConversationsListView.as_view(), name="conversations-list"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

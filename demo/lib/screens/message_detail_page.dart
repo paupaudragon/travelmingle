@@ -1,338 +1,171 @@
-import 'package:demo/enums/notification_types.dart';
-import 'package:demo/models/message_category.dart';
-import 'package:demo/screens/user_list_page.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:demo/models/message_model.dart';
 import 'package:flutter/material.dart';
-import 'package:demo/services/notification_service.dart';
-import 'package:demo/screens/post_page.dart'; // Add this import
+import 'package:demo/services/api_service.dart';
 
-class CategoryDetailScreen extends StatefulWidget {
-  final NotificationCategory category;
-  final Function(NotificationType, String) onMessageRead;
+class MessageDetailPage extends StatefulWidget {
+  final int userId; // The user you are chatting with
 
-  const CategoryDetailScreen({
-    Key? key,
-    required this.category,
-    required this.onMessageRead,
-  }) : super(key: key);
+  const MessageDetailPage({Key? key, required this.userId}) : super(key: key);
 
   @override
-  State<CategoryDetailScreen> createState() => _CategoryDetailScreenState();
+  _MessageDetailPageState createState() => _MessageDetailPageState();
 }
 
-class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
-  final NotificationService _notificationService = NotificationService();
-  bool _isMarking = false;
-  List<dynamic> _items = [];
+class _MessageDetailPageState extends State<MessageDetailPage> {
+  final ApiService _apiService = ApiService();
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  List<dynamic> messages = [];
   bool _isLoading = true;
-  bool _isNavigating = false;
+  bool _sendingMessage = false;
 
   @override
   void initState() {
     super.initState();
-    _loadAllNotifications();
+    _fetchMessages();
   }
 
-  Future<void> _loadAllNotifications() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _fetchMessages() async {
     try {
-      await _notificationService.fetchNotifications();
-      setState(() {
-        _items = widget.category.items.map((item) {
-          if (item is Map) {
-            return Map<String, dynamic>.from(item);
-          }
-          return <String, dynamic>{};
-        }).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('❌ Error loading notifications: $e');
-      setState(() {
-        _isLoading = false;
-        _items = [];
-      });
-    }
-  }
+      List<Message> fetchedMessages =
+          await _apiService.fetchMessages(widget.userId);
 
-  Future<void> _handleItemTap(dynamic rawItem) async {
-    if (_isNavigating) return;
-    _isNavigating = true;
-
-    try {
-      // Helper function to recursively convert maps
-      Map<String, dynamic> convertMap(Map map) {
-        return map.map((key, value) {
-          if (value is Map) {
-            return MapEntry(key.toString(), convertMap(value));
-          } else if (value is List) {
-            return MapEntry(
-                key.toString(),
-                value.map((item) {
-                  if (item is Map) {
-                    return convertMap(item);
-                  }
-                  return item;
-                }).toList());
-          }
-          return MapEntry(key.toString(), value);
+      if (mounted) {
+        setState(() {
+          messages = fetchedMessages;
+          _isLoading = false; // ✅ Update loading state
         });
       }
 
-      // Convert the raw item
-      final Map<String, dynamic> item = convertMap(rawItem as Map);
+      // Scroll to bottom after loading messages
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-      // Mark notification as read if it's unread
-      if (item['is_read'] == false) {
-        final notificationId = item['id'];
-        print('📱 Marking notification $notificationId as read');
+      _markMessagesAsRead(); // Automatically mark as read after fetching
+    } catch (e) {
+      print("Error fetching messages: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
-        try {
-          // Call the notification service to mark as read
-          await NotificationService().markNotificationAsRead(notificationId);
-
-          // Update local state after successful API call
-          final index = _items.indexWhere((i) => i['id'] == notificationId);
-          if (index != -1) {
-            setState(() {
-              _items[index] = Map<String, dynamic>.from(_items[index])
-                ..['is_read'] = true;
-            });
-          }
-        } catch (e) {
-          print('❌ Error marking notification as read: $e');
-        }
-      }
-
-      final notificationType = item['notification_type'];
-      print('📱 Processing notification type: $notificationType');
-
-      if (notificationType == 'follow') {
-        final recipientData = item['recipient'] as Map<String, dynamic>;
-        final recipientId = recipientData['id'];
-
-        print('📱 Navigating to follower list for user ID: $recipientId');
-
-        if (recipientId != null) {
-          if (!mounted) return;
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FollowListPage(
-                userId: recipientId,
-                initialTabIndex: 1,
-              ),
-            ),
-          );
-          // Reload notifications after returning
-          await _loadAllNotifications();
-        }
-      } else if (item['post'] != null) {
-        final postData = item['post'] as Map<String, dynamic>;
-        final postId = postData['id'];
-
-        if (postId != null) {
-          print('📱 Navigating to post: $postId');
-          if (!mounted) return;
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostPage(
-                postId: postId,
-                onPostUpdated: (updatedPost) {
-                  print('📱 Post updated: ${updatedPost.id}');
-                  _loadAllNotifications();
-                },
-              ),
-            ),
-          );
+  void _markMessagesAsRead() async {
+    try {
+      for (var message in messages) {
+        if (!message.isRead == false) {
+          // ❌ Incorrect: message['is_read']
+          await _apiService.markMessageAsRead(message.id);
         }
       }
     } catch (e) {
-      print('❌ Error in _handleItemTap: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error processing notification: $e'),
-            backgroundColor: Colors.red,
+      print("Error marking messages as read: $e");
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    setState(() => _sendingMessage = true);
+
+    try {
+      await _apiService.sendMessage(
+          widget.userId, _messageController.text.trim());
+
+      _messageController.clear();
+      await _fetchMessages(); // Refresh message list after sending
+    } catch (e) {
+      print("Error sending message: $e");
+    }
+
+    setState(() => _sendingMessage = false);
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
+  }
+
+  Widget _buildMessageList() {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final message = messages[index];
+        final isSender = message.sender ==
+            _apiService.currentUserId; // ✅ FIXED: Compare integers directly
+
+        return Align(
+          alignment: isSender ? Alignment.centerLeft : Alignment.centerRight,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+            decoration: BoxDecoration(
+              color: isSender ? Colors.grey[300] : Colors.blueAccent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message.content, // ✅ FIXED: Directly access 'content'
+                  style:
+                      TextStyle(color: isSender ? Colors.white : Colors.black),
+                ),
+                // Text(
+                //   message.timestamp, // ✅ FIXED: Corrected timestamp access
+                //   style: TextStyle(
+                //     color: isSender ? Colors.white70 : Colors.black54,
+                //     fontSize: 10,
+                //   ),
+                // ),
+              ],
+            ),
           ),
         );
-      }
-    } finally {
-      _isNavigating = false;
-    }
-  }
-
-  Future<void> _markAllAsRead() async {
-    if (_isMarking) return;
-
-    setState(() {
-      _isMarking = true;
-    });
-
-    try {
-      final unreadItems =
-          _items.where((item) => item['is_read'] == false).toList();
-
-      if (unreadItems.isEmpty) {
-        setState(() {
-          _isMarking = false;
-        });
-        return;
-      }
-
-      setState(() {
-        for (final item in unreadItems) {
-          final index = _items.indexWhere((i) => i['id'] == item['id']);
-          if (index != -1) {
-            _items[index] = Map.from(_items[index])..['is_read'] = true;
-          }
-        }
-      });
-
-      NotificationService notificationService = NotificationService();
-      notificationService.notificationState.setUnreadStatus(false);
-      await notificationService.markAllAsRead();
-      await notificationService.fetchNotifications();
-    } catch (e) {
-      print('❌ Error marking all as read: $e');
-    } finally {
-      setState(() {
-        _isMarking = false;
-      });
-    }
-  }
-
-  Future<void> _markItemAsRead(dynamic item) async {
-    try {
-      final type =
-          NotificationCategory.typeFromString(item['notification_type']);
-      if (type != null) {
-        final notificationId = item['id'];
-        print('📱 Marking notification $notificationId as read'); // Debug print
-
-        // Update local state first for immediate UI feedback
-        final index = _items.indexWhere((i) => i['id'] == notificationId);
-        if (index != -1) {
-          setState(() {
-            _items[index] = Map.from(_items[index])..['is_read'] = true;
-          });
-        }
-
-        // Call the notification service
-        await NotificationService().markNotificationAsRead(notificationId);
-
-        // Update the UI callback
-        await widget.onMessageRead(type, notificationId.toString());
-
-        // Refresh notifications
-        await _loadAllNotifications();
-      }
-    } catch (e) {
-      print('❌ Error marking item as read: $e');
-      // Refresh notifications on error to ensure consistent state
-      await _loadAllNotifications();
-    }
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.category.name),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    final hasUnread = _items.any((item) => item['is_read'] == false);
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.category.name),
-        actions: [
-          if (hasUnread)
-            TextButton(
-              onPressed: _isMarking ? null : _markAllAsRead,
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
-              ),
-              child: _isMarking
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Mark All Read'),
-            ),
+      appBar: AppBar(title: const Text("Chat")),
+      body: Column(
+        children: [
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildMessageList(),
+          ),
+          _buildMessageInput(),
         ],
       ),
-      body: _items.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.category.icon,
-                    size: 48,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No ${widget.category.name} yet',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                final isUnread = item['is_read'] == false;
-
-                return ListTile(
-                  onTap: () => _handleItemTap(item),
-                  title: Text(_getNotificationMessage(item)),
-                  subtitle: Text(item['created_at'] ?? ''),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isUnread)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_ios, size: 16),
-                    ],
-                  ),
-                );
-              },
-            ),
     );
   }
 
-  String _getNotificationMessage(Map<String, dynamic> item) {
-    final notificationType = item['notification_type'];
-
-    if (notificationType == 'follow') {
-      final senderUsername = item['sender']?['username'] ?? 'Someone';
-      return '$senderUsername started following you';
-    }
-
-    return item['message'] ?? 'New notification';
+  Widget _buildMessageInput() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: const InputDecoration(
+                hintText: "Type a message...",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: _sendingMessage
+                ? const CircularProgressIndicator()
+                : const Icon(Icons.send, color: Colors.blue),
+            onPressed: _sendingMessage ? null : _sendMessage,
+          ),
+        ],
+      ),
+    );
   }
 }

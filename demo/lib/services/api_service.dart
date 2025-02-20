@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/post_model.dart';
 import '../models/comment_model.dart';
+import '../models/message_model.dart';
+
 
 class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
@@ -913,4 +915,62 @@ class ApiService {
     await _storage.write(key: "access_token", value: token);
     _cachedToken = token;
   }
+
+// Messenger
+  // **1. Fetch Messages Between Users**
+  Future<List<dynamic>> fetchConversations() async {
+    final response = await makeAuthenticatedRequest(
+      url: "$baseApiUrl/messages/conversations/",
+      method: "GET",
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception("Failed to load conversations");
+    }
+  }
+
+  // **2. Fetch Messages with a User**
+  Future<List<Message>> fetchMessages(int otherUserId) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/messages/?other_user_id=$otherUserId',
+      method: 'GET',
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => Message.fromJson(json)).toList();
+    } else {
+      throw Exception("Failed to load messages");
+    }
+  }
+
+  // **2. Send a Message**
+  Future<void> sendMessage(int receiverId, String content) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/messages/send/',
+      method: 'POST',
+      body: {
+        "receiver": receiverId,
+        "content": content,
+      },
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception("Failed to send message");
+    }
+  }
+
+  // **3. Mark a Message as Read**
+  Future<void> markMessageAsRead(int messageId) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/messages/$messageId/mark-read/',
+      method: 'PATCH',
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to mark message as read");
+    }
+  }    
 }

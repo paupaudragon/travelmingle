@@ -1,4 +1,5 @@
 import 'package:demo/main.dart';
+import 'package:demo/screens/message_detail_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/recap_page.dart';
 import 'package:demo/screens/user_list_page.dart';
@@ -51,39 +52,7 @@ class _ProfilePageState extends State<ProfilePage>
     super.dispose();
   }
 
-  void navigateToProfile(int userId) {
-    if (userId != widget.userId) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProfilePage(userId: userId),
-        ),
-      ).then((_) => _onRefresh());
-    }
-  }
-
-  void navigateToPost(int postId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PostPage(
-          postId: postId,
-          onPostUpdated: (updatedPost) {
-            // Update the state of the saved posts list
-            setState(() {
-              // Update the specific post in `allPosts`
-              final index =
-                  allPosts.indexWhere((post) => post.id == updatedPost.id);
-              if (index != -1) {
-                allPosts[index] = updatedPost;
-              }
-            });
-          },
-        ),
-      ),
-    ).then((_) => _onRefresh());
-  }
-
+// Fetch data
   Future<void> fetchUserData() async {
     try {
       setState(() {
@@ -124,6 +93,118 @@ class _ProfilePageState extends State<ProfilePage>
         });
       }
     }
+  }
+
+// Refresh
+  Future<void> _handleRefresh() async {
+    try {
+      await _initializeUserData();
+    } catch (e) {
+      print("Error refreshing data: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to refresh. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _initializeUserData() async {
+    try {
+      // First get current user's ID
+      final currentUserInfo = await _apiService.getUserInfo();
+      if (mounted && currentUserInfo != null && currentUserInfo['id'] != null) {
+        setState(() {
+          currentUserId = currentUserInfo['id'];
+        });
+      }
+
+      // Then fetch the profile data
+      await fetchUserData();
+
+      // Update tab controller based on whether this is the current user's profile
+      final bool isCurrentUser =
+          widget.userId == null || widget.userId == currentUserId;
+      if (_tabController.length != (isCurrentUser ? 3 : 1)) {
+        _tabController.dispose();
+        _tabController = TabController(
+          length: isCurrentUser ? 3 : 1,
+          vsync: this,
+        );
+      }
+    } catch (e) {
+      print("Error initializing user data: $e");
+      if (mounted) {
+        setState(() {
+          error = "Failed to load profile";
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      await _initializeUserData();
+      _refreshController.refreshCompleted();
+    } catch (e) {
+      print("Error refreshing data: $e");
+      _refreshController.refreshFailed();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to refresh. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+// Navagitor
+  void navigateToProfile(int userId) {
+    if (userId != widget.userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(userId: userId),
+        ),
+      ).then((_) => _onRefresh());
+    }
+  }
+
+  void navigateToPost(int postId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostPage(
+          postId: postId,
+          onPostUpdated: (updatedPost) {
+            // Update the state of the saved posts list
+            setState(() {
+              // Update the specific post in `allPosts`
+              final index =
+                  allPosts.indexWhere((post) => post.id == updatedPost.id);
+              if (index != -1) {
+                allPosts[index] = updatedPost;
+              }
+            });
+          },
+        ),
+      ),
+    ).then((_) => _onRefresh());
+  }
+
+  void _navigateToChat(int chatPartnerId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MessageDetailPage(userId: chatPartnerId),
+      ),
+    );
   }
 
   Future<void> toggleFollow() async {
@@ -172,6 +253,19 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
+// Interaction
+  void toggleLike(Post post) async {
+    try {
+      final result = await _apiService.updatePostLikes(post.id);
+      setState(() {
+        post.isLiked = result['is_liked'];
+        post.likesCount = result['likes_count'];
+      });
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
   List<Post> getUserPosts() {
     if (userInfo == null) return [];
     return allPosts.where((post) => post.user.id == userInfo!['id']).toList();
@@ -191,6 +285,21 @@ class _ProfilePageState extends State<ProfilePage>
     return allPosts.where((post) => post.isLiked).toList();
   }
 
+  void _logOutUser(BuildContext context) async {
+    try {
+      await ApiService().logout();
+      print("Logged out successfully.");
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      print("Error during logout: $e");
+      // Optionally, show an error message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to log out. Please try again.")),
+      );
+    }
+  }
+
+// UI - View
   void _openMenuDrawer() {
     showDialog(
       context: context,
@@ -273,18 +382,32 @@ class _ProfilePageState extends State<ProfilePage>
     ).then((_) => _onRefresh());
   }
 
-  void _logOutUser(BuildContext context) async {
-    try {
-      await ApiService().logout();
-      print("Logged out successfully.");
-      Navigator.pushReplacementNamed(context, '/login');
-    } catch (e) {
-      print("Error during logout: $e");
-      // Optionally, show an error message to the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to log out. Please try again.")),
-      );
-    }
+  Widget _buildFollowCount(String label, int count, int tabIndex) {
+    return InkWell(
+      onTap: () {
+        if (userInfo != null && userInfo!['id'] != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FollowListPage(
+                userId: userInfo!['id'],
+                initialTabIndex: tabIndex,
+              ),
+            ),
+          ).then((_) => _onRefresh());
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Text(
+          '$count $label',
+          style: const TextStyle(
+            color: Colors.blue,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildProfileHeader() {
@@ -366,6 +489,20 @@ class _ProfilePageState extends State<ProfilePage>
                                         : 'Follow',
                                   ),
                                 ),
+                          const SizedBox(width: 8),
+                          // New Message Button
+                          ElevatedButton(
+                            onPressed: () => _navigateToChat(userInfo!['id']),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                            ),
+                            child: const Text("Message"),
+                          ),
                         ],
                       ],
                     ),
@@ -377,57 +514,11 @@ class _ProfilePageState extends State<ProfilePage>
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        InkWell(
-                          onTap: () {
-                            if (userInfo != null && userInfo!['id'] != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FollowListPage(
-                                    userId: userInfo!['id'],
-                                    initialTabIndex: 0,
-                                  ),
-                                ),
-                              ).then((_) => _onRefresh());
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Text(
-                              '${userInfo!['following_count'] ?? 0} Following',
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
+                        _buildFollowCount(
+                            'Following', userInfo!['following_count'], 0),
                         const SizedBox(width: 16),
-                        InkWell(
-                          onTap: () {
-                            if (userInfo != null && userInfo!['id'] != null) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FollowListPage(
-                                    userId: userInfo!['id'],
-                                    initialTabIndex: 1,
-                                  ),
-                                ),
-                              ).then((_) => _onRefresh());
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Text(
-                              '${userInfo!['followers_count'] ?? 0} Followers',
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
+                        _buildFollowCount(
+                            'Followers', userInfo!['followers_count'], 1),
                       ],
                     ),
                   ],
@@ -440,111 +531,32 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  void toggleLike(Post post) async {
-    try {
-      final result = await _apiService.updatePostLikes(post.id);
-      setState(() {
-        post.isLiked = result['is_liked'];
-        post.likesCount = result['likes_count'];
-      });
-    } catch (e) {
-      print("Error toggling like: $e");
-    }
-  }
-
-Widget _buildPostGrid(List<Post> posts) {
-  return posts.isEmpty
-      ? const Center(child: Text('No posts to display'))
-      : Container(
-          color: gridBackgroundColor,
-          padding: const EdgeInsets.all(4.0),
-          child: MasonryGridView.builder(
-            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+  Widget _buildPostGrid(List<Post> posts) {
+    return posts.isEmpty
+        ? const Center(child: Text('No posts to display'))
+        : Container(
+            color: gridBackgroundColor,
+            padding: const EdgeInsets.all(4.0),
+            child: MasonryGridView.builder(
+              gridDelegate:
+                  const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+              ),
+              mainAxisSpacing: 4.0,
+              crossAxisSpacing: 4.0,
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return GestureDetector(
+                  onTap: () => navigateToPost(post.id),
+                  child: PostCard(
+                    post: post,
+                    onLikePressed: () => toggleLike(post),
+                  ),
+                );
+              },
             ),
-            mainAxisSpacing: 4.0,
-            crossAxisSpacing: 4.0,
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              final post = posts[index];
-              return GestureDetector(
-                onTap: () => navigateToPost(post.id),
-                child: PostCard(
-                  post: post,
-                  onLikePressed: () => toggleLike(post),
-                ),
-              );
-            },
-          ),
-        );
-}
-
-  Future<void> _handleRefresh() async {
-    try {
-      await _initializeUserData();
-    } catch (e) {
-      print("Error refreshing data: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to refresh. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _initializeUserData() async {
-    try {
-      // First get current user's ID
-      final currentUserInfo = await _apiService.getUserInfo();
-      if (mounted && currentUserInfo != null && currentUserInfo['id'] != null) {
-        setState(() {
-          currentUserId = currentUserInfo['id'];
-        });
-      }
-
-      // Then fetch the profile data
-      await fetchUserData();
-
-      // Update tab controller based on whether this is the current user's profile
-      final bool isCurrentUser =
-          widget.userId == null || widget.userId == currentUserId;
-      if (_tabController.length != (isCurrentUser ? 3 : 1)) {
-        _tabController.dispose();
-        _tabController = TabController(
-          length: isCurrentUser ? 3 : 1,
-          vsync: this,
-        );
-      }
-    } catch (e) {
-      print("Error initializing user data: $e");
-      if (mounted) {
-        setState(() {
-          error = "Failed to load profile";
-          isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _onRefresh() async {
-    try {
-      await _initializeUserData();
-      _refreshController.refreshCompleted();
-    } catch (e) {
-      print("Error refreshing data: $e");
-      _refreshController.refreshFailed();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to refresh. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+          );
   }
 
   @override

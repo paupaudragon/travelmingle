@@ -1,7 +1,7 @@
 from .models import Device
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
-from .models import Follow, Users, Posts, Location, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications
+from .models import Follow, Users, Posts, Location, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications, Message
 
 from django.db.models import Prefetch
 
@@ -454,3 +454,9 @@ class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
         fields = ["user", "token"]
+
+# Messenger
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'content', 'timestamp', 'is_read']

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:demo/screens/direct_messages_list.dart';
+import 'package:demo/screens/message_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/enums/notification_types.dart';
 import 'package:demo/models/message_category.dart';
-import 'package:demo/screens/message_detail_page.dart';
+import 'package:demo/screens/notification_detail_page.dart';
 import 'package:demo/services/api_service.dart';
 import 'package:demo/services/notification_service.dart';
 import 'package:demo/widgets/footer.dart';
@@ -51,6 +53,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
       if (mounted && !_isRefreshing) {
         _fetchNotifications();
+        _fetchDirectMessages();
       }
     });
   }
@@ -61,12 +64,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!_isInitialized) {
       _isInitialized = true;
       _fetchNotifications();
+      _fetchDirectMessages;
     }
   }
 
   void _onFocusChange() {
     if (_focusNode.hasFocus && !_isRefreshing) {
       _fetchNotifications();
+      _fetchDirectMessages;
     }
   }
 
@@ -101,6 +106,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
 
       final int currentUserId = userInfo['id'];
+
       final data = json.decode(response.body);
       final notifications = data['notifications'] as List;
 
@@ -138,6 +144,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         setState(() {
           _error = e.toString();
           _categories = NotificationCategory.getDefaultCategories();
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchDirectMessages() async {
+    if (!mounted || _isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      print('📩 Fetching direct messages...');
+
+      final messages = await _apiService.fetchConversations(); // Calls new API
+      print('✅ Direct messages fetched: ${messages.length}');
+
+      if (mounted) {
+        setState(() {
+          _directMessages = messages; // ✅ Ensures messages are correctly stored
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error in _fetchDirectMessages: $e');
+      print(stackTrace);
+
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _directMessages = [];
           _isLoading = false;
           _isRefreshing = false;
         });
@@ -229,21 +272,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: _directMessages.length,
-      itemBuilder: (context, index) {
-        final message = _directMessages[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(message['sender']?['avatar'] ?? ''),
+    return DirectMessagesList(
+      messages: _directMessages,
+      onMessageTap: (message) async {
+        final sender = message['sender'];
+        final receiver = message['receiver'];
+        final currentUserId = _apiService.currentUserId;
+
+        final chatPartnerId =
+            sender['id'] == currentUserId ? receiver['id'] : sender['id'];
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MessageDetailPage(userId: chatPartnerId),
           ),
-          title: Text(message['sender']?['username'] ?? 'Unknown'),
-          subtitle: Text(message['message'] ?? ''),
-          trailing: Text(message['created_at'] ?? ''),
-          onTap: () {
-            // Handle direct message tap
-          },
         );
+
+        // ✅ Refresh messages after returning from chat
+        _fetchDirectMessages();
       },
     );
   }

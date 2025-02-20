@@ -1,11 +1,11 @@
 import 'package:demo/models/message_category.dart';
 import 'package:flutter/material.dart';
 
-class MessageCategoryGrid extends StatelessWidget {
+class NotificationCategoryGrid extends StatelessWidget {
   final List<NotificationCategory> categories;
   final Function(NotificationCategory) onCategorySelected;
 
-  const MessageCategoryGrid({
+  const NotificationCategoryGrid({
     Key? key,
     required this.categories,
     required this.onCategorySelected,
