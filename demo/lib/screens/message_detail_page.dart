@@ -20,11 +20,27 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
   List<dynamic> messages = [];
   bool _isLoading = true;
   bool _sendingMessage = false;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchMessages();
+    _startAutoRefresh();
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _scrollController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      _fetchMessages(); // ✅ Fetch messages every 5 seconds
+    });
   }
 
   Future<void> _fetchMessages() async {
@@ -96,7 +112,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
             _apiService.currentUserId; // ✅ FIXED: Compare integers directly
 
         return Align(
-          alignment: isSender ? Alignment.centerLeft : Alignment.centerRight,
+          alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             padding: const EdgeInsets.all(10),
             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),

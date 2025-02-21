@@ -314,7 +314,7 @@ class ApiService {
         url =
             '$baseApiUrl/posts/nearby/?latitude=$latitude&longitude=$longitude&radius=$radius';
       } else if (source == 'follow') {
-        url = '$baseApiUrl/posts/follow/';
+        url = '$baseApiUrl/follow/';
       }
 
       // Attach filters dynamically

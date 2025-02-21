@@ -35,7 +35,8 @@ class FollowPostView(APIView):
         # Fetch posts from followed users (excluding drafts)
         followed_posts = Posts.objects.filter(
             user_id__in=followed_users, 
-            status="published"
+            status="published",
+            parent_post__isnull=True
         )
 
         # Retrieve filter parameters
