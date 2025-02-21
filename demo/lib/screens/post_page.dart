@@ -2,14 +2,11 @@ import 'dart:io';
 import 'package:demo/main.dart';
 import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
-import 'package:demo/widgets/ProgressIndicatorWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../models/comment_model.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
-import '../widgets/post_card.dart';
 import 'dart:async';
 
 class PostPage extends StatefulWidget {
@@ -23,7 +20,8 @@ class PostPage extends StatefulWidget {
 }
 
 class _PostPageState extends State<PostPage> {
-  bool _isCommentsVisible = false; // 控制评论部分的显示与隐藏
+  bool _isCommentsVisible = false;
+  bool _isCommentInputVisible = false;
   final FocusNode _commentFocusNode = FocusNode();
   final TextEditingController _commentController = TextEditingController();
   late Future<Post> postFuture;
@@ -174,6 +172,7 @@ class _PostPageState extends State<PostPage> {
     setState(() {
       activeReplyToCommentId = commentId;
       replyingToUsername = username;
+      _isCommentInputVisible = true;
     });
     _commentFocusNode.requestFocus();
   }
@@ -182,6 +181,7 @@ class _PostPageState extends State<PostPage> {
     setState(() {
       activeReplyToCommentId = null;
       replyingToUsername = null;
+      _isCommentInputVisible = false;
     });
   }
 
@@ -391,9 +391,24 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-  Widget buildPostActions(Post post) {
-    return Row(
+Widget buildPostActions(Post post) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Comment button
+        IconButton(
+          icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey),
+          onPressed: () {
+            setState(() {
+              _isCommentsVisible = !_isCommentsVisible; // Toggle comment section visibility
+              _isCommentInputVisible = false; // Reset input box state
+            });
+          },
+        ),
+        Text(formatNumber(commentsCache?.length ?? 0)),
+
         // Like button
         IconButton(
           icon: Icon(
@@ -404,7 +419,7 @@ class _PostPageState extends State<PostPage> {
         ),
         Text(formatNumber(post.likesCount)),
 
-        // Collect button
+        // Save button
         IconButton(
           icon: Icon(
             post.isSaved ? Icons.bookmark : Icons.bookmark_border,
@@ -416,19 +431,42 @@ class _PostPageState extends State<PostPage> {
         ),
         Text(formatNumber(post.savesCount)),
 
-        // Comment button
-        IconButton(
-          icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey),
-          onPressed: () {
-            setState(() {
-              _isCommentsVisible = !_isCommentsVisible; // Toggle comments
-            });
-          },
-        ),
-        Text(formatNumber(commentsCache?.length ?? 0)),
+        // Input box
+        if (_isCommentsVisible && !_isCommentInputVisible)
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isCommentInputVisible = true; // Show full input box
+                });
+              },
+              child: Container(
+                height: 40, // Custom height
+                margin: const EdgeInsets.only(left: 12), // Keep distance from icon
+                padding: const EdgeInsets.symmetric(horizontal: 16), // Padding
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F0F0), // Background color
+                  borderRadius: BorderRadius.circular(13), // Rounded corners
+                  border: Border.all(
+                    color: Colors.black, // Border color
+                    width: 1, // Border width
+                  ),
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: const Text(
+                    "Say something...",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
-    );
-  }
+    ),
+  );
+}
+
 
   Future<Size> _getImageSize(String imageUrl) async {
     final Completer<Size> completer = Completer();
@@ -446,6 +484,16 @@ class _PostPageState extends State<PostPage> {
     return completer.future;
   }
 
+  // Define the logic for determining the appropriate `BoxFit` for each image:
+  // 1. The first image always uses `BoxFit.cover`.
+  // 2. For other images:
+  //    - If the image's aspect ratio is similar to the first image's aspect ratio (within a 5% margin of error),
+  //      or if both the first image's aspect ratio and the current image's aspect ratio are below the minimum threshold,
+  //      or if both the first image's aspect ratio and the current image's aspect ratio are above the maximum threshold,
+  //      then use `BoxFit.cover`.
+  //    - Otherwise:
+  //      - If the current image's aspect ratio is wider than the first image's aspect ratio, use `BoxFit.fitWidth`.
+  //      - If the current image's aspect ratio is taller than the first image's aspect ratio, use `BoxFit.fitHeight`.
   // # post each day
   Widget buildSingleDayContent(Post day) {
     final PageController _imageController = PageController();
@@ -461,25 +509,84 @@ class _PostPageState extends State<PostPage> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.done &&
                     snapshot.hasData) {
-                  double aspectRatio =
+                  // Get the aspect ratio of the first image
+                  double firstImageAspectRatio =
                       snapshot.data!.width / snapshot.data!.height;
-                  // 限制比例在 5/7 到 4/3 之间
-                  aspectRatio = aspectRatio.clamp(5 / 7, 4 / 3);
+
+                  // Define the minimum and maximum aspect ratio
+                  const double minAspectRatio = 5 / 7; // Minimum aspect ratio
+                  const double maxAspectRatio = 4 / 3; // Maximum aspect ratio
+
+                  // Clamp the first image's aspect ratio between the minimum and maximum values
+                  double clampedAspectRatio =
+                      firstImageAspectRatio.clamp(minAspectRatio, maxAspectRatio);
 
                   return Column(
                     children: [
                       AspectRatio(
-                        aspectRatio: aspectRatio,
+                        aspectRatio: clampedAspectRatio,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: PageView.builder(
                             controller: _imageController,
                             itemCount: day.images.length,
                             itemBuilder: (context, index) {
-                              return Image.network(
-                                day.images[index].imageUrl,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
+                              // Get the width and height of the current image
+                              return FutureBuilder<Size>(
+                                future: _getImageSize(day.images[index].imageUrl),
+                                builder: (context, sizeSnapshot) {
+                                  if (sizeSnapshot.connectionState ==
+                                          ConnectionState.done &&
+                                      sizeSnapshot.hasData) {
+                                    double imageAspectRatio =
+                                        sizeSnapshot.data!.width /
+                                            sizeSnapshot.data!.height;
+
+                                    // Determine the BoxFit type
+                                    BoxFit fit;
+                                    if (index == 0) {
+                                      // The first image uses BoxFit.cover
+                                      fit = BoxFit.cover;
+                                    } else {
+                                      // Check if the aspect ratio is similar (within 5% error)
+                                      bool isAspectRatioSimilar =
+                                          (imageAspectRatio - firstImageAspectRatio)
+                                                  .abs() <=
+                                              firstImageAspectRatio * 0.05;
+
+                                      // Check if both are below the minimum or above the maximum
+                                      bool isBothBelowMin =
+                                          imageAspectRatio < minAspectRatio &&
+                                              firstImageAspectRatio <
+                                                  minAspectRatio;
+                                      bool isBothAboveMax =
+                                          imageAspectRatio > maxAspectRatio &&
+                                              firstImageAspectRatio >
+                                                  maxAspectRatio;
+
+                                      // If aspect ratios are similar, or both are below min or above max, use BoxFit.cover
+                                      if (isAspectRatioSimilar ||
+                                          isBothBelowMin ||
+                                          isBothAboveMax) {
+                                        fit = BoxFit.cover;
+                                      } else {
+                                        // Otherwise, choose BoxFit based on the image aspect ratio
+                                        fit = imageAspectRatio > firstImageAspectRatio
+                                            ? BoxFit.fitWidth
+                                            : BoxFit.fitHeight;
+                                      }
+                                    }
+
+                                    return Image.network(
+                                      day.images[index].imageUrl,
+                                      fit: fit,
+                                      width: double.infinity,
+                                    );
+                                  } else {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  }
+                                },
                               );
                             },
                           ),
@@ -488,7 +595,7 @@ class _PostPageState extends State<PostPage> {
                     ],
                   );
                 } else {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
               },
             ),
@@ -839,40 +946,48 @@ class _PostPageState extends State<PostPage> {
                 ],
               ),
             ),
-          // # reply section
-          // Row(
-          //   //Comment box
-          //   children: [
-          //     Expanded(
-          //       child: TextField(
-          //         controller: _commentController,
-          //         focusNode: _commentFocusNode,
-          //         decoration: InputDecoration(
-          //           hintText: activeReplyToCommentId == null
-          //               ? "Say something..."
-          //               : "Replying...",
-          //           border: OutlineInputBorder(
-          //             borderRadius: BorderRadius.circular(20),
-          //             borderSide: BorderSide.none,
-          //           ),
-          //           filled: true,
-          //           fillColor: const Color(0xFFE8E8E8),
-          //         ),
-          //       ),
-          //     ),
-          //     //Image picker
-          //     IconButton(
-          //       icon: const Icon(Icons.photo),
-          //       onPressed: _pickCommentImage,
-          //     ),
-          //     //Add comment
-          //     // Add comment button
-          //     IconButton(
-          //       icon: const Icon(Icons.send),
-          //       onPressed: () => addComment(widget.postId),
-          //     ),
-          //   ],
-          // ),
+          // Reply section
+          Row(
+            children: [
+              // Back button
+              IconButton(
+                icon: const Icon(Icons.arrow_back), // Back icon
+                onPressed: () {
+                  setState(() {
+                    _isCommentInputVisible = false; // Return to buildPostActions
+                  });
+                },
+              ),
+              // Input box
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  focusNode: _commentFocusNode,
+                  decoration: InputDecoration(
+                    hintText: activeReplyToCommentId == null
+                        ? "Say something..."
+                        : "Replying...",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFE8E8E8),
+                  ),
+                ),
+              ),
+              // Image selection button
+              IconButton(
+                icon: const Icon(Icons.photo),
+                onPressed: _pickCommentImage,
+              ),
+              // Send button
+              IconButton(
+                icon: const Icon(Icons.send),
+                onPressed: () => addComment(widget.postId),
+              ),
+            ],
+          ),
           if (_commentImage != null)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
@@ -897,61 +1012,75 @@ class _PostPageState extends State<PostPage> {
     );
   }
 
-@override
+ @override
 Widget build(BuildContext context) {
   return Scaffold(
     appBar: AppBar(
       title: buildPostHeader(postFuture),
     ),
-    body: FutureBuilder<Post>(
-      future: postFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}"));
-        } else if (!snapshot.hasData) {
-          return const Center(child: Text("Post not found"));
+    body: GestureDetector(
+      onTap: () {
+        // When the comment section is expanded, clicking outside collapses it
+        if (_isCommentsVisible) {
+          setState(() {
+            _isCommentsVisible = false;
+            _isCommentInputVisible = false;
+          });
         }
+      },
+      behavior: HitTestBehavior.opaque, // Ensure clicking on empty space triggers the event
+      child: FutureBuilder<Post>(
+        future: postFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (!snapshot.hasData) {
+            return const Center(child: Text("Post not found"));
+          }
 
-        final post = snapshot.data!;
+          final post = snapshot.data!;
 
-        return Stack(
-          children: [
-            Column(
-              children: [
-                // ✅ Post Content with Dynamic Height
-                Expanded(
-                  flex: 1, // Post always take 1 space
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        // ✅ Post Content without Fixed Height
-                        buildPostContent(post),
+          return Column(
+            children: [
+              // ✅ Post Content with Dynamic Height
+              Expanded(
+                flex: 1, // Post content always takes up 1 part of the space
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      // ✅ Post Content without Fixed Height
+                      buildPostContent(post),
 
-                        // ✅ Divider
-                        const Divider(),
-                      ],
-                    ),
+                      // ✅ Divider
+                      const Divider(),
+                    ],
                   ),
                 ),
+              ),
 
-                // ✅ Comment Section (Scrollable)
-                if (_isCommentsVisible) // Only show comments when visible
-                  Expanded(
-                    flex: 9, // comments take 9/10 of the space
+              // ✅ Comment Section (Scrollable)
+              if (_isCommentsVisible) // Only show comment section when expanded
+                Expanded(
+                  flex: 9, // Comment section takes up 9 parts of the space (90%)
+                  child: GestureDetector(
+                    onTap: () {
+                      // Clicking inside the comment section does not collapse it
+                      // Prevent event from bubbling up
+                    },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white, // Background color
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16), // Round top corners
+                          top: Radius.circular(16), // Top rounded corners
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, -3),
+                            color: Colors.black.withOpacity(0.1), // Shadow color
+                            blurRadius: 8, // Shadow blur radius
+                            offset: const Offset(0, -2), // Shadow offset
                           ),
                         ],
                       ),
@@ -961,23 +1090,20 @@ Widget build(BuildContext context) {
                       ),
                     ),
                   ),
+                ),
 
-                // ✅ Comment Input Always Stays at the Bottom
-                buildCommentInput(),
-              ],
-            ),
+              // ✅ Post Actions (Like, Save) at the Bottom
+              if (!_isCommentInputVisible) buildPostActions(post),
 
-            // ✅ Post Actions (Like, Save) at the Top Layer
-            Positioned(
-              bottom: 6,
-              left: 0,
-              right: 0,
-              child: buildPostActions(post),
-            ),
-          ],
-        );
-      },
+              // ✅ Comment Input Always Stays at the Bottom
+              if (_isCommentInputVisible) buildCommentInput(),
+            ],
+          );
+        },
+      ),
     ),
   );
 }
+
+
 }
