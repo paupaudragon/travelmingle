@@ -499,7 +499,7 @@ Widget buildPostActions(Post post) {
     final PageController _imageController = PageController();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
