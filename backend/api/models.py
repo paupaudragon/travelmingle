@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db import models
 from django.contrib.auth import get_user_model
-from cloudinary.models import CloudinaryField
 
 
 class Users(AbstractUser):
@@ -28,14 +27,8 @@ class Users(AbstractUser):
     """
     email = models.EmailField(unique=True)
     bio = models.TextField(blank=True, null=True)
-    # profile_picture = models.ImageField(
-    #     upload_to='profile_pictures/',
-    #     null=True,
-    #     blank=True
-    # )
-    profile_picture = CloudinaryField(
-        'profile_picture',
-        folder='profile_pictures',  # This will create a folder in Cloudinary
+    profile_picture = models.ImageField(
+        upload_to='profile_pictures/',
         null=True,
         blank=True
     )
@@ -223,15 +216,8 @@ class PostImages(models.Model):
     post = models.ForeignKey(
         Posts, on_delete=models.CASCADE, related_name="images")
     # Store the URL/path of the image
-    # image = models.ImageField(
-    #     upload_to="postImages/",
-    #     null=True,
-    #     blank=True,
-    # )
-
-    image = CloudinaryField(
-        'image',
-        folder='post_images',
+    image = models.ImageField(
+        upload_to="postImages/",
         null=True,
         blank=True,
     )
@@ -284,15 +270,8 @@ class Comments(models.Model):
         related_name="replies",
         help_text="The comment this comment is replying to",
     )
-    # comment_image = models.ImageField(
-    #     upload_to='comment_images/',
-    #     null=True,
-    #     blank=True,
-    # )
-
-    comment_image = CloudinaryField(
-        'comment_image',
-        folder='comment_images',
+    comment_image = models.ImageField(
+        upload_to='comment_images/',
         null=True,
         blank=True,
     )
