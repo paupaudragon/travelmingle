@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db import models
 from django.contrib.auth import get_user_model
+from cloudinary.models import CloudinaryField
+
 
 class Users(AbstractUser):
     """
@@ -26,8 +28,14 @@ class Users(AbstractUser):
     """
     email = models.EmailField(unique=True)
     bio = models.TextField(blank=True, null=True)
-    profile_picture = models.ImageField(
-        upload_to='profile_pictures/',
+    # profile_picture = models.ImageField(
+    #     upload_to='profile_pictures/',
+    #     null=True,
+    #     blank=True
+    # )
+    profile_picture = CloudinaryField(
+        'profile_picture',
+        folder='profile_pictures',  # This will create a folder in Cloudinary
         null=True,
         blank=True
     )
@@ -215,8 +223,15 @@ class PostImages(models.Model):
     post = models.ForeignKey(
         Posts, on_delete=models.CASCADE, related_name="images")
     # Store the URL/path of the image
-    image = models.ImageField(
-        upload_to="postImages/",
+    # image = models.ImageField(
+    #     upload_to="postImages/",
+    #     null=True,
+    #     blank=True,
+    # )
+
+    image = CloudinaryField(
+        'image',
+        folder='post_images',
         null=True,
         blank=True,
     )
@@ -269,8 +284,15 @@ class Comments(models.Model):
         related_name="replies",
         help_text="The comment this comment is replying to",
     )
-    comment_image = models.ImageField(
-        upload_to='comment_images/',
+    # comment_image = models.ImageField(
+    #     upload_to='comment_images/',
+    #     null=True,
+    #     blank=True,
+    # )
+
+    comment_image = CloudinaryField(
+        'comment_image',
+        folder='comment_images',
         null=True,
         blank=True,
     )
@@ -532,9 +554,13 @@ class Device(models.Model):
 
 ############ Messenger ##################
 User = get_user_model()  # Get the correct user model dynamically
+
+
 class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    sender = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -547,7 +573,8 @@ class Message(models.Model):
         latest_messages = (
             cls.objects.filter(Q(sender=user) | Q(receiver=user))
             .order_by("sender", "receiver", "-timestamp")
-            .distinct("sender", "receiver")  # Get the latest for each user pair
+            # Get the latest for each user pair
+            .distinct("sender", "receiver")
         )
         return latest_messages
 
