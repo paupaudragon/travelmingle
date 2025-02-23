@@ -52,3 +52,8 @@ demo/linux/flutter/*
 
 demo/macos/Flutter/*
 demo/windows/flutter/*
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
