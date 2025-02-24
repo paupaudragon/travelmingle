@@ -1,15 +1,18 @@
-﻿FROM python:3.12-slim-bullseye
+﻿FROM python:3.12
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
+    gdal-bin \
     libgdal-dev \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+    python3-gdal
+
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-WORKDIR /app
-COPY . /app/
+COPY . .
+
+EXPOSE 8000
