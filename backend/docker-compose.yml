@@ -1,10 +1,16 @@
-version: "3.8"
-
+﻿version: "3.8"
+   
 services:
-  django:
-    build: .
-    container_name: django
-    command: gunicorn -w 2 -b 0.0.0.0:8000 backend.wsgi:application
-    restart: always
-    ports:
-      - "80:8000"
+    django:
+        build: .
+        container_name: django
+        command: gunicorn -w 2 -b 0.0.0.0:8000 backend.wsgi:application
+        restart: always
+        ports:
+            - "80:8000"
+        environment:
+            - RDS_DB_NAME=postgres
+            - RDS_USERNAME=postgres
+            - RDS_PASSWORD=travelmingle123
+            - RDS_HOSTNAME=database-1.cr2yg42w08ex.us-east-2.rds.amazonaws.com
+            - RDS_PORT=5432
