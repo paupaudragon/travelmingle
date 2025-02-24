@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  django:
+    build: .
+    container_name: django
+    command: gunicorn -w 2 -b 0.0.0.0:8000 backend.wsgi:application
+    restart: always
+    ports:
+      - "80:8000"

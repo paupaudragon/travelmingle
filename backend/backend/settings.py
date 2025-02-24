@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'django.contrib.gis',
+    'api.apps.ApiConfig'
 ]
 
 AUTH_USER_MODEL = 'api.Users'
@@ -97,8 +98,9 @@ env = environ.Env()
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='default-secret-key')
 
-env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+if not DEBUG:
+    GDAL_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgdal.so'
+    GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so'
 
 # AWS S3 Storage
 if not DEBUG:
@@ -131,11 +133,11 @@ if not DEBUG:
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'postgres',  # Your actual DB name from RDS
-        'USER': 'postgres',  # Your RDS username
-        'PASSWORD': 'travelmingle123',  # Your RDS password
-        'HOST': 'database-1.cr2yg42w08ex.us-east-2.rds.amazonaws.com',  # Your RDS endpoint
-        'PORT': '5432',
+        'NAME': os.environ.get('RDS_DB_NAME', 'postgres'),
+        'USER': os.environ.get('RDS_USERNAME', 'postgres'),
+        'PASSWORD': os.environ.get('RDS_PASSWORD', 'travelmingle123'),
+        'HOST': os.environ.get('RDS_HOSTNAME', 'database-1.cr2yg42w08ex.us-east-2.rds.amazonaws.com'),
+        'PORT': os.environ.get('RDS_PORT', '5432'),
     }
 }
 
@@ -249,20 +251,25 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'
+GOOGLE_MAPS_API_KEY = env('GOOGLE_MAPS_API_KEY')
 
 
 # Tingting computer
 # GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309.dll'
-GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+# GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
 
 # Andy computer
-GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
+# GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
 
 
 # Firebase setup
 FIREBASE_CREDENTIALS_PATH = "firebaseAccount.json"
 
-if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
+# if not firebase_admin._apps:
+#     cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+#     firebase_admin.initialize_app(cred)
+
+if not DEBUG and os.path.exists(FIREBASE_CREDENTIALS_PATH):
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
