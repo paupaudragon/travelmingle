@@ -16,3 +16,8 @@ yum install -y postgis31_12 postgis31_12-client
 chmod 755 /usr/lib64/libgeos_c.so*
 chmod 755 /usr/lib64/libproj.so*
 chmod 755 /usr/lib64/libgdal.so*
+
+#!/bin/bash
+yum install -y gdal gdal-devel
+ln -sf /usr/lib64/libgdal.so /usr/lib/libgdal.so
+ln -sf /usr/lib64/libgeos_c.so /usr/lib/libgeos_c.so
