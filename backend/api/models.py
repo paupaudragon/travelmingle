@@ -7,7 +7,6 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.db import models
 from django.contrib.auth import get_user_model
 
-
 class Users(AbstractUser):
     """
     Users model that extends the AbstractUser model to include additional fields and functionality.
@@ -533,13 +532,9 @@ class Device(models.Model):
 
 ############ Messenger ##################
 User = get_user_model()  # Get the correct user model dynamically
-
-
 class Message(models.Model):
-    sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_messages")
-    receiver = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="received_messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -552,8 +547,7 @@ class Message(models.Model):
         latest_messages = (
             cls.objects.filter(Q(sender=user) | Q(receiver=user))
             .order_by("sender", "receiver", "-timestamp")
-            # Get the latest for each user pair
-            .distinct("sender", "receiver")
+            .distinct("sender", "receiver")  # Get the latest for each user pair
         )
         return latest_messages
 
