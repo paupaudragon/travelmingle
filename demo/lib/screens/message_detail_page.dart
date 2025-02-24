@@ -50,8 +50,10 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
 
       if (mounted) {
         setState(() {
-          messages = fetchedMessages;
-          _isLoading = false; // ✅ Update loading state
+          messages = fetchedMessages
+            ..sort((a, b) =>
+                a.timestamp.compareTo(b.timestamp)); // ✅ Sort messages by time
+          _isLoading = false;
         });
       }
 
@@ -102,6 +104,10 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
     }
   }
 
+  String _formatTimestamp(DateTime timestamp) {
+    return "${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}"; // ✅ Example: "14:05"
+  }
+
   Widget _buildMessageList() {
     return ListView.builder(
       controller: _scrollController,
@@ -128,13 +134,14 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
                   style:
                       TextStyle(color: isSender ? Colors.white : Colors.black),
                 ),
-                // Text(
-                //   message.timestamp, // ✅ FIXED: Corrected timestamp access
-                //   style: TextStyle(
-                //     color: isSender ? Colors.white70 : Colors.black54,
-                //     fontSize: 10,
-                //   ),
-                // ),
+                Text(
+                  _formatTimestamp(
+                      message.timestamp), // ✅ FIXED: Corrected timestamp access
+                  style: TextStyle(
+                    color: isSender ? Colors.white70 : Colors.black54,
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ),

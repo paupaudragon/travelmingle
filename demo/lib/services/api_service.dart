@@ -10,7 +10,6 @@ import '../models/post_model.dart';
 import '../models/comment_model.dart';
 import '../models/message_model.dart';
 
-
 class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -917,6 +916,54 @@ class ApiService {
   }
 
 // Messenger
+  Future<int?> getCurrentUserId() async {
+    // ✅ 1. Check if _currentUserId is already cached
+    if (_currentUserId != null) {
+      print('🔍 Using cached current user ID: $_currentUserId');
+      return _currentUserId;
+    }
+
+    // ✅ 2. Check secure storage for stored user ID
+    String? storedId = await _storage.read(key: "current_user_id");
+    if (storedId != null) {
+      _currentUserId = int.tryParse(storedId);
+      if (_currentUserId != null) {
+        print('🔐 Retrieved current user ID from storage: $_currentUserId');
+        return _currentUserId;
+      }
+    }
+
+    // ✅ 3. If not found, fetch from API
+    try {
+      print('🌐 Fetching current user ID from API...');
+      final response = await makeAuthenticatedRequest(
+        url: "$baseApiUrl/users/me/",
+        method: "GET",
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data.containsKey('id')) {
+          _currentUserId = data['id'];
+          await _storage.write(
+              key: "current_user_id", value: _currentUserId.toString());
+          print(
+              '✅ Successfully fetched and stored current user ID: $_currentUserId');
+          return _currentUserId;
+        } else {
+          print('❌ API response missing "id" key: $data');
+          return null;
+        }
+      } else {
+        print('❌ Failed to fetch current user ID: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error fetching current user ID: $e');
+      return null;
+    }
+  }
+
   // **1. Fetch Messages Between Users**
   Future<List<dynamic>> fetchConversations() async {
     final response = await makeAuthenticatedRequest(
@@ -972,5 +1019,5 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception("Failed to mark message as read");
     }
-  }    
+  }
 }

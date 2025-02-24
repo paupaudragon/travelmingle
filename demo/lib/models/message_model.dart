@@ -3,7 +3,7 @@ class Message {
   final int sender;  // ✅ FIXED: Use integer, not a map
   final int receiver;
   final String content;
-  final String timestamp;
+  final DateTime timestamp;
   final bool isRead;
 
   Message({
@@ -21,7 +21,7 @@ class Message {
       sender: json['sender'],  // ✅ FIXED: Integer value
       receiver: json['receiver'],  // ✅ FIXED: Integer value
       content: json['content'],
-      timestamp: json['timestamp'],
+      timestamp: DateTime.parse(json['timestamp']),
       isRead: json['is_read'],  // ✅ FIXED: Boolean value
     );
   }
