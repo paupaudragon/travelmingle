@@ -41,12 +41,15 @@ class FirebaseManager:
 
     def send_notification(self, tokens, title, body, data=None):
         if not tokens:
-            print("No tokens provided for notification")
+            print("❌ No tokens provided for notification")
             return
 
         try:
-            print(f"Preparing to send notification to {len(tokens)} devices")
-            print(f"Project ID: {self.app.project_id}")
+            print(f"📨 Sending notification to {len(tokens)} devices")
+            print(f"🎯 Firebase Project ID: {self.app.project_id}")
+            print(f"📝 Notification Title: {title}")
+            print(f"📩 Notification Body: {body}")
+            print(f"🔹 Data Payload: {json.dumps(data, indent=2)}")
 
             # Ensure data is string-based
             if data:
@@ -58,7 +61,7 @@ class FirebaseManager:
 
             for token in tokens:
                 try:
-                    print(f"Sending to token: {token[:20]}...")
+                    print(f"📩 Sending to token: {token[:20]}...")
 
                     message = messaging.Message(
                         notification=messaging.Notification(
@@ -69,13 +72,12 @@ class FirebaseManager:
                         token=token
                     )
 
-                    # Send using v1 API
                     response = messaging.send(message, app=self.app)
-                    print(f"Message sent successfully. Response: {response}")
+                    print(f"✅ Message sent successfully. Response: {response}")
                     success_count += 1
 
                 except Exception as e:
-                    print(f"Error sending to token {token[:20]}: {str(e)}")
+                    print(f"❌ Error sending to token {token[:20]}: {str(e)}")
                     failure_count += 1
                     failed_tokens.append({
                         'token': token,
@@ -88,12 +90,12 @@ class FirebaseManager:
                 'failed_tokens': failed_tokens
             }
 
-            print(f"Final result: {json.dumps(result, indent=2)}")
+            print(f"📊 Firebase Notification Result: {json.dumps(result, indent=2)}")
             return result
 
         except Exception as e:
-            print(f"Error in send_notification: {str(e)}")
-            print(f"Error type: {type(e)}")
-            if hasattr(e, '__dict__'):
-                print(f"Error attributes: {e.__dict__}")
+            print(f"❌ Error in send_notification: {str(e)}")
             return {'error': str(e)}
+
+
+

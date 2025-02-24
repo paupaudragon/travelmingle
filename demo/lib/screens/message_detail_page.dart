@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:demo/models/message_model.dart';
+import 'package:demo/services/firebase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 
@@ -27,6 +28,21 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
     super.initState();
     _fetchMessages();
     _startAutoRefresh();
+
+    FirebaseMessagingService messagingService = FirebaseMessagingService(
+      registerDeviceToken: (String token) {
+        _apiService.registerDeviceToken(token);
+      },
+      onNewMessageReceived: (String senderId, String messageId) {
+        print("🔔 New message from user $senderId, message ID: $messageId");
+
+        // Reload messages in chat screen
+        if (mounted) {
+          _fetchMessages();
+        }
+      },
+    );
+    messagingService.initialize();
   }
 
   @override
@@ -45,6 +61,15 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
 
   Future<void> _fetchMessages() async {
     try {
+      // ✅ Ensure current user ID is available
+      if (_apiService.currentUserId == null) {
+        print("🔍 Fetching current user ID...");
+        await _apiService.getCurrentUserId(); // Ensure it's fetched
+      }
+
+      print(
+          "🔎 Current User ID inside _fetchMessages: ${_apiService.currentUserId}");
+
       List<Message> fetchedMessages =
           await _apiService.fetchMessages(widget.userId);
 
@@ -117,13 +142,17 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
         final isSender = message.sender ==
             _apiService.currentUserId; // ✅ FIXED: Compare integers directly
 
+        // ✅ Print Debug Info
+        print(
+            "Message ID: ${message.id}, Sender: ${message.sender}, Receiver: ${message.receiver}, Current User ID: ${_apiService.currentUserId}, isSender: $isSender");
+
         return Align(
           alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             padding: const EdgeInsets.all(10),
             margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
             decoration: BoxDecoration(
-              color: isSender ? Colors.grey[300] : Colors.blueAccent,
+              color: isSender ? Colors.grey : Colors.blueAccent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(

@@ -135,6 +135,11 @@ class ApiService {
   }
 
   Future<bool> login(String username, String password) async {
+    print("🔐 Logging in as: $username");
+
+    // ✅ Ensure logout before logging in a new user
+    await logout();
+
     const String url = "$baseApiUrl/token/";
     final NotificationService notificationService = NotificationService();
 
@@ -164,6 +169,7 @@ class ApiService {
         print("Error fetching user info after login: $e");
       }
 
+      print("✅ Login successful for user ID: $_currentUserId");
       return true;
     } else {
       return false;
@@ -171,12 +177,15 @@ class ApiService {
   }
 
   Future<void> logout() async {
+    print("🔴 Logging out...");
     NotificationService().reset();
     var notificationState = NotificationState();
     notificationState.setUnreadStatus(false);
-    await _storage.delete(key: "access_token");
-    await _storage.delete(key: "refresh_token");
-    await _storage.delete(key: "current_user_id");
+    // ✅ Ensure ALL stored data is cleared
+    await _storage.deleteAll();
+    // await _storage.delete(key: "access_token");
+    // await _storage.delete(key: "refresh_token");
+    // await _storage.delete(key: "current_user_id");
     _cachedToken = null;
     _currentUserId = null;
 
@@ -966,15 +975,28 @@ class ApiService {
 
   // **1. Fetch Messages Between Users**
   Future<List<dynamic>> fetchConversations() async {
-    final response = await makeAuthenticatedRequest(
-      url: "$baseApiUrl/messages/conversations/",
-      method: "GET",
-    );
+    try {
+      print('🌐 Requesting conversations from backend...');
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception("Failed to load conversations");
+      final response = await makeAuthenticatedRequest(
+        url: "$baseApiUrl/messages/conversations/",
+        method: "GET",
+      );
+
+      print(
+          '📥 Raw API Response (Status: ${response.statusCode}): ${response.body}');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        print('✅ Successfully loaded conversations: ${data.length}');
+        return data;
+      } else {
+        print('❌ Failed to fetch conversations. Error: ${response.body}');
+        throw Exception("Failed to load conversations");
+      }
+    } catch (e) {
+      print('❌ Exception in fetchConversations: $e');
+      rethrow;
     }
   }
 
@@ -1018,6 +1040,20 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception("Failed to mark message as read");
+    }
+  }
+
+  Future<void> registerDeviceToken(String token) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/register-device/',
+      method: 'POST',
+      body: {"token": token},
+    );
+
+    if (response.statusCode == 200) {
+      print('✅ Device token registered successfully');
+    } else {
+      print('❌ Failed to register device token: ${response.body}');
     }
   }
 }

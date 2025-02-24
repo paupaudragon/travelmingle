@@ -2,7 +2,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .device_management import DeviceManager
-from .models import Collects, Comments, Follow, Likes, Notifications, Users, Profile, Device
+from .models import Collects, Comments, Follow, Likes, Notifications, Users, Profile, Device, Message
 from .firebase_utils import FirebaseManager
 
 firebase = FirebaseManager()
@@ -201,3 +201,54 @@ def create_follow_notification(sender, instance, created, **kwargs):
             'type': 'follow',
             'notification_id': notification.id
         })
+
+
+# Messengers
+@receiver(post_save, sender=Message)
+def send_message_notification(sender, instance, created, **kwargs):
+    """Send push notification when a new message is received"""
+    if created:
+        recipient = instance.receiver
+        sender = instance.sender
+
+        print(f"📩 New message from {sender.username} to {recipient.username}")
+        print(f"📝 Content: {instance.content}")
+        print(f"📅 Timestamp: {instance.timestamp}")
+
+        # Get all device tokens for the recipient
+        device_tokens = Device.objects.filter(
+            user=recipient
+        ).values_list('token', flat=True)
+
+        if device_tokens:
+            print(f"📲 Sending notification to {len(device_tokens)} devices...")
+
+            # Create notification in database
+            notification = Notifications.objects.create(
+                recipient=recipient,
+                sender=sender,
+                notification_type="message",
+                message=f"New message from {sender.username}"
+            )
+
+            # Send Firebase notification
+            result = firebase.send_notification(
+                tokens=list(device_tokens),
+                title="New Message",
+                body=f"{sender.username}: {instance.content[:50]}",  # Show first 50 characters
+                data={
+                    "type": "message",
+                    "notification_id": str(notification.id),
+                    "sender_id": str(sender.id),
+                    "receiver_id": str(recipient.id),
+                    "message_id": str(instance.id),
+                }
+            )
+
+            print(f"🚀 Firebase send result: {result}")
+
+            # Log failed tokens
+            if result.get("failed_tokens"):
+                print(f"⚠️ Failed tokens: {result['failed_tokens']}")
+                for failed_token in result['failed_tokens']:
+                    Device.objects.filter(token=failed_token["token"]).delete()

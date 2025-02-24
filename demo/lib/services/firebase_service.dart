@@ -2,8 +2,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FirebaseMessagingService {
   final Function(String) registerDeviceToken;
+  final Function(String senderId, String messageId) onNewMessageReceived;
 
-  FirebaseMessagingService({required this.registerDeviceToken});
+  FirebaseMessagingService({
+    required this.registerDeviceToken,
+    required this.onNewMessageReceived,
+  });
 
   Future<void> initialize() async {
     try {
@@ -25,19 +29,22 @@ class FirebaseMessagingService {
       String? token = await FirebaseMessaging.instance.getToken();
       print('🔥 FCM Token: $token');
 
-      if (token != null) {
-        // Register the token with your backend
-        await registerDeviceToken(token);
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print("📩 Incoming Firebase notification: ${message.data}");
 
-        // Listen for token refresh
-        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-          print('🔄 FCM Token refreshed: $newToken');
-          registerDeviceToken(newToken);
-        });
-      } else {
-        print('❌ Failed to get FCM token');
-        return;
-      }
+        if (message.data['type'] == 'message') {
+          String senderId = message.data['sender_id'];
+          String messageId = message.data['message_id'];
+
+          print(
+              "📨 New message from sender: $senderId (Message ID: $messageId)");
+
+          // Call the callback to update UI
+          onNewMessageReceived(senderId, messageId);
+        } else {
+          print("ℹ️ Received non-message notification: ${message.data}");
+        }
+      });
     } catch (e) {
       print('❌ Error initializing Firebase Messaging: $e');
     }

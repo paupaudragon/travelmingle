@@ -438,6 +438,7 @@ class Notifications(models.Model):
             ("mention", "Mention"),
             ("collect", "Collect"),
             ("follow", "Follow"),
+            ("message", "Message"),  # ✅ New message type
         ]
     )
     message = models.CharField(max_length=255)
