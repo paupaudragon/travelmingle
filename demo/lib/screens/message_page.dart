@@ -188,12 +188,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       print('📩 Fetching direct messages...');
 
-      final messages = await _apiService.fetchConversations(); // Calls new API
+      final messages =
+          await _apiService.fetchConversations(); // ✅ Calls the API
+
+      // ✅ Sort messages by newest first
+      if (messages.isNotEmpty) {
+        messages.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
+      }
+
       print('✅ Direct messages fetched: ${messages.length}');
 
       if (mounted) {
         setState(() {
-          _directMessages = messages; // ✅ Ensures messages are correctly stored
+          _directMessages = messages; // ✅ Store messages properly
           _isLoading = false;
           _isRefreshing = false;
         });
@@ -297,30 +304,63 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
 
-    // ✅ Ensure currentUserId is passed correctly
+    // ✅ Ensure currentUserId is initialized before rendering messages
     if (_currentUserId == null) {
-      return Center(
-          child: CircularProgressIndicator()); // Wait until user ID loads
+      return Center(child: CircularProgressIndicator());
     }
 
-    return DirectMessagesList(
-      messages: _directMessages,
-      currentUserId: _currentUserId!, // ✅ Pass currentUserId here
-      onMessageTap: (message) async {
+    return ListView.builder(
+      itemCount: _directMessages.length, // ✅ Show all direct messages
+      itemBuilder: (context, index) {
+        final message = _directMessages[index];
+
+        // ✅ Ensure message content is shown correctly
+        final messageContent =
+            message['message_content'] ?? "No message content";
         final sender = message['sender'];
         final receiver = message['receiver'];
 
-        final chatPartnerId = sender == _currentUserId ? receiver : sender;
+        // ✅ Determine the chat partner
+        final chatPartnerId =
+            sender['id'] == _currentUserId ? receiver['id'] : sender['id'];
+        final chatPartnerUsername = sender['id'] == _currentUserId
+            ? receiver['username']
+            : sender['username'];
 
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MessageDetailPage(userId: chatPartnerId),
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: NetworkImage(receiver['profile_picture_url']),
+            radius: 24,
           ),
-        );
+          title: Text(
+            chatPartnerUsername,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            messageContent,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                color: message['is_read'] ? Colors.grey : Colors.white),
+          ),
+          trailing: message['is_read']
+              ? Icon(Icons.done_all, color: Colors.green)
+              : Icon(Icons.markunread,
+                  color: Colors.red), // ✅ Indicate unread messages
+          onTap: () async {
+            print("📨 Opening conversation with $chatPartnerUsername");
 
-        // ✅ Refresh messages after returning from chat
-        _fetchDirectMessages();
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MessageDetailPage(userId: chatPartnerId),
+              ),
+            );
+
+            // ✅ Refresh messages after returning from chat
+            _fetchDirectMessages();
+          },
+        );
       },
     );
   }

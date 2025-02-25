@@ -98,7 +98,6 @@ env = environ.Env()
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='default-secret-key')
 
-<<<<<<< HEAD
 if not DEBUG:
     GDAL_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgdal.so'
     GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so'
@@ -120,26 +119,6 @@ if not DEBUG:
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-#         'NAME': env('DB_NAME', default='travelmingle'),
-#         'USER': env('DB_USER', default=''),
-#         'PASSWORD': env('DB_PASSWORD', default=''),
-#         'HOST': env('DB_HOST', default='localhost'),
-#         'PORT': env('DB_PORT', default='5432'),
-#     }
-# }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': os.environ.get('RDS_DB_NAME', 'postgres'),
-        'USER': os.environ.get('RDS_USERNAME', 'postgres'),
-        'PASSWORD': os.environ.get('RDS_PASSWORD', 'travelmingle123'),
-        'HOST': os.environ.get('RDS_HOSTNAME', 'database-1.cr2yg42w08ex.us-east-2.rds.amazonaws.com'),
-        'PORT': os.environ.get('RDS_PORT', '5432'),
-=======
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
@@ -148,9 +127,19 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD', default=''),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
->>>>>>> 95aa73b2cd2d5098f7caa025fea7b6edfc6dda65
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
+#         'NAME': os.environ.get('RDS_DB_NAME', 'travelmingle'),
+#         'USER': os.environ.get('RDS_USERNAME', 'postgres'),
+#         'PASSWORD': os.environ.get('RDS_PASSWORD', 'afj1470'),
+#         'HOST': os.environ.get('RDS_HOSTNAME', 'database-1.cr2yg42w08ex.us-east-2.rds.amazonaws.com'),
+#         'PORT': os.environ.get('RDS_PORT', '5432'),
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
