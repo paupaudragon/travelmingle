@@ -8,42 +8,38 @@ from ..serializers import MessageSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from django.db.models import Q, OuterRef, Subquery
+
 class MessageListView(APIView):
     """
     Fetch messages between the authenticated user and another user.
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                'other_user_id', openapi.IN_QUERY,
-                description="ID of the other user in the conversation",
-                type=openapi.TYPE_INTEGER,
-                required=True
-            )
-        ],
-        responses={200: MessageSerializer(many=True)}
-    )
-
     def get(self, request):
         other_user_id = request.query_params.get('other_user_id')
-        
+
+        print(f"🌐 Message API called by {request.user} (other_user_id={other_user_id})")
+
         if not other_user_id:
+            print("❌ Missing other_user_id parameter")
             return Response({"error": "Missing other_user_id parameter"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             other_user = Users.objects.get(id=other_user_id)
         except Users.DoesNotExist:
+            print("❌ User not found")
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        user = request.user
         messages = Message.objects.filter(
-            Q(sender=user, receiver=other_user) | Q(sender=other_user, receiver=user)
+            Q(sender=request.user, receiver=other_user) | Q(sender=other_user, receiver=request.user)
         ).order_by('timestamp')
+
+        print(f"📩 Messages retrieved: {messages.count()}")
 
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 class SendMessageView(APIView):
@@ -109,23 +105,46 @@ class MarkMessageReadView(APIView):
             return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
+@classmethod
+def get_latest_messages_per_conversation(cls, user):
+    """
+    Fetch the latest message from each conversation (either sender or receiver is the user).
+    """
+    latest_messages = cls.objects.filter(
+        Q(sender=user) | Q(receiver=user)
+    ).order_by('-timestamp')
+
+    subquery = latest_messages.filter(
+        Q(sender=OuterRef("sender"), receiver=OuterRef("receiver")) |
+        Q(sender=OuterRef("receiver"), receiver=OuterRef("sender"))
+    ).order_by('-timestamp').values('id')[:1]  # Get latest message ID for each pair
+
+    return cls.objects.filter(id__in=Subquery(subquery))
+
 class ConversationsListView(APIView):
     """
     Fetch a list of users the authenticated user has messaged, showing the latest message with each user.
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(
-        responses={200: MessageSerializer(many=True)}
-    )
-
     def get(self, request):
-        user = request.user
+        try:
+            user = request.user
+            print(f"📩 Fetching conversations for user: {user.id} ({user.username})")
 
-        # Get latest messages in each conversation
-        latest_messages = Message.objects.filter(
-            Q(sender=user) | Q(receiver=user)
-        ).order_by('-timestamp').distinct('sender', 'receiver')
+            latest_messages = Message.get_latest_messages_per_conversation(user)
 
-        serializer = MessageSerializer(latest_messages, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            if not latest_messages.exists():
+                print("⚠️ No conversations found for this user.")
+
+            print(f"✅ Retrieved {latest_messages.count()} latest messages")
+
+            serializer = MessageSerializer(latest_messages, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(f"❌ Error in ConversationsListView: {str(e)}")
+            import traceback
+            print(traceback.format_exc())  # Print full error traceback
+            return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

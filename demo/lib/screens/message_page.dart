@@ -46,6 +46,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   String? _error;
   bool _isInitialized = false;
 
+  int? _currentUserId;
+
   @override
   void initState() {
     super.initState();
@@ -53,9 +55,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
       if (mounted && !_isRefreshing) {
         _fetchNotifications();
-        _fetchDirectMessages();
       }
     });
+    _fetchCurrentUserId(); // ✅ Load user ID
+    _fetchDirectMessages();
   }
 
   @override
@@ -64,13 +67,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!_isInitialized) {
       _isInitialized = true;
       _fetchNotifications();
+
+      _fetchCurrentUserId(); // ✅ Load user ID
       _fetchDirectMessages;
+    }
+  }
+
+  // @override
+  // void dispose() {
+  //   _refreshTimer?.cancel();
+  //   _scrollController.dispose();
+  //   _messageController.dispose();
+  //   super.dispose();
+  // }
+
+  /// **Fetch current user's ID**
+  Future<void> _fetchCurrentUserId() async {
+    int? userId = await _apiService.getCurrentUserId();
+    if (mounted) {
+      setState(() {
+        _currentUserId = userId;
+      });
     }
   }
 
   void _onFocusChange() {
     if (_focusNode.hasFocus && !_isRefreshing) {
       _fetchNotifications();
+
+      _fetchCurrentUserId(); // ✅ Load user ID
       _fetchDirectMessages;
     }
   }
@@ -272,15 +297,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
 
+    // ✅ Ensure currentUserId is passed correctly
+    if (_currentUserId == null) {
+      return Center(
+          child: CircularProgressIndicator()); // Wait until user ID loads
+    }
+
     return DirectMessagesList(
       messages: _directMessages,
+      currentUserId: _currentUserId!, // ✅ Pass currentUserId here
       onMessageTap: (message) async {
         final sender = message['sender'];
         final receiver = message['receiver'];
-        final currentUserId = _apiService.currentUserId;
 
-        final chatPartnerId =
-            sender['id'] == currentUserId ? receiver['id'] : sender['id'];
+        final chatPartnerId = sender == _currentUserId ? receiver : sender;
 
         await Navigator.push(
           context,

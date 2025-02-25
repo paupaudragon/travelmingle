@@ -10,7 +10,6 @@ import '../models/post_model.dart';
 import '../models/comment_model.dart';
 import '../models/message_model.dart';
 
-
 class ApiService {
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -136,6 +135,11 @@ class ApiService {
   }
 
   Future<bool> login(String username, String password) async {
+    print("🔐 Logging in as: $username");
+
+    // ✅ Ensure logout before logging in a new user
+    await logout();
+
     const String url = "$baseApiUrl/token/";
     final NotificationService notificationService = NotificationService();
 
@@ -165,6 +169,7 @@ class ApiService {
         print("Error fetching user info after login: $e");
       }
 
+      print("✅ Login successful for user ID: $_currentUserId");
       return true;
     } else {
       return false;
@@ -172,12 +177,15 @@ class ApiService {
   }
 
   Future<void> logout() async {
+    print("🔴 Logging out...");
     NotificationService().reset();
     var notificationState = NotificationState();
     notificationState.setUnreadStatus(false);
-    await _storage.delete(key: "access_token");
-    await _storage.delete(key: "refresh_token");
-    await _storage.delete(key: "current_user_id");
+    // ✅ Ensure ALL stored data is cleared
+    await _storage.deleteAll();
+    // await _storage.delete(key: "access_token");
+    // await _storage.delete(key: "refresh_token");
+    // await _storage.delete(key: "current_user_id");
     _cachedToken = null;
     _currentUserId = null;
 
@@ -917,17 +925,78 @@ class ApiService {
   }
 
 // Messenger
+  Future<int?> getCurrentUserId() async {
+    // ✅ 1. Check if _currentUserId is already cached
+    if (_currentUserId != null) {
+      print('🔍 Using cached current user ID: $_currentUserId');
+      return _currentUserId;
+    }
+
+    // ✅ 2. Check secure storage for stored user ID
+    String? storedId = await _storage.read(key: "current_user_id");
+    if (storedId != null) {
+      _currentUserId = int.tryParse(storedId);
+      if (_currentUserId != null) {
+        print('🔐 Retrieved current user ID from storage: $_currentUserId');
+        return _currentUserId;
+      }
+    }
+
+    // ✅ 3. If not found, fetch from API
+    try {
+      print('🌐 Fetching current user ID from API...');
+      final response = await makeAuthenticatedRequest(
+        url: "$baseApiUrl/users/me/",
+        method: "GET",
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data.containsKey('id')) {
+          _currentUserId = data['id'];
+          await _storage.write(
+              key: "current_user_id", value: _currentUserId.toString());
+          print(
+              '✅ Successfully fetched and stored current user ID: $_currentUserId');
+          return _currentUserId;
+        } else {
+          print('❌ API response missing "id" key: $data');
+          return null;
+        }
+      } else {
+        print('❌ Failed to fetch current user ID: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Error fetching current user ID: $e');
+      return null;
+    }
+  }
+
   // **1. Fetch Messages Between Users**
   Future<List<dynamic>> fetchConversations() async {
-    final response = await makeAuthenticatedRequest(
-      url: "$baseApiUrl/messages/conversations/",
-      method: "GET",
-    );
+    try {
+      print('🌐 Requesting conversations from backend...');
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception("Failed to load conversations");
+      final response = await makeAuthenticatedRequest(
+        url: "$baseApiUrl/messages/conversations/",
+        method: "GET",
+      );
+
+      print(
+          '📥 Raw API Response (Status: ${response.statusCode}): ${response.body}');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        print('✅ Successfully loaded conversations: ${data.length}');
+        return data;
+      } else {
+        print('❌ Failed to fetch conversations. Error: ${response.body}');
+        throw Exception("Failed to load conversations");
+      }
+    } catch (e) {
+      print('❌ Exception in fetchConversations: $e');
+      rethrow;
     }
   }
 
@@ -972,5 +1041,19 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception("Failed to mark message as read");
     }
-  }    
+  }
+
+  Future<void> registerDeviceToken(String token) async {
+    final response = await makeAuthenticatedRequest(
+      url: '$baseApiUrl/register-device/',
+      method: 'POST',
+      body: {"token": token},
+    );
+
+    if (response.statusCode == 200) {
+      print('✅ Device token registered successfully');
+    } else {
+      print('❌ Failed to register device token: ${response.body}');
+    }
+  }
 }

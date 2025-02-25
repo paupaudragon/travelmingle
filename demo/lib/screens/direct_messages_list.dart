@@ -4,11 +4,13 @@ import 'package:demo/screens/message_detail_page.dart';
 class DirectMessagesList extends StatelessWidget {
   final List<dynamic> messages;
   final Function(dynamic) onMessageTap;
+  final int currentUserId; // ✅ Pass current user ID
 
   const DirectMessagesList({
     Key? key,
     required this.messages,
     required this.onMessageTap,
+    required this.currentUserId,
   }) : super(key: key);
 
   @override
@@ -17,20 +19,24 @@ class DirectMessagesList extends StatelessWidget {
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
-        final sender = message['sender'];
-        final receiver = message['receiver'];
-        final content = message['content'] ?? '';
-        final timestamp = message['timestamp'] ?? message['created_at'] ?? '';
+        final int senderId =
+            message['sender']; // ✅ FIX: Ensure sender ID is correct
+        final int receiverId =
+            message['receiver']; // ✅ FIX: Ensure receiver ID is correct
+        final String content = message['content'] ?? '';
+        final String timestamp = message['timestamp'] ?? '';
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: NetworkImage(sender?['avatar'] ?? ''),
+            backgroundImage: NetworkImage(message['sender_avatar'] ?? ''),
           ),
-          title: Text(sender?['username'] ?? 'Unknown'),
+          title: Text("User $senderId"),
           subtitle: Text(content),
           trailing: Text(timestamp),
           onTap: () {
-            final chatPartnerId = sender['id'];  // Navigate to chat with sender
+            // ✅ Ensure correct chat navigation (chat partner should NOT be the current user)
+            final chatPartnerId =
+                currentUserId == senderId ? receiverId : senderId;
 
             Navigator.push(
               context,
