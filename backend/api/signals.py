@@ -58,13 +58,13 @@ def create_like_notification(sender, instance, created, **kwargs):
                 sender=instance.user,
                 post=instance.post,
                 notification_type='like_post',
-                message=f"{instance.user.username} liked your post"
+                message_text=f"{instance.user.username} liked your post"
             )
 
             # Send push notification
             send_push_notification(instance.post.user, {
                 'title': 'New Like',
-                'message': f"{instance.user.username} liked your post",
+                'message_text': f"{instance.user.username} liked your post",
                 'type': 'like_post',
                 'notification_id': notification.id,
                 'post_id': instance.post.id
@@ -78,12 +78,12 @@ def create_like_notification(sender, instance, created, **kwargs):
                 comment=instance.comment,
                 post=instance.comment.post,
                 notification_type='like_comment',
-                message=f"{instance.user.username} liked your comment"
+                message_text=f"{instance.user.username} liked your comment"
             )
 
             send_push_notification(instance.comment.user, {
                 'title': 'New Like',
-                'message': f"{instance.user.username} liked your comment",
+                'message_text': f"{instance.user.username} liked your comment",
                 'type': 'like_comment',
                 'notification_id': notification.id,
                 'post_id': instance.comment.post.id,
@@ -103,13 +103,13 @@ def create_comment_notification(sender, instance, created, **kwargs):
                 post=instance.post,
                 comment=instance,
                 notification_type='reply',
-                message=f"{instance.user.username} replied to your comment"
+                message_text=f"{instance.user.username} replied to your comment"
             )
 
             # Send push notification for reply
             send_push_notification(instance.reply_to.user, {
                 'title': 'New Reply',
-                'message': f"{instance.user.username} replied to your comment",
+                'message_text': f"{instance.user.username} replied to your comment",
                 'type': 'reply',
                 'notification_id': notification.id,
                 'post_id': instance.post.id,
@@ -123,13 +123,13 @@ def create_comment_notification(sender, instance, created, **kwargs):
                 post=instance.post,
                 comment=instance,
                 notification_type='comment',
-                message=f"{instance.user.username} commented on your post"
+                message_text=f"{instance.user.username} commented on your post"
             )
 
             # Send push notification for comment
             send_push_notification(instance.post.user, {
                 'title': 'New Comment',
-                'message': f"{instance.user.username} commented on your post",
+                'message_text': f"{instance.user.username} commented on your post",
                 'type': 'comment',
                 'notification_id': notification.id,
                 'post_id': instance.post.id,
@@ -145,13 +145,13 @@ def create_comment_notification(sender, instance, created, **kwargs):
                 post=instance.post,
                 comment=instance,
                 notification_type='mention',
-                message=f"{instance.user.username} mentioned you in a comment"
+                message_text=f"{instance.user.username} mentioned you in a comment"
             )
 
             # Send push notification for mention
             send_push_notification(mentioned_user, {
                 'title': 'New Mention',
-                'message': f"{instance.user.username} mentioned you in a comment",
+                'message_text': f"{instance.user.username} mentioned you in a comment",
                 'type': 'mention',
                 'notification_id': notification.id,
                 'post_id': instance.post.id,
@@ -169,13 +169,13 @@ def create_collect_notification(sender, instance, created, **kwargs):
             sender=instance.user,
             post=instance.post,
             notification_type='collect',
-            message=f"{instance.user.username} collected your post"
+            message_text=f"{instance.user.username} collected your post"
         )
 
         # Send push notification
         send_push_notification(instance.post.user, {
             'title': 'New Collection',
-            'message': f"{instance.user.username} collected your post",
+            'message_text': f"{instance.user.username} collected your post",
             'type': 'collect',
             'notification_id': notification.id,
             'post_id': instance.post.id
@@ -191,51 +191,46 @@ def create_follow_notification(sender, instance, created, **kwargs):
             recipient=instance.following,
             sender=instance.follower,
             notification_type='follow',
-            message=f"{instance.follower.username} started following you"
+            message_text=f"{instance.follower.username} started following you"
         )
 
         # Send push notification
         send_push_notification(instance.following, {
             'title': 'New Follower',
-            'message': f"{instance.follower.username} started following you",
+            'message_text': f"{instance.follower.username} started following you",
             'type': 'follow',
             'notification_id': notification.id
         })
 
 
-# Messengers
+
 @receiver(post_save, sender=Message)
-def send_message_notification(sender, instance, created, **kwargs):
-    """Send push notification when a new message is received"""
+def create_message_notification(sender, instance, created, **kwargs):
+    """Signal to handle notifications for new messages"""
     if created:
-        recipient = instance.receiver
-        sender = instance.sender
+        recipient = instance.receiver  # ✅ Fix: Correct recipient field
+        sender = instance.sender       # ✅ Fix: Correct sender field
 
-        print(f"📩 New message from {sender.username} to {recipient.username}")
-        print(f"📝 Content: {instance.content}")
-        print(f"📅 Timestamp: {instance.timestamp}")
+        # ✅ Create database notification for the message
+        notification = Notifications.objects.create(
+            recipient=recipient,
+            sender=sender,
+            message=instance,  # ✅ Attach the Message object
+            notification_type="message",
+            message_text=f"New message from {sender.username}"
+        )
 
-        # Get all device tokens for the recipient
-        device_tokens = Device.objects.filter(
-            user=recipient
-        ).values_list('token', flat=True)
+        # ✅ Get all device tokens for recipient
+        device_tokens = Device.objects.filter(user=recipient).values_list('token', flat=True)
 
         if device_tokens:
             print(f"📲 Sending notification to {len(device_tokens)} devices...")
 
-            # Create notification in database
-            notification = Notifications.objects.create(
-                recipient=recipient,
-                sender=sender,
-                notification_type="message",
-                message=f"New message from {sender.username}"
-            )
-
-            # Send Firebase notification
+            # ✅ Send Firebase Notification
             result = firebase.send_notification(
                 tokens=list(device_tokens),
                 title="New Message",
-                body=f"{sender.username}: {instance.content[:50]}",  # Show first 50 characters
+                body=f"{sender.username}: {instance.content[:50]}",  # ✅ Show first 50 characters
                 data={
                     "type": "message",
                     "notification_id": str(notification.id),
@@ -247,8 +242,13 @@ def send_message_notification(sender, instance, created, **kwargs):
 
             print(f"🚀 Firebase send result: {result}")
 
-            # Log failed tokens
+            # ✅ Remove failed tokens
             if result.get("failed_tokens"):
-                print(f"⚠️ Failed tokens: {result['failed_tokens']}")
                 for failed_token in result['failed_tokens']:
                     Device.objects.filter(token=failed_token["token"]).delete()
+        else:
+            print("⚠️ No registered devices for recipient. Skipping push notification.")
+
+
+
+

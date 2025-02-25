@@ -401,6 +401,32 @@ class Collects(models.Model):
             return f"Post {self.post.title or 'Untitled'} collected in Folder {self.folder.name} by {self.user.username}"
         return f"Post {self.post.title or 'Untitled'} collected by {self.user.username}"
 
+############ Messenger ##################
+User = get_user_model()  # Get the correct user model dynamically
+class Message(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    @classmethod
+    def get_latest_messages_per_conversation(cls, user):
+        """
+        Fetch the latest message from each conversation (either sender or receiver is the user).
+        """
+        latest_messages = (
+            cls.objects.filter(Q(sender=user) | Q(receiver=user))
+            .order_by("sender", "receiver", "-timestamp")
+            .distinct("sender", "receiver")  # Get the latest for each user pair
+            
+        )
+        return latest_messages
+
+    def __str__(self):
+        return f"{self.sender} -> {self.receiver}: {self.content[:30]}"
+
 
 class Notifications(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -428,6 +454,13 @@ class Notifications(models.Model):
         blank=True,
         related_name="notifications"
     )
+    message = models.ForeignKey(  # ✅ New ForeignKey for Messages
+        Message,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications"
+    )    
     notification_type = models.CharField(
         max_length=50,
         choices=[
@@ -441,14 +474,14 @@ class Notifications(models.Model):
             ("message", "Message"),  # ✅ New message type
         ]
     )
-    message = models.CharField(max_length=255)
+    message_text = models.CharField(max_length=255) 
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['recipient', 'sender', 'post', 'comment',
+                fields=['recipient', 'sender', 'post', 'comment', 'message',
                         'notification_type', 'created_at'],
                 name='unique_notification_constraint',
                 # allow exact duplicates after a certain time
@@ -530,27 +563,3 @@ class Device(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.token}"
 
-
-############ Messenger ##################
-User = get_user_model()  # Get the correct user model dynamically
-class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-
-    @classmethod
-    def get_latest_messages_per_conversation(cls, user):
-        """
-        Fetch the latest message from each conversation (either sender or receiver is the user).
-        """
-        latest_messages = (
-            cls.objects.filter(Q(sender=user) | Q(receiver=user))
-            .order_by("sender", "receiver", "-timestamp")
-            .distinct("sender", "receiver")  # Get the latest for each user pair
-        )
-        return latest_messages
-
-    def __str__(self):
-        return f"{self.sender} -> {self.receiver}: {self.content[:30]}"

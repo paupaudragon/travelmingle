@@ -12,15 +12,18 @@ class NotificationListView(APIView):
 
     def get(self, request):
         print(f"🔍 Notification Request by User: {request.user.username}")
-
+        print(f"🔐 Current Auth Token: {request.auth}")  # Debug token
         try:
             notifications = Notifications.objects.filter(
                 recipient=request.user
             ).select_related(
                 'sender',
                 'post',
-                'comment'
-            )[:50]  # Limit to last 50 notifications
+                'comment',
+                'message',
+            ).order_by("-created_at")[:50]  # Limit to last 50 notifications
+
+            print(f"✅ Found {notifications.count()} notifications")
 
             serializer = NotificationSerializer(
                 notifications,

@@ -8,7 +8,7 @@ from ..serializers import MessageSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from django.db.models import Q, OuterRef, Subquery
+
 
 class MessageListView(APIView):
     """
@@ -104,7 +104,7 @@ class MarkMessageReadView(APIView):
         except Message.DoesNotExist:
             return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+from django.db.models import Q, OuterRef, Subquery
 @classmethod
 def get_latest_messages_per_conversation(cls, user):
     """

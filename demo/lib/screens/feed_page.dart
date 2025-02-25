@@ -195,39 +195,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-  // Future<void> _loadNearbyPosts() async {
-  //   if (!mounted) return;
-
-  //   try {
-  //     // Start loading animation
-  //     setState(() => isLoading = true);
-
-  //     // Get location asynchronously
-  //     final position = await _apiService.getCurrentLocation();
-
-  //     source = "nearby";
-
-  //     // Begin fetching nearby posts after location retrieval
-  //     final fetchedPosts = await _apiService.fetchPostsBySource(
-  //       source: source,
-  //       latitude: position.latitude,
-  //       longitude: position.longitude,
-  //       radius: _radius,
-  //     );
-
-  //     // Update UI once posts are fetched
-  //     if (!mounted) return;
-  //     setState(() {
-  //       posts = fetchedPosts;
-  //       isLoading = false;
-  //     });
-  //     _refreshController.refreshCompleted();
-  //   } catch (e) {
-  //     setState(() => isLoading = false);
-  //     _refreshController.refreshFailed();
-  //     print('Error loading nearby posts: $e');
-  //   }
-  // }
 
   Future<void> _filterAndFetchPost() async {
     if (!mounted) return;
