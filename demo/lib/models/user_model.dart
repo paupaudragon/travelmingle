@@ -24,7 +24,7 @@ class User {
       id: json['id'],
       username: json['username'],
       email: json['email'],
-      bio: json['bio'],
+      bio: json['bio'] ?? ' ',
       profilePictureUrl: json['profile_picture_url'] ?? '',
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),

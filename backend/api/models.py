@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db import models
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+
 
 class Users(AbstractUser):
     """

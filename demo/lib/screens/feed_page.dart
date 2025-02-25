@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:demo/main.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/screens/message_page.dart';
-import 'package:demo/screens/nearby_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/profile_page.dart';
 import 'package:demo/screens/search_page.dart';
@@ -194,7 +193,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       print('Error loading posts: $e');
     }
   }
-
 
   Future<void> _filterAndFetchPost() async {
     if (!mounted) return;
