@@ -1,4 +1,5 @@
 import 'package:demo/main.dart';
+import 'package:demo/services/notification_service.dart';
 import 'package:demo/widgets/message_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -96,7 +97,12 @@ class Footer extends StatelessWidget {
             ),
           ),
           MessageIconWithStatus(
-            onTap: () => onMessagesPressed(),
+            onTap: () {
+              print("📩 Message icon clicked - Fetching notifications...");
+              NotificationService()
+                  .fetchNotifications(); // ✅ Updates unread count
+              onMessagesPressed(); // ✅ Navigates to the messages page
+            },
             iconColor: iconColor,
           ),
 

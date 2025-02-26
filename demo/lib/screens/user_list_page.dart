@@ -3,6 +3,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../services/api_service.dart';
 import '../models/user_model.dart';
 import 'profile_page.dart';
+import 'package:demo/models/user_model.dart' as app_models;
 
 class UserListItem extends StatelessWidget {
   final User user;
@@ -102,8 +103,17 @@ class _FollowListPageState extends State<FollowListPage>
 
       setState(() {
         username = userInfo['username'] as String?;
-        following = data['following'] ?? [];
-        followers = data['followers'] ?? [];
+        following = (data['following'] as List<dynamic>?)
+                ?.map((user) =>
+                    app_models.User.fromJson(user as Map<String, dynamic>))
+                .toList() ??
+            [];
+
+        followers = (data['followers'] as List<dynamic>?)
+                ?.map((user) =>
+                    app_models.User.fromJson(user as Map<String, dynamic>))
+                .toList() ??
+            [];
         isLoading = false;
       });
     } catch (e) {
