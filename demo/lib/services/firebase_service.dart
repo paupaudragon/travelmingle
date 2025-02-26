@@ -1,14 +1,17 @@
 import 'package:demo/services/api_service.dart';
+import 'package:demo/services/notification_state.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FirebaseMessagingService {
+  final NotificationState _notificationState;
   final Function(String) registerDeviceToken;
   final Function(String senderId, String messageId) onNewMessageReceived;
 
   FirebaseMessagingService({
     required this.registerDeviceToken,
     required this.onNewMessageReceived,
-  });
+    required NotificationState notificationState, // Accept as a parameter
+  }) : _notificationState = notificationState; // ✅ Store in private variable
 
   Future<void> initialize() async {
     try {
@@ -77,6 +80,7 @@ class FirebaseMessagingService {
       print("📨 New message from sender: $senderId (Message ID: $messageId)");
 
       // Call the callback to update UI
+      _notificationState.setUnreadStatus(true);
       onNewMessageReceived(senderId, messageId);
     } else {
       print("ℹ️ Received non-message notification: ${message.data}");

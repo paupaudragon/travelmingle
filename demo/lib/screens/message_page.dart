@@ -32,7 +32,8 @@ class NotificationsScreen extends StatefulWidget {
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with WidgetsBindingObserver {
   bool _isRefreshing = false;
   final ApiService _apiService = ApiService();
   final NotificationService _notificationService = NotificationService();
@@ -51,11 +52,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
-      if (mounted && !_isRefreshing) {
-        _fetchNotifications();
-      }
-    });
+    // _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
+    //   if (mounted && !_isRefreshing) {
+    //     _fetchNotifications();
+    //   }
+    // });
+    _fetchNotifications();
     _fetchCurrentUserId(); // ✅ Load user ID
     _fetchDirectMessages();
   }
@@ -72,13 +74,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  // @override
-  // void dispose() {
-  //   _refreshTimer?.cancel();
-  //   _scrollController.dispose();
-  //   _messageController.dispose();
-  //   super.dispose();
-  // }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      print("🔄 App resumed - Refreshing notifications...");
+      _fetchNotifications();
+      _fetchDirectMessages();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // ✅ Remove observer
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   /// **Fetch current user's ID**
   Future<void> _fetchCurrentUserId() async {
@@ -91,7 +103,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _onFocusChange() {
-    if (_focusNode.hasFocus && !_isRefreshing) {
+    if (_focusNode.hasFocus || !_isRefreshing) {
       _fetchNotifications();
 
       _fetchCurrentUserId(); // ✅ Load user ID
@@ -141,6 +153,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         NotificationCategory.getDefaultCategories(),
         notifications,
       );
+
+      if (mounted) {
+        setState(() {
+          _categories = updatedCategories; // ✅ Force update categories
+          _isLoading = false;
+          _isRefreshing = false;
+          _error = null;
+        });
+      }
 
       // Count unread notifications
       final unreadNotifications = notifications
@@ -445,13 +466,5 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _focusNode.removeListener(_onFocusChange);
-    _focusNode.dispose();
-    _refreshTimer?.cancel();
-    super.dispose();
   }
 }

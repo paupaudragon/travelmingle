@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:demo/models/message_model.dart';
 import 'package:demo/services/firebase_service.dart';
+import 'package:demo/services/notification_state.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 
@@ -29,6 +30,8 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
     _fetchMessages();
     _startAutoRefresh();
 
+    final NotificationState _notificationState = NotificationState();
+
     FirebaseMessagingService messagingService = FirebaseMessagingService(
       registerDeviceToken: (String token) {
         _apiService.registerDeviceToken(token);
@@ -41,6 +44,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
           _fetchMessages();
         }
       },
+      notificationState: _notificationState,
     );
     messagingService.initialize();
   }
