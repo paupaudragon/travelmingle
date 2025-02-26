@@ -58,7 +58,9 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     checkLoginStatus();
     _loadPosts("explore");
-    // _startPollingNotifications;
+    _refreshTimer = Timer.periodic(Duration(seconds: 10), (timer) {
+      NotificationService().fetchNotifications();
+    });
   }
 
   @override
@@ -293,21 +295,27 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         MaterialPageRoute(
           builder: (context) => NotificationsScreen(
             onHomePressed: () {
-              Navigator.pop(context); // Ensure we return to FeedPage
+              Navigator.pop(context);
               setState(() {
-                _loadPosts(source); // Refresh FeedPage when returning
+                _loadPosts(source);
               });
             },
             onSearchPressed: navigateToSearchPage,
             onPlusPressed: navigateToCreatePost,
-            onMessagesPressed: navigateToMessagePage,
+            onMessagesPressed: () {
+              // ✅ Trigger _fetchNotifications() in message_page.dart
+              print(
+                  "🔄 Navigating to Messages - Ensuring notification refresh...");
+              NotificationService().fetchNotifications(); // Update unread state
+            },
             onMePressed: navigateToProfilePage,
             onMapPressed: navigateToMapPage,
           ),
         ),
       ).then((_) {
-        // Ensures feed refreshes when returning
-        _loadPosts(source);
+        // ✅ Ensures updates when returning
+        print("🔄 Returning to feed page - Fetching notifications...");
+        NotificationService().fetchNotifications();
       });
     });
   }
