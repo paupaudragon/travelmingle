@@ -3,6 +3,7 @@ import 'package:demo/screens/map_page.dart';
 import 'package:demo/services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/feed_page.dart';
 import 'screens/register_page.dart';
 import 'screens/login_page.dart';
@@ -33,9 +34,18 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final notificationService = NotificationService();
-  await notificationService.initialize();
+  // final notificationService = NotificationService();
+  // await notificationService.initialize();
+
+  await clearCachedAuth();
   runApp(MyApp());
+}
+
+Future<void> clearCachedAuth() async {
+  print("🧹 Clearing cached auth data...");
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.clear(); // Clears stored login tokens
+  print("✅ Cached auth data cleared.");
 }
 
 class MyApp extends StatelessWidget {

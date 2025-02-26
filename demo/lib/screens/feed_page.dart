@@ -64,8 +64,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    NotificationService()
-        .fetchNotifications(); // ✅ Replaces checkUnreadNotifications()
+    NotificationService().fetchNotifications();
   }
 
   @override

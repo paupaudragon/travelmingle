@@ -2,15 +2,24 @@ import 'dart:convert';
 import 'package:demo/models/user_model.dart';
 import 'package:demo/services/notification_service.dart';
 import 'package:demo/services/notification_state.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post_model.dart';
 import '../models/comment_model.dart';
 import '../models/message_model.dart';
 
 class ApiService {
+  static final ApiService _instance = ApiService._internal();
+  factory ApiService() {
+    return _instance;
+  }
+  ApiService._internal() {
+    print("🔧 Creating new ApiService instance");
+  }
   static const String baseApiUrl = "http://10.0.2.2:8000/api";
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String? _cachedToken;
@@ -74,7 +83,7 @@ class ApiService {
 // Token Management, log in, log out
   Future<String?> getAccessToken() async {
     if (_cachedToken != null) {
-      print('🔐 Using cached token');
+      print('🔐 Using cached token: ${_cachedToken!.substring(0, 20)}...');
       return _cachedToken;
     }
 
@@ -109,7 +118,7 @@ class ApiService {
     }
 
     _cachedToken = token;
-    return token;
+    return _cachedToken;
   }
 
   Future<void> refreshAccessToken() async {
@@ -137,80 +146,123 @@ class ApiService {
   Future<bool> login(String username, String password) async {
     print("🔐 Logging in as: $username");
 
-    // ✅ Ensure logout before logging in a new user
+    // Ensure complete logout before logging in a new user
     await logout();
 
     const String url = "$baseApiUrl/token/";
     final NotificationService notificationService = NotificationService();
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"username": username, "password": password}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"username": username, "password": password}),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _storage.write(key: "access_token", value: data["access"]);
-      await _storage.write(key: "refresh_token", value: data["refresh"]);
-      _cachedToken = data["access"];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _storage.write(key: "access_token", value: data["access"]);
+        await _storage.write(key: "refresh_token", value: data["refresh"]);
+        _cachedToken = data["access"];
 
-      // Fetch and store user info after successful login
-      try {
-        final userInfo = await getUserInfo();
-        if (userInfo != null) {
-          _currentUserId = userInfo['id'];
-          await _storage.write(
-              key: "current_user_id", value: _currentUserId.toString());
+        // Fetch and store user info after successful login
+        try {
+          final userInfo = await getUserInfo();
+          if (userInfo != null) {
+            _currentUserId = userInfo['id'];
+            await _storage.write(
+                key: "current_user_id", value: _currentUserId.toString());
+
+            print("✅ Login successful for user ID: $_currentUserId");
+
+            // Initialize notification service AFTER user is confirmed
+            await notificationService.initialize(userId: _currentUserId);
+            await notificationService.fetchNotifications();
+          }
+        } catch (e) {
+          print("Error fetching user info after login: $e");
         }
 
-        await notificationService.fetchNotifications();
-      } catch (e) {
-        print("Error fetching user info after login: $e");
+        return true;
+      } else {
+        print("❌ Login failed: ${response.body}");
+        return false;
       }
-
-      print("✅ Login successful for user ID: $_currentUserId");
-      return true;
-    } else {
+    } catch (e) {
+      print("❌ Login error: $e");
       return false;
     }
   }
 
   Future<void> logout() async {
     print("🔴 Logging out...");
+
+    // Step 1: Reset notification service FIRST
     NotificationService().reset();
-    var notificationState = NotificationState();
-    notificationState.setUnreadStatus(false);
-    // ✅ Ensure ALL stored data is cleared
-    await _storage.deleteAll();
-    // await _storage.delete(key: "access_token");
-    // await _storage.delete(key: "refresh_token");
-    // await _storage.delete(key: "current_user_id");
-    _cachedToken = null;
-    _currentUserId = null;
 
-    // Unregister FCM Token
-    String? fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      print('🔄 Unregistering FCM token on logout...');
-      try {
-        final response = await makeAuthenticatedRequest(
-          url: '${ApiService.baseApiUrl}/register-device/',
-          method: 'DELETE',
-          body: {"token": fcmToken},
-        );
-
-        if (response.statusCode == 200) {
-          print('✅ Device unregistered successfully');
-        } else {
-          print('⚠️ Failed to unregister device. Response: ${response.body}');
-        }
-      } catch (e) {
-        print('❌ Failed to unregister device: $e');
-      }
+    // Step 2: Ensure Firebase Auth is signed out
+    try {
+      await FirebaseAuth.instance.signOut();
+      print("✅ FirebaseAuth: User signed out.");
+    } catch (e) {
+      print("⚠️ FirebaseAuth signout error: $e");
     }
 
-    print("Logged out successfully.");
+    // Step 3: Unregister FCM token on backend
+    try {
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        print('🔄 Unregistering FCM token on logout...');
+        try {
+          final token = await getAccessToken();
+          if (token != null) {
+            final response = await http.post(
+              Uri.parse('${ApiService.baseApiUrl}/register-device/'),
+              headers: {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json',
+              },
+              body: jsonEncode({"token": fcmToken, "unregister": true}),
+            );
+
+            if (response.statusCode == 200) {
+              print('✅ Device unregistered successfully');
+            } else {
+              print(
+                  '⚠️ Failed to unregister device. Response: ${response.body}');
+            }
+          }
+        } catch (e) {
+          print('⚠️ Failed to unregister device: $e');
+        }
+      }
+    } catch (e) {
+      print("⚠️ FCM token error: $e");
+    }
+
+    // Step 4: Delete FCM token locally
+    try {
+      await FirebaseMessaging.instance.deleteToken();
+      print("✅ FCM token deleted.");
+    } catch (e) {
+      print("⚠️ Error deleting FCM token: $e");
+    }
+
+    // Step 5: Clear all local storage
+    try {
+      await _storage.deleteAll();
+      _cachedToken = null;
+      _currentUserId = null;
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      print("✅ Local storage cleared.");
+    } catch (e) {
+      print("⚠️ Error clearing storage: $e");
+    }
+
+    // Final verification
+    print("✅ Logout completed. User ID is now: $_currentUserId");
   }
 
   Future<List<Post>> fetchPostsBySource({
@@ -319,9 +371,9 @@ class ApiService {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
 
         // ✅ Debug childPosts before parsing
-        print("📌 Child Posts Data: ${jsonData['childPosts']}");
+        // print("📌 Child Posts Data: ${jsonData['childPosts']}");
 
-        print("Fetched post: ${response.body}");
+        // print("Fetched post: ${response.body}");
 
         // Process the childPosts if they exist
         if (jsonData['childPosts'] != null) {
@@ -838,24 +890,44 @@ class ApiService {
 
 // Messenger
   Future<int?> getCurrentUserId() async {
-    // ✅ 1. Check if _currentUserId is already cached
-    if (_currentUserId != null) {
-      print('🔍 Using cached current user ID: $_currentUserId');
-      return _currentUserId;
-    }
+    try {
+      // Always get the fresh user ID from the token first
+      final String? token = await getAccessToken();
+      if (token != null) {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payload = jsonDecode(
+              utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
 
-    // ✅ 2. Check secure storage for stored user ID
-    String? storedId = await _storage.read(key: "current_user_id");
-    if (storedId != null) {
-      _currentUserId = int.tryParse(storedId);
+          if (payload.containsKey('user_id')) {
+            final tokenUserId = payload['user_id'];
+            // Update cache with the value from token
+            _currentUserId = tokenUserId;
+            await _storage.write(
+                key: "current_user_id", value: tokenUserId.toString());
+            print('📝 User ID from token: $tokenUserId');
+            return tokenUserId;
+          }
+        }
+      }
+
+      // If we couldn't get it from token, use cached value as fallback
       if (_currentUserId != null) {
-        print('🔐 Retrieved current user ID from storage: $_currentUserId');
+        print('🔍 Using cached current user ID: $_currentUserId');
         return _currentUserId;
       }
-    }
 
-    // ✅ 3. If not found, fetch from API
-    try {
+      // Last resort: check storage
+      String? storedId = await _storage.read(key: "current_user_id");
+      if (storedId != null) {
+        _currentUserId = int.tryParse(storedId);
+        if (_currentUserId != null) {
+          print('🔐 Retrieved current user ID from storage: $_currentUserId');
+          return _currentUserId;
+        }
+      }
+
+      // If we still don't have an ID, fetch from API
       print('🌐 Fetching current user ID from API...');
       final response = await makeAuthenticatedRequest(
         url: "$baseApiUrl/users/me/",
@@ -868,19 +940,14 @@ class ApiService {
           _currentUserId = data['id'];
           await _storage.write(
               key: "current_user_id", value: _currentUserId.toString());
-          print(
-              '✅ Successfully fetched and stored current user ID: $_currentUserId');
+          print('✅ Successfully fetched user ID from API: $_currentUserId');
           return _currentUserId;
-        } else {
-          print('❌ API response missing "id" key: $data');
-          return null;
         }
-      } else {
-        print('❌ Failed to fetch current user ID: ${response.body}');
-        return null;
       }
+
+      return null;
     } catch (e) {
-      print('❌ Error fetching current user ID: $e');
+      print('❌ Error determining current user ID: $e');
       return null;
     }
   }

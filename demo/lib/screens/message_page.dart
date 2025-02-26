@@ -45,7 +45,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
   String? _error;
   bool _isInitialized = false;
-
   int? _currentUserId;
 
   @override
@@ -146,7 +145,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       // Count unread notifications
       final unreadNotifications = notifications
           .where((n) =>
-              n['is_read'] == false && n['recipient']['id'] == currentUserId)
+              n['is_read'] == false &&
+              n['recipient']
+                  is Map<String, dynamic> && // Ensure recipient is a Map
+              n['recipient']['id'] == currentUserId)
           .toList();
 
       if (mounted) {
@@ -191,16 +193,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final messages =
           await _apiService.fetchConversations(); // ✅ Calls the API
 
-      // ✅ Sort messages by newest first
       if (messages.isNotEmpty) {
         messages.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
       }
 
-      print('✅ Direct messages fetched: ${messages.length}');
+      // ✅ Debugging - Print messages before processing
+      print("Fetched direct messages: ${json.encode(messages)}");
 
       if (mounted) {
         setState(() {
-          _directMessages = messages; // ✅ Store messages properly
+          _directMessages = messages
+              .where((message) => message is Map<String, dynamic>)
+              .map((message) {
+            return {
+              'id': message['id'],
+              'sender': message['sender'] is Map<String, dynamic>
+                  ? message['sender']
+                  : {'id': message['sender']}, // Convert to a map
+              'receiver': message['receiver'] is Map<String, dynamic>
+                  ? message['receiver']
+                  : {'id': message['receiver']}, // Convert to a map
+              'message_content':
+                  message['content'] ?? "No content", // Ensure not null
+              'timestamp': message['timestamp'] ?? "", // Ensure not null
+              'is_read': message['is_read'] ?? false,
+            };
+          }).toList();
+
           _isLoading = false;
           _isRefreshing = false;
         });
