@@ -103,17 +103,8 @@ class _FollowListPageState extends State<FollowListPage>
 
       setState(() {
         username = userInfo['username'] as String?;
-        following = (data['following'] as List<dynamic>?)
-                ?.map((user) =>
-                    app_models.User.fromJson(user as Map<String, dynamic>))
-                .toList() ??
-            [];
-
-        followers = (data['followers'] as List<dynamic>?)
-                ?.map((user) =>
-                    app_models.User.fromJson(user as Map<String, dynamic>))
-                .toList() ??
-            [];
+        following = data['following'] ?? [];
+        followers = data['followers'] ?? [];
         isLoading = false;
       });
     } catch (e) {
