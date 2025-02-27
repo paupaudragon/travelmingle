@@ -1056,4 +1056,20 @@ class ApiService {
       print('❌ Failed to register device token: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> fetchUserProfile(int userId) async {
+    try {
+      final response = await makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/users/$userId/',
+        method: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('❌ Error fetching user profile: $e');
+    }
+    return {};
+  }
 }

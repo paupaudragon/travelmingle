@@ -12,3 +12,8 @@ class UserInfoView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+class UserDetailView(generics.RetrieveAPIView):
+    queryset = Users.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'id'

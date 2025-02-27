@@ -11,7 +11,8 @@ from .views import (
     CollectionFolderListCreateView, CollectionFolderDetailView,
     CollectListCreateView, CollectDetailView,
     NotificationListView,  RegisterView,
-    UserInfoView, ToggleLikeView, PostCommentsView, ToggleSaveView,
+    UserInfoView, UserDetailView,
+    ToggleLikeView, PostCommentsView, ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView, FollowPostView,
     NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification,
     MessageListView, SendMessageView, MarkMessageReadView, ConversationsListView,
@@ -80,14 +81,13 @@ urlpatterns = [
          name='notification-mark-read'),
     # Only for development
 
-    path('users/me/', UserInfoView.as_view(), name='user-info'),
-
-    path('users/<int:user_id>/follow/',
+     path('users/me/', UserInfoView.as_view(), name='user-info'),
+     path('users/<int:user_id>/', UserDetailView.as_view(), name='user-detail'),
+     path('users/<int:user_id>/follow/',
          FollowView.as_view(), name='follow-user'),
-
-    path('users/<int:user_id>/following/',
+     path('users/<int:user_id>/following/',
          UserFollowingListView.as_view(), name='user-following'),
-    path('users/<int:user_id>/followers/',
+     path('users/<int:user_id>/followers/',
          UserFollowersListView.as_view(), name='user-followers'),
 
     # Notification

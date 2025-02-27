@@ -60,7 +60,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     // });
     _fetchNotifications();
     _fetchCurrentUserId(); // ✅ Load user ID
-    _fetchDirectMessages();
   }
 
   @override
@@ -69,9 +68,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (!_isInitialized) {
       _isInitialized = true;
       _fetchNotifications();
-
       _fetchCurrentUserId(); // ✅ Load user ID
-      _fetchDirectMessages;
     }
   }
 
@@ -80,7 +77,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (state == AppLifecycleState.resumed) {
       print("🔄 App resumed - Refreshing notifications...");
       _fetchNotifications();
-      _fetchDirectMessages();
     }
   }
 
@@ -108,40 +104,39 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       _fetchNotifications();
 
       _fetchCurrentUserId(); // ✅ Load user ID
-      _fetchDirectMessages;
     }
   }
 
-  Future<String> _fetchMessageContent(int messageId) async {
-    try {
-      final response = await _apiService.makeAuthenticatedRequest(
-        url: '${ApiService.baseApiUrl}/messages/conversations/',
-        method: 'GET',
-      );
+  // Future<String> _fetchMessageContent(int messageId) async {
+  //   try {
+  //     final response = await _apiService.makeAuthenticatedRequest(
+  //       url: '${ApiService.baseApiUrl}/messages/conversations/',
+  //       method: 'GET',
+  //     );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> messages = json.decode(response.body);
+  //     if (response.statusCode == 200) {
+  //       final List<dynamic> messages = json.decode(response.body);
 
-        // ✅ Find the message with the matching ID
-        final message = messages.firstWhere(
-          (msg) => msg['id'] == messageId,
-          orElse: () => null,
-        );
-        if (message != null) {
-          return message['content'] ?? 'No content available';
-        } else {
-          print('❌ Message ID $messageId not found.');
-          return 'No content available';
-        }
-      } else {
-        print('❌ Error fetching message content for ID $messageId');
-        return 'No content available';
-      }
-    } catch (e) {
-      print('❌ Exception fetching message content: $e');
-      return 'No content available';
-    }
-  }
+  //       // ✅ Find the message with the matching ID
+  //       final message = messages.firstWhere(
+  //         (msg) => msg['id'] == messageId,
+  //         orElse: () => null,
+  //       );
+  //       if (message != null) {
+  //         return message['content'] ?? 'No content available';
+  //       } else {
+  //         print('❌ Message ID $messageId not found.');
+  //         return 'No content available';
+  //       }
+  //     } else {
+  //       print('❌ Error fetching message content for ID $messageId');
+  //       return 'No content available';
+  //     }
+  //   } catch (e) {
+  //     print('❌ Exception fetching message content: $e');
+  //     return 'No content available';
+  //   }
+  // }
 
   Future<void> _fetchNotifications() async {
     if (!mounted || _isRefreshing) return;
@@ -173,76 +168,61 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         throw Exception('No logged-in user found');
       }
 
-      //final int currentUserId = userInfo['id'];
+      _currentUserId = userInfo['id'];
 
       final data = json.decode(response.body);
       final notifications = data['notifications'] as List;
 
       print('📩 Notifications fetched: ${notifications.length}');
 
-      // Filter only message notifications
-      final messageNotifications = notifications
-          .where((n) => n['notification_type'] == 'message')
-          .toList();
+      // ✅ Fetch the latest messages from conversations
+      final conversationsResponse = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/messages/conversations/',
+        method: 'GET',
+      );
 
-      // ✅ Keep only the latest message per sender
+      if (conversationsResponse.statusCode != 200) {
+        print('❌ Error fetching conversations.');
+        throw Exception('Failed to load conversations');
+      }
+
+      final List<dynamic> conversations =
+          json.decode(conversationsResponse.body);
+
+      // ✅ Keep only the latest message per conversation
       Map<int, dynamic> latestMessages = {};
-      for (var message in messageNotifications) {
-        int senderId = message['sender']['id'];
-        if (!latestMessages.containsKey(senderId) ||
-            DateTime.parse(message['created_at']).isAfter(
-                DateTime.parse(latestMessages[senderId]['created_at']))) {
-          latestMessages[senderId] = message;
+      for (var message in conversations) {
+        int senderId = message['sender'];
+        int receiverId = message['receiver'];
+
+        int chatPartnerId = senderId == _currentUserId ? receiverId : senderId;
+
+        if (!latestMessages.containsKey(chatPartnerId) ||
+            DateTime.parse(message['timestamp']).isAfter(
+                DateTime.parse(latestMessages[chatPartnerId]['timestamp']))) {
+          latestMessages[chatPartnerId] = message;
         }
       }
 
       final filteredMessageNotifications = latestMessages.values.toList();
 
       // ✅ Sort messages by newest
-      filteredMessageNotifications.sort((a, b) =>
-          DateTime.parse(b['created_at'])
-              .compareTo(DateTime.parse(a['created_at'])));
+      filteredMessageNotifications.sort((a, b) => DateTime.parse(b['timestamp'])
+          .compareTo(DateTime.parse(a['timestamp'])));
 
-      // ✅ Fetch content for each message notification
+      // ✅ Add prefix if the current user sent the latest message
       for (var msg in filteredMessageNotifications) {
-        if (msg['message'] != null) {
-          int messageId = msg['message'];
-          print('✅ Message ID: $messageId');
-          msg['message_content'] = await _fetchMessageContent(messageId);
-        } else {
-          msg['message_content'] = 'No content available';
+        int senderId = msg['sender'];
+
+        if (senderId == _currentUserId) {
+          msg['content'] = "You: ${msg['content']}";
         }
       }
 
-      // Update categories with all notifications
-      final updatedCategories = NotificationCategory.updateWithNotifications(
-        NotificationCategory.getDefaultCategories(),
-        notifications,
-      );
-
+      // ✅ Update state with filtered messages
       if (mounted) {
         setState(() {
-          _categories = updatedCategories; // ✅ Force update categories
-          _directMessages =
-              filteredMessageNotifications; // ✅ Store messages separately
-          _isLoading = false;
-          _isRefreshing = false;
-          _error = null;
-        });
-      }
-
-      // // Count unread notifications
-      // final unreadNotifications = notifications
-      //     .where((n) =>
-      //         n['is_read'] == false &&
-      //         n['recipient']
-      //             is Map<String, dynamic> && // Ensure recipient is a Map
-      //         n['recipient']['id'] == currentUserId)
-      //     .toList();
-
-      if (mounted) {
-        setState(() {
-          _categories = updatedCategories;
+          _directMessages = filteredMessageNotifications;
           _isLoading = false;
           _isRefreshing = false;
           _error = null;
@@ -260,68 +240,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       if (mounted) {
         setState(() {
           _error = e.toString();
-          _categories = NotificationCategory.getDefaultCategories();
-          _isLoading = false;
-          _isRefreshing = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _fetchDirectMessages() async {
-    if (!mounted || _isRefreshing) return;
-
-    setState(() {
-      _isRefreshing = true;
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      print('📩 Fetching direct messages...');
-
-      final messages =
-          await _apiService.fetchConversations(); // ✅ Calls the API
-
-      if (messages.isNotEmpty) {
-        messages.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
-      }
-
-      // ✅ Debugging - Print messages before processing
-      print("Fetched direct messages: ${json.encode(messages)}");
-
-      if (mounted) {
-        setState(() {
-          _directMessages = messages
-              .where((message) => message is Map<String, dynamic>)
-              .map((message) {
-            return {
-              'id': message['id'],
-              'sender': message['sender'] is Map<String, dynamic>
-                  ? message['sender']
-                  : {'id': message['sender']}, // Convert to a map
-              'receiver': message['receiver'] is Map<String, dynamic>
-                  ? message['receiver']
-                  : {'id': message['receiver']}, // Convert to a map
-              'message_content':
-                  message['content'] ?? "No content", // Ensure not null
-              'timestamp': message['timestamp'] ?? "", // Ensure not null
-              'is_read': message['is_read'] ?? false,
-            };
-          }).toList();
-
-          _isLoading = false;
-          _isRefreshing = false;
-        });
-      }
-    } catch (e, stackTrace) {
-      print('❌ Error in _fetchDirectMessages: $e');
-      print(stackTrace);
-
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _directMessages = [];
           _isLoading = false;
           _isRefreshing = false;
         });
@@ -419,47 +337,78 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       itemCount: _directMessages.length,
       itemBuilder: (context, index) {
         final message = _directMessages[index];
-        final sender = message['sender'];
-        final content = message['message_content'] ?? 'No content';
-        final timestamp = message['created_at'];
-        final bool isRead = message['is_read'] ?? false;
+        final int senderId = message['sender'];
+        final int receiverId = message['receiver'];
+        // final String content = message['message_content'] ?? 'No content';
+        // final String timestamp = message['timestamp'];
+        // final bool isRead = message['is_read'] ?? false;
 
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(sender['profile_picture_url']),
-          ),
-          title: Text(sender['username']),
-          subtitle: Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                DateFormat.jm().format(DateTime.parse(timestamp)),
-                style: TextStyle(color: Colors.grey),
+        final bool isSentByCurrentUser = senderId == _currentUserId;
+        final int chatPartnerId = isSentByCurrentUser ? receiverId : senderId;
+
+        return FutureBuilder<Map<String, dynamic>>(
+          future: _apiService.fetchUserProfile(chatPartnerId),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return ListTile(
+                title: Text("Loading..."),
+                subtitle: Text("Fetching chat details..."),
+                leading: CircleAvatar(backgroundColor: Colors.grey[300]),
+              );
+            }
+
+            final userProfile = snapshot.data!;
+            final chatPartnerUsername = userProfile['username'] ?? "Unknown";
+            final chatPartnerProfilePic = userProfile['profile_picture_url'] ?? "";
+
+            // final String content = isSentByCurrentUser
+            //     ? "You: ${message['content']}"
+            //     : message['content'] ?? "No content";
+            final String content = message['content'] ?? 'No content';
+            final timestamp = message['timestamp'] ?? "";
+            final bool isRead = message['is_read'] ?? false;
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundImage: chatPartnerProfilePic.isNotEmpty
+                    ? NetworkImage(chatPartnerProfilePic)
+                    : AssetImage('assets/images/default_avatar.png')
+                        as ImageProvider,
               ),
-              if (!isRead) ...[
-                const SizedBox(width: 8),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+              title: Text(chatPartnerUsername),
+              subtitle:
+                  Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    DateFormat.jm().format(DateTime.parse(timestamp)),
+                    style: TextStyle(color: Colors.grey),
                   ),
-                ),
-              ],
-            ],
-          ),
-          onTap: () async {
-            print("✅ Opening chat with ${sender['username']}");
-
-            await _notificationService.markNotificationAsRead(message['id']);
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MessageDetailPage(userId: sender['id']),
+                  if (!isRead)
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
               ),
+              onTap: () async {
+                print("✅ Opening chat with $chatPartnerUsername");
+                await _notificationService
+                    .markNotificationAsRead(message['id']);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        MessageDetailPage(userId: chatPartnerId),
+                  ),
+                );
+              },
             );
           },
         );
