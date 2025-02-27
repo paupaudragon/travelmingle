@@ -336,206 +336,180 @@ class _PostPageState extends State<PostPage> {
     );
   }
 
-  Future<void> _handleFollowPress(int userId) async {
-    try {
-      print("Attempting to follow user: $userId"); // Debug print
-      final response = await apiService.followUser(userId);
-      print("Follow response: $response"); // Debug print
-
-      setState(() {
-        postFuture = postFuture.then((post) {
-          post.user.isFollowing = response['is_following'];
-          return post;
-        });
-      });
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              response['is_following'] ? 'Following user' : 'Unfollowed user'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      print("Follow error in handler: $e"); // Debug print
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text('Failed to update follow status: $e'), // Added error message
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
 // # button bar
   Widget buildPostActions(Post post) {
-    return SafeArea(
-      // not cover system gesture area
-      bottom: true,
-      child: Column(
-        children: [
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: Colors.grey,
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Comment button
-                GestureDetector(
-                  onTap: () => {
-                    setState(() {
-                      _isCommentsVisible =
-                          !_isCommentsVisible; // Toggle comment section visibility
-                      _isCommentInputVisible = false; // Reset input box state
-                    }),
-                  },
-                  child: Column(children: [
-                    SvgPicture.asset('assets/icons/comment.svg',
-                        width: 32,
-                        height: 32,
-                        colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn))
-                  ]),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  formatNumber(commentsCache?.length ?? 0),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w400),
-                ),
-
-                const SizedBox(width: 10),
-
-                // Like button
-                GestureDetector(
-                  onTap: () => togglePostLike(post),
-                  child: Column(children: [
-                    SvgPicture.asset(
-                        post.isLiked
-                            ? 'assets/icons/heart_filled.svg'
-                            : 'assets/icons/heart.svg',
-                        width: 32,
-                        height: 32,
-                        colorFilter: ColorFilter.mode(
-                            post.isLiked ? colorLiked : iconColor, 
-                            BlendMode.srcIn))
-                  ]),
-                ),
-                const SizedBox(width: 6),
-
-                Text(
-                  formatNumber(post.likesCount),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w400),
-                ),
-
-                const SizedBox(width: 10),
-
-                // Save button
-                GestureDetector(
-                  onTap: () => togglePostSave(post),
-                  child: Column(children: [
-                    SvgPicture.asset(
-                        post.isSaved
-                            ? 'assets/icons/star_filled.svg'
-                            : 'assets/icons/star.svg',
-                        width: 32,
-                        height: 32,
-                        colorFilter: ColorFilter.mode(
-                            post.isSaved ? colorLiked : iconColor, 
-                            BlendMode.srcIn))
-                  ]),
-                ),
-                const SizedBox(width: 6),
-
-                Text(
-                  formatNumber(post.savesCount),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w400),
-                ),
-
-                const SizedBox(width: 6),
-
-                // Input box
-                if (_isCommentsVisible && !_isCommentInputVisible)
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isCommentInputVisible = true; // Show full input box
-
-                        });
-                      },
-                      child: Container(
-                        height: 32, // Custom height
-                        margin: const EdgeInsets.only(
-                            left: 12), // Keep distance from icon
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14), // Padding
-                        decoration: BoxDecoration(
-                          color: insertBoxBgColor, // Background color
-                          borderRadius:
-                              BorderRadius.circular(16), // Rounded corners
-                          // border: Border.all(
-                          //   color: Colors.black, // Border color
-                          //   width: 1, // Border width
-                          // ),
-                        ),
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: const Text(
-                            "Say something...",
-                            style: TextStyle(color: insertBoxTextColor),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                // # poster's profile and name
-                if (!_isCommentsVisible || _isCommentInputVisible)
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ProfilePage(userId: post.user.id),
-                          ),
-                        );
-                      },
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundImage:
-                                  NetworkImage(post.user.profilePictureUrl),
-                            ),
-                            const SizedBox(width: 9),
-                            Text(
-                              post.user.username,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+    return Container(
+      color: whiteColor,
+      child: SafeArea(
+        // not cover system gesture area
+        bottom: true,
+        child: Column(
+          children: [
+            const Divider(
+              height: 1,
+              thickness: 0.2,
+              color: Colors.grey,
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                  12, 9, 12, 0), // l 12，up 9，r 12，dw 0d
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Comment button
+                  GestureDetector(
+                    onTap: () => {
+                      setState(() {
+                        _isCommentsVisible =
+                            !_isCommentsVisible; // Toggle comment section visibility
+                        _isCommentInputVisible = false; // Reset input box state
+                      }),
+                    },
+                    child: Column(children: [
+                      SvgPicture.asset(
+                          _isCommentsVisible
+                              ? 'assets/icons/comment_filled.svg'
+                              : 'assets/icons/comment.svg',
+                          width: 32,
+                          height: 32,
+                          colorFilter:
+                              ColorFilter.mode(iconColor, BlendMode.dst))
+                    ]),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    formatNumber(commentsCache?.length ?? 0),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w400),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Like button
+                  GestureDetector(
+                    onTap: () => togglePostLike(post),
+                    child: Column(children: [
+                      SvgPicture.asset(
+                          post.isLiked
+                              ? 'assets/icons/heart_filled.svg'
+                              : 'assets/icons/heart.svg',
+                          width: 32,
+                          height: 32,
+                          colorFilter: ColorFilter.mode(
+                              post.isLiked ? colorLiked : iconColor,
+                              BlendMode.srcIn))
+                    ]),
+                  ),
+                  const SizedBox(width: 6),
+
+                  Text(
+                    formatNumber(post.likesCount),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w400),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Save button
+                  GestureDetector(
+                    onTap: () => togglePostSave(post),
+                    child: Column(children: [
+                      SvgPicture.asset(
+                          post.isSaved
+                              ? 'assets/icons/star_filled.svg'
+                              : 'assets/icons/star.svg',
+                          width: 32,
+                          height: 32,
+                          colorFilter: ColorFilter.mode(
+                              post.isSaved ? colorLiked : iconColor,
+                              BlendMode.srcIn))
+                    ]),
+                  ),
+                  const SizedBox(width: 6),
+
+                  Text(
+                    formatNumber(post.savesCount),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w400),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // Input box
+                  if (_isCommentsVisible && !_isCommentInputVisible)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isCommentInputVisible =
+                                true; // Show full input box
+                          });
+                        },
+                        child: Container(
+                          height: 34, // Custom height
+                          margin: const EdgeInsets.only(
+                              left: 12), // Keep distance from icon
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10), // Padding
+                          decoration: BoxDecoration(
+                            color: insertBoxBgColor, // Background color
+                            borderRadius:
+                                BorderRadius.circular(16), // Rounded corners
+                            // border: Border.all(
+                            //   color: Colors.black, // Border color
+                            //   width: 1, // Border width
+                            // ),
+                          ),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: const Text(
+                              "Say something...",
+                              style: TextStyle(color: insertBoxTextColor),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // # poster's profile and name
+                  if (!_isCommentsVisible || _isCommentInputVisible)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProfilePage(userId: post.user.id),
+                            ),
+                          );
+                        },
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundImage:
+                                    NetworkImage(post.user.profilePictureUrl),
+                              ),
+                              const SizedBox(width: 9),
+                              Text(
+                                post.user.username,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
