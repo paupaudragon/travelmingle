@@ -481,8 +481,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
 
       //Footer (Navigation Bar)
       bottomNavigationBar: Footer(
-        onSearchPressed: () => navigateToSearchPage(),
         onHomePressed: () => _loadPosts("explore"),
+        onSearchPressed: () => navigateToSearchPage(),
         onPlusPressed: () {
           navigateToCreatePost();
         },
@@ -492,9 +492,9 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         onMePressed: () {
           navigateToProfilePage();
         },
-        onMapPressed: () => requireLogin(context, onSuccess: () {
-          Navigator.pushNamed(context, '/map');
-        }),
+        // onMapPressed: () => requireLogin(context, onSuccess: () {
+        //   Navigator.pushNamed(context, '/map');
+        // }),
         hasUnreadMessages: NotificationService().notificationState.hasUnread,
       ),
     );

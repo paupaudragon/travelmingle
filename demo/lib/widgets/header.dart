@@ -34,19 +34,18 @@ class Header extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Filter icon
-          Positioned(
-            left: 10,
-            top: 4,
-            child: IconButton(
-              icon: SvgPicture.asset(
-                'assets/icons/filter.svg',
-                width: 22,
-                height: 22,
-              ),
-              onPressed: () => onFilterPressed(),
-              tooltip: 'Filter by Categories',
+          // Filter icon
+          IconButton(
+            icon: SvgPicture.asset(
+              'assets/icons/filter.svg',
+              width: 22,
+              height: 22,
             ),
+            onPressed: () => onFilterPressed(),
+            tooltip: 'Filter by Categories',
           ),
+
+          // SizedBox(width: 10), // Small spacing between filter and tabs
 
           SizedBox(
             width: 220, // Set width
@@ -93,19 +92,21 @@ class Header extends StatelessWidget {
             ),
           ),
 
-          // Search icon
-          Positioned(
-            right: 10,
-            top: 3,
-            child: IconButton(
-              icon: SvgPicture.asset(
-                'assets/icons/search.svg',
-                width: 22,
-                height: 22,
-              ),
-              onPressed: () => onSearchPressed(),
-            ),
-          ),
+        SizedBox(width: 50), // Small spacing between filter and tabs
+
+          // //Search icon
+          // Positioned(
+          //   right: 10,
+          //   top: 3,
+          //   child: IconButton(
+          //     icon: SvgPicture.asset(
+          //       'assets/icons/search.svg',
+          //       width: 22,
+          //       height: 22,
+          //     ),
+          //     onPressed: () => onSearchPressed(),
+          //   ),
+          // ),
         ],
       ),
     );

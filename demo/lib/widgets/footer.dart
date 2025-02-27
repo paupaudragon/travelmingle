@@ -9,7 +9,8 @@ class Footer extends StatelessWidget {
   final Function onPlusPressed;
   final Function onMessagesPressed;
   final Function onMePressed;
-  final Function onMapPressed;
+  // final Function onMapPressed;
+  final Function onSearchPressed;
 
   const Footer({
     Key? key,
@@ -17,8 +18,8 @@ class Footer extends StatelessWidget {
     required this.onPlusPressed,
     required this.onMessagesPressed,
     required this.onMePressed,
-    required this.onMapPressed,
-    required Function() onSearchPressed,
+    // required this.onMapPressed,
+    required this.onSearchPressed,
     required bool hasUnreadMessages,
   }) : super(key: key);
 
@@ -54,22 +55,20 @@ class Footer extends StatelessWidget {
               ],
             ),
           ),
-
-          /// **Map Button**
           GestureDetector(
-            onTap: () => onMapPressed(),
+            onTap: () => onSearchPressed(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SvgPicture.asset(
-                  'assets/icons/map.svg',
+                  'assets/icons/search.svg',
                   width: 22,
                   height: 22,
                   colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
                 const SizedBox(height: 1),
                 const Text(
-                  "Map",
+                  "Search",
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w400,
@@ -78,6 +77,30 @@ class Footer extends StatelessWidget {
               ],
             ),
           ),
+
+          // /// **Map Button**
+          // GestureDetector(
+          //   onTap: () => onMapPressed(),
+          //   child: Column(
+          //     mainAxisSize: MainAxisSize.min,
+          //     children: [
+          //       SvgPicture.asset(
+          //         'assets/icons/map.svg',
+          //         width: 22,
+          //         height: 22,
+          //         colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          //       ),
+          //       const SizedBox(height: 1),
+          //       const Text(
+          //         "Map",
+          //         style: TextStyle(
+          //             fontSize: 10,
+          //             fontWeight: FontWeight.w400,
+          //             color: iconColor),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
           /// **"+" Button (Create)**
           Transform.translate(

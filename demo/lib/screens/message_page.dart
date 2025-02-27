@@ -595,7 +595,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           onPlusPressed: widget.onPlusPressed ?? () {},
           onMessagesPressed: _fetchNotifications,
           onMePressed: widget.onMePressed ?? () {},
-          onMapPressed: widget.onMapPressed ?? () {},
+          // onMapPressed: widget.onMapPressed ?? () {},
           hasUnreadMessages: NotificationService().notificationState.hasUnread,
         ),
       ),
