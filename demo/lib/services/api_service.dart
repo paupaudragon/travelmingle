@@ -698,7 +698,10 @@ class ApiService {
       };
     } catch (e) {
       print('Original error: $e'); // Debug print
-      throw Exception('Error fetching follow data: $e');
+      return {
+        'following': [],
+        'followers': [],
+      };
     }
   }
 
