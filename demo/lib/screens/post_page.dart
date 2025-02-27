@@ -265,6 +265,40 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
+  Future<void> _handleFollowPress(int userId) async {
+    try {
+      print("Attempting to follow user: $userId"); // Debug print
+      final response = await apiService.followUser(userId);
+      print("Follow response: $response"); // Debug print
+
+      setState(() {
+        postFuture = postFuture.then((post) {
+          post.user.isFollowing = response['is_following'];
+          return post;
+        });
+      });
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              response['is_following'] ? 'Following user' : 'Unfollowed user'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print("Follow error in handler: $e"); // Debug print
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Failed to update follow status: $e'), // Added error message
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget buildPostHeader(Future<Post> postFuture) {
     return FutureBuilder<Post>(
       future: postFuture,
@@ -280,54 +314,84 @@ class _PostPageState extends State<PostPage> {
 
             return Row(
               children: [
-                // Make avatar and username clickable
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfilePage(
-                            userId: isCurrentUser ? null : post.user.id,
+                // 只有当 post.period != 'multipleday' 时，显示头像、用户名和关注按钮
+                if (post.period != 'multipleday') ...[
+                  // Make avatar and username clickable
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfilePage(
+                              userId: isCurrentUser ? null : post.user.id,
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                      // # MARK 1
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundImage:
+                                NetworkImage(post.user.profilePictureUrl),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  post.user.username,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                // Only show follow button for other users
-                // # top follow button
-                // if (!isCurrentUser && userSnapshot.hasData)
-                //   SizedBox(
-                //     height: 36,
-                //     child: OutlinedButton(
-                //       onPressed: post.user.isFollowing
-                //           ? null
-                //           : () => _handleFollowPress(post.user.id),
-                //       style: OutlinedButton.styleFrom(
-                //         backgroundColor: post.user.isFollowing
-                //             ? Colors.grey[200]
-                //             : Colors.white,
-                //         side: BorderSide(
-                //           color:
-                //               post.user.isFollowing ? Colors.grey : Colors.blue,
-                //         ),
-                //         shape: RoundedRectangleBorder(
-                //           borderRadius: BorderRadius.circular(18),
-                //         ),
-                //         padding: const EdgeInsets.symmetric(horizontal: 16),
-                //       ),
-                //       child: Text(
-                //         post.user.isFollowing ? 'Following' : 'Follow',
-                //         style: TextStyle(
-                //           color: post.user.isFollowing
-                //               ? Colors.grey[700]
-                //               : Colors.blue,
-                //           fontSize: 14,
-                //         ),
-                //       ),
-                //     ),
-                //   ),
+
+                  // Only show follow button for other users
+                  if (!isCurrentUser && userSnapshot.hasData)
+                    SizedBox(
+                      height: 36,
+                      child: OutlinedButton(
+                        onPressed: post.user.isFollowing
+                            ? null
+                            : () => _handleFollowPress(post.user.id),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: post.user.isFollowing
+                              ? Colors.grey[200]
+                              : primaryColor,
+                          side: BorderSide(
+                            color: post.user.isFollowing
+                                ? Colors.grey
+                                : primaryColor,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                        child: Text(
+                          post.user.isFollowing ? 'Following' : 'Follow',
+                          style: TextStyle(
+                              color: post.user.isFollowing
+                                  ? Colors.grey[700]
+                                  : whiteColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                ] else ...[
+                  // TODO: multi days indicator
+                ]
               ],
             );
           },
@@ -975,6 +1039,80 @@ class _PostPageState extends State<PostPage> {
 
   Widget buildCommentInput() {
     return Container(
+        color: whiteColor,
+        child: SafeArea(
+            bottom: true,
+            child: Column(
+              children: [
+                const Divider(
+                  height: 1,
+                  thickness: 0.2,
+                  color: Colors.grey,
+                ),
+                Container(
+                    padding: const EdgeInsets.fromLTRB(12, 9, 12, 0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Back button
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back), // Back icon
+                          onPressed: () {
+                            setState(() {
+                              _isCommentInputVisible =
+                                  false; // Return to buildPostActions
+                            });
+                          },
+                        ),
+                        // Input box
+                        Expanded(
+                          child: Container(
+                            height: 45, // Set the height as per your requirement
+                            child: TextField(
+                              controller: _commentController,
+                              focusNode: _commentFocusNode,
+                              decoration: InputDecoration(
+                                hintText: activeReplyToCommentId == null
+                                    ? "Say something..."
+                                    : "Replying...",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFE8E8E8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Image selection button
+                        GestureDetector(
+                          onTap: () => _pickCommentImage,
+                          child: Column(children: [
+                            SvgPicture.asset(
+                              'assets/icons/gallery.svg',
+                              width: 32,
+                              height: 32,
+                              colorFilter:                             ColorFilter.mode(iconColor, BlendMode.dst))
+                          ],)
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.photo),
+                          onPressed: _pickCommentImage,
+                        ),
+                        // Send button
+                        IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed: () => addComment(widget.postId),
+                        ),
+                      ],
+                    ))
+              ],
+            )));
+  }
+
+  Widget buildCommentInput1() {
+    return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF0F0F0),
         borderRadius: BorderRadius.circular(16),
@@ -1019,19 +1157,22 @@ class _PostPageState extends State<PostPage> {
               ),
               // Input box
               Expanded(
-                child: TextField(
-                  controller: _commentController,
-                  focusNode: _commentFocusNode,
-                  decoration: InputDecoration(
-                    hintText: activeReplyToCommentId == null
-                        ? "Say something..."
-                        : "Replying...",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+                child: Container(
+                  height: 50, // Set the height as per your requirement
+                  child: TextField(
+                    controller: _commentController,
+                    focusNode: _commentFocusNode,
+                    decoration: InputDecoration(
+                      hintText: activeReplyToCommentId == null
+                          ? "Say something..."
+                          : "Replying...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFE8E8E8),
                     ),
-                    filled: true,
-                    fillColor: const Color(0xFFE8E8E8),
                   ),
                 ),
               ),
@@ -1135,19 +1276,21 @@ class _PostPageState extends State<PostPage> {
                         decoration: BoxDecoration(
                           color: Colors.white, // Background color
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(16), // Top rounded corners
+                            top: Radius.circular(
+                                0), // Top rounded corners: can't make it transparent
                           ),
                           boxShadow: [
                             BoxShadow(
                               color:
-                                  Colors.black.withOpacity(0.1), // Shadow color
+                                  Colors.black.withOpacity(0.3), // Shadow color
                               blurRadius: 8, // Shadow blur radius
                               offset: const Offset(0, -2), // Shadow offset
                             ),
                           ],
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 16),
                           child: buildCommentsSection(),
                         ),
                       ),
