@@ -275,6 +275,143 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     }
   }
 
+  String _getNotificationMessage(Map<String, dynamic> item) {
+    final notificationType = item['notification_type'];
+    final senderUsername = item['sender']?['username'] ?? 'Someone';
+
+    switch (notificationType) {
+      case 'follow':
+        return '$senderUsername started following you';
+
+      case 'like_post':
+        final postTitle = item['post']?['title'] ?? 'a post';
+        return '$senderUsername liked your post "$postTitle"';
+
+      case 'like_comment':
+        final commentContent = item['comment']?['content'] ?? '';
+        return '$senderUsername liked your comment: "${_truncateText(commentContent)}"';
+
+      case 'collect':
+        final postTitle = item['post']?['title'] ?? 'a post';
+        return '$senderUsername saved your post "$postTitle"';
+
+      case 'comment':
+        final postTitle = item['post']?['title'] ?? 'a post';
+        final commentContent = item['comment']?['content'] ?? '';
+        return '$senderUsername commented on your post "$postTitle": "${_truncateText(commentContent)}"';
+
+      case 'reply':
+        final commentContent = item['comment']?['content'] ?? '';
+        return '$senderUsername replied to your comment: "${_truncateText(commentContent)}"';
+
+      case 'mention':
+        final postTitle = item['post']?['title'] ?? 'a post';
+        return '$senderUsername mentioned you in post "$postTitle"';
+
+      default:
+        if (item['message'] != null &&
+            item['message'] is String &&
+            item['message'].isNotEmpty) {
+          return item['message'];
+        }
+        return 'New notification';
+    }
+  }
+
+  String _truncateText(String text, {int maxLength = 30}) {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return '${text.substring(0, maxLength)}...';
+  }
+
+// Also update the list item UI to make it more descriptive
+  Widget _buildNotificationItem(Map<String, dynamic> item) {
+    final isUnread = item['is_read'] == false;
+    final notificationType = item['notification_type'];
+
+    // Choose appropriate icon based on notification type
+    IconData itemIcon;
+    switch (notificationType) {
+      case 'like_post':
+      case 'like_comment':
+        itemIcon = Icons.favorite;
+        break;
+      case 'collect':
+        itemIcon = Icons.bookmark;
+        break;
+      case 'comment':
+      case 'reply':
+        itemIcon = Icons.comment;
+        break;
+      case 'mention':
+        itemIcon = Icons.alternate_email;
+        break;
+      case 'follow':
+        itemIcon = Icons.person_add;
+        break;
+      default:
+        itemIcon = Icons.notifications;
+    }
+
+    final String formattedTimestamp =
+        _formatTimestamp(item['created_at'] ?? '');
+
+    return ListTile(
+      onTap: () => _handleItemTap(item),
+      leading: CircleAvatar(
+        backgroundColor: isUnread ? Colors.red[100] : Colors.grey[200],
+        child: Icon(itemIcon, color: isUnread ? Colors.red : Colors.grey),
+      ),
+      title: Text(
+        _getNotificationMessage(item),
+        style: TextStyle(
+          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      subtitle: Text(formattedTimestamp),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isUnread)
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+          const SizedBox(width: 8),
+          const Icon(Icons.arrow_forward_ios, size: 16),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(String isoTimestamp) {
+    try {
+      final DateTime dateTime = DateTime.parse(isoTimestamp);
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(dateTime);
+
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inHours < 1) {
+        return '${difference.inMinutes} min ago';
+      } else if (difference.inDays < 1) {
+        return '${difference.inHours} hr ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+      }
+    } catch (e) {
+      return isoTimestamp;
+    }
+  }
+
+// Now update the ListView.builder in the build method to use this new item builder
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -335,42 +472,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               itemCount: _items.length,
               itemBuilder: (context, index) {
                 final item = _items[index];
-                final isUnread = item['is_read'] == false;
-
-                return ListTile(
-                  onTap: () => _handleItemTap(item),
-                  title: Text(_getNotificationMessage(item)),
-                  subtitle: Text(item['created_at'] ?? ''),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isUnread)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_ios, size: 16),
-                    ],
-                  ),
-                );
+                return _buildNotificationItem(item);
               },
             ),
     );
-  }
-
-  String _getNotificationMessage(Map<String, dynamic> item) {
-    final notificationType = item['notification_type'];
-
-    if (notificationType == 'follow') {
-      final senderUsername = item['sender']?['username'] ?? 'Someone';
-      return '$senderUsername started following you';
-    }
-
-    return item['message'] ?? 'New notification';
   }
 }
