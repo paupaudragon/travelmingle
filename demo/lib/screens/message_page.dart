@@ -112,6 +112,37 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
+  Future<String> _fetchMessageContent(int messageId) async {
+    try {
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/messages/conversations/',
+        method: 'GET',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> messages = json.decode(response.body);
+
+        // ✅ Find the message with the matching ID
+        final message = messages.firstWhere(
+          (msg) => msg['id'] == messageId,
+          orElse: () => null,
+        );
+        if (message != null) {
+          return message['content'] ?? 'No content available';
+        } else {
+          print('❌ Message ID $messageId not found.');
+          return 'No content available';
+        }
+      } else {
+        print('❌ Error fetching message content for ID $messageId');
+        return 'No content available';
+      }
+    } catch (e) {
+      print('❌ Exception fetching message content: $e');
+      return 'No content available';
+    }
+  }
+
   Future<void> _fetchNotifications() async {
     if (!mounted || _isRefreshing) return;
 
@@ -142,7 +173,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         throw Exception('No logged-in user found');
       }
 
-      final int currentUserId = userInfo['id'];
+      //final int currentUserId = userInfo['id'];
 
       final data = json.decode(response.body);
       final notifications = data['notifications'] as List;
@@ -154,9 +185,34 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           .where((n) => n['notification_type'] == 'message')
           .toList();
 
-      // Sort messages by newest
-      messageNotifications.sort((a, b) => DateTime.parse(b['created_at'])
-          .compareTo(DateTime.parse(a['created_at'])));
+      // ✅ Keep only the latest message per sender
+      Map<int, dynamic> latestMessages = {};
+      for (var message in messageNotifications) {
+        int senderId = message['sender']['id'];
+        if (!latestMessages.containsKey(senderId) ||
+            DateTime.parse(message['created_at']).isAfter(
+                DateTime.parse(latestMessages[senderId]['created_at']))) {
+          latestMessages[senderId] = message;
+        }
+      }
+
+      final filteredMessageNotifications = latestMessages.values.toList();
+
+      // ✅ Sort messages by newest
+      filteredMessageNotifications.sort((a, b) =>
+          DateTime.parse(b['created_at'])
+              .compareTo(DateTime.parse(a['created_at'])));
+
+      // ✅ Fetch content for each message notification
+      for (var msg in filteredMessageNotifications) {
+        if (msg['message'] != null) {
+          int messageId = msg['message'];
+          print('✅ Message ID: $messageId');
+          msg['message_content'] = await _fetchMessageContent(messageId);
+        } else {
+          msg['message_content'] = 'No content available';
+        }
+      }
 
       // Update categories with all notifications
       final updatedCategories = NotificationCategory.updateWithNotifications(
@@ -167,21 +223,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       if (mounted) {
         setState(() {
           _categories = updatedCategories; // ✅ Force update categories
-          _directMessages = messageNotifications; // ✅ Store messages separately
+          _directMessages =
+              filteredMessageNotifications; // ✅ Store messages separately
           _isLoading = false;
           _isRefreshing = false;
           _error = null;
         });
       }
 
-      // Count unread notifications
-      final unreadNotifications = notifications
-          .where((n) =>
-              n['is_read'] == false &&
-              n['recipient']
-                  is Map<String, dynamic> && // Ensure recipient is a Map
-              n['recipient']['id'] == currentUserId)
-          .toList();
+      // // Count unread notifications
+      // final unreadNotifications = notifications
+      //     .where((n) =>
+      //         n['is_read'] == false &&
+      //         n['recipient']
+      //             is Map<String, dynamic> && // Ensure recipient is a Map
+      //         n['recipient']['id'] == currentUserId)
+      //     .toList();
 
       if (mounted) {
         setState(() {
@@ -357,15 +414,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
 
     return ListView.builder(
-      shrinkWrap: true, // ✅ Allows messages to appear below categories
-      physics:
-          NeverScrollableScrollPhysics(), // ✅ Prevents independent scrolling
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       itemCount: _directMessages.length,
       itemBuilder: (context, index) {
         final message = _directMessages[index];
         final sender = message['sender'];
-        final content = message['content'] ?? 'No content';
+        final content = message['message_content'] ?? 'No content';
         final timestamp = message['created_at'];
+        final bool isRead = message['is_read'] ?? false;
 
         return ListTile(
           leading: CircleAvatar(
@@ -373,11 +430,31 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
           title: Text(sender['username']),
           subtitle: Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: Text(
-            DateFormat.jm().format(DateTime.parse(timestamp)),
-            style: TextStyle(color: Colors.grey),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DateFormat.jm().format(DateTime.parse(timestamp)),
+                style: TextStyle(color: Colors.grey),
+              ),
+              if (!isRead) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
           ),
-          onTap: () {
+          onTap: () async {
+            print("✅ Opening chat with ${sender['username']}");
+
+            await _notificationService.markNotificationAsRead(message['id']);
+
             Navigator.push(
               context,
               MaterialPageRoute(
