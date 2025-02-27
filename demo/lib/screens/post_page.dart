@@ -292,63 +292,64 @@ class _PostPageState extends State<PostPage> {
                         ),
                       );
                     },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundImage:
-                              NetworkImage(post.user.profilePictureUrl),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post.user.username,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    // child: Row(
+                    //   children: [
+                    //     CircleAvatar(
+                    //       backgroundImage:
+                    //           NetworkImage(post.user.profilePictureUrl),
+                    //     ),
+                    //     const SizedBox(width: 10),
+                    //     Expanded(
+                    //       child: Column(
+                    //         crossAxisAlignment: CrossAxisAlignment.start,
+                    //         children: [
+                    //           Text(
+                    //             post.user.username,
+                    //             style: const TextStyle(
+                    //               fontSize: 16,
+                    //               fontWeight: FontWeight.bold,
+                    //             ),
+                    //           ),
+                    //         ],
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ),
                 ),
                 // Only show follow button for other users
-                if (!isCurrentUser && userSnapshot.hasData)
-                  SizedBox(
-                    height: 36,
-                    child: OutlinedButton(
-                      onPressed: post.user.isFollowing
-                          ? null
-                          : () => _handleFollowPress(post.user.id),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: post.user.isFollowing
-                            ? Colors.grey[200]
-                            : Colors.white,
-                        side: BorderSide(
-                          color:
-                              post.user.isFollowing ? Colors.grey : Colors.blue,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      child: Text(
-                        post.user.isFollowing ? 'Following' : 'Follow',
-                        style: TextStyle(
-                          color: post.user.isFollowing
-                              ? Colors.grey[700]
-                              : Colors.blue,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
+                // # top follow button
+                // if (!isCurrentUser && userSnapshot.hasData)
+                //   SizedBox(
+                //     height: 36,
+                //     child: OutlinedButton(
+                //       onPressed: post.user.isFollowing
+                //           ? null
+                //           : () => _handleFollowPress(post.user.id),
+                //       style: OutlinedButton.styleFrom(
+                //         backgroundColor: post.user.isFollowing
+                //             ? Colors.grey[200]
+                //             : Colors.white,
+                //         side: BorderSide(
+                //           color:
+                //               post.user.isFollowing ? Colors.grey : Colors.blue,
+                //         ),
+                //         shape: RoundedRectangleBorder(
+                //           borderRadius: BorderRadius.circular(18),
+                //         ),
+                //         padding: const EdgeInsets.symmetric(horizontal: 16),
+                //       ),
+                //       child: Text(
+                //         post.user.isFollowing ? 'Following' : 'Follow',
+                //         style: TextStyle(
+                //           color: post.user.isFollowing
+                //               ? Colors.grey[700]
+                //               : Colors.blue,
+                //           fontSize: 14,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
               ],
             );
           },
@@ -391,82 +392,135 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-Widget buildPostActions(Post post) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Comment button
-        IconButton(
-          icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey),
-          onPressed: () {
-            setState(() {
-              _isCommentsVisible = !_isCommentsVisible; // Toggle comment section visibility
-              _isCommentInputVisible = false; // Reset input box state
-            });
-          },
-        ),
-        Text(formatNumber(commentsCache?.length ?? 0)),
-
-        // Like button
-        IconButton(
-          icon: Icon(
-            post.isLiked ? Icons.favorite : Icons.favorite_border,
-            color: post.isLiked ? Colors.red : Colors.grey,
+// # button bar
+  Widget buildPostActions(Post post) {
+    return SafeArea(
+      // not cover system gesture area
+      bottom: true,
+      child: Column(
+        children: [
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: Colors.grey,
           ),
-          onPressed: () => togglePostLike(post),
-        ),
-        Text(formatNumber(post.likesCount)),
-
-        // Save button
-        IconButton(
-          icon: Icon(
-            post.isSaved ? Icons.bookmark : Icons.bookmark_border,
-            color: post.isSaved
-                ? const Color.fromARGB(255, 255, 193, 7)
-                : Colors.grey,
-          ),
-          onPressed: () => togglePostSave(post),
-        ),
-        Text(formatNumber(post.savesCount)),
-
-        // Input box
-        if (_isCommentsVisible && !_isCommentInputVisible)
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isCommentInputVisible = true; // Show full input box
-                });
-              },
-              child: Container(
-                height: 40, // Custom height
-                margin: const EdgeInsets.only(left: 12), // Keep distance from icon
-                padding: const EdgeInsets.symmetric(horizontal: 16), // Padding
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F0), // Background color
-                  borderRadius: BorderRadius.circular(13), // Rounded corners
-                  border: Border.all(
-                    color: Colors.black, // Border color
-                    width: 1, // Border width
-                  ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Comment button
+                IconButton(
+                  icon:
+                      const Icon(Icons.chat_bubble_outline, color: Colors.grey),
+                  onPressed: () {
+                    setState(() {
+                      _isCommentsVisible =
+                          !_isCommentsVisible; // Toggle comment section visibility
+                      _isCommentInputVisible = false; // Reset input box state
+                    });
+                  },
                 ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    "Say something...",
-                    style: TextStyle(color: Colors.grey),
+                Text(formatNumber(commentsCache?.length ?? 0)),
+
+                // Like button
+                IconButton(
+                  icon: Icon(
+                    post.isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: post.isLiked ? Colors.red : Colors.grey,
                   ),
+                  onPressed: () => togglePostLike(post),
                 ),
-              ),
+                Text(formatNumber(post.likesCount)),
+
+                // Save button
+                IconButton(
+                  icon: Icon(
+                    post.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                    color: post.isSaved
+                        ? const Color.fromARGB(255, 255, 193, 7)
+                        : Colors.grey,
+                  ),
+                  onPressed: () => togglePostSave(post),
+                ),
+                Text(formatNumber(post.savesCount)),
+
+                // Input box
+                if (_isCommentsVisible && !_isCommentInputVisible)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isCommentInputVisible = true; // Show full input box
+                        });
+                      },
+                      child: Container(
+                        height: 40, // Custom height
+                        margin: const EdgeInsets.only(
+                            left: 12), // Keep distance from icon
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16), // Padding
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F0F0), // Background color
+                          borderRadius:
+                              BorderRadius.circular(13), // Rounded corners
+                          border: Border.all(
+                            color: Colors.black, // Border color
+                            width: 1, // Border width
+                          ),
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: const Text(
+                            "Say something...",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                // # poster's profile and name
+                if (!_isCommentsVisible || _isCommentInputVisible)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProfilePage(userId: post.user.id),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundImage:
+                                  NetworkImage(post.user.profilePictureUrl),
+                            ),
+                            const SizedBox(width: 9),
+                            Text(
+                              post.user.username,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Future<Size> _getImageSize(String imageUrl) async {
     final Completer<Size> completer = Completer();
@@ -518,8 +572,8 @@ Widget buildPostActions(Post post) {
                   const double maxAspectRatio = 4 / 3; // Maximum aspect ratio
 
                   // Clamp the first image's aspect ratio between the minimum and maximum values
-                  double clampedAspectRatio =
-                      firstImageAspectRatio.clamp(minAspectRatio, maxAspectRatio);
+                  double clampedAspectRatio = firstImageAspectRatio.clamp(
+                      minAspectRatio, maxAspectRatio);
 
                   return Column(
                     children: [
@@ -533,7 +587,8 @@ Widget buildPostActions(Post post) {
                             itemBuilder: (context, index) {
                               // Get the width and height of the current image
                               return FutureBuilder<Size>(
-                                future: _getImageSize(day.images[index].imageUrl),
+                                future:
+                                    _getImageSize(day.images[index].imageUrl),
                                 builder: (context, sizeSnapshot) {
                                   if (sizeSnapshot.connectionState ==
                                           ConnectionState.done &&
@@ -550,7 +605,8 @@ Widget buildPostActions(Post post) {
                                     } else {
                                       // Check if the aspect ratio is similar (within 5% error)
                                       bool isAspectRatioSimilar =
-                                          (imageAspectRatio - firstImageAspectRatio)
+                                          (imageAspectRatio -
+                                                      firstImageAspectRatio)
                                                   .abs() <=
                                               firstImageAspectRatio * 0.05;
 
@@ -571,7 +627,8 @@ Widget buildPostActions(Post post) {
                                         fit = BoxFit.cover;
                                       } else {
                                         // Otherwise, choose BoxFit based on the image aspect ratio
-                                        fit = imageAspectRatio > firstImageAspectRatio
+                                        fit = imageAspectRatio >
+                                                firstImageAspectRatio
                                             ? BoxFit.fitWidth
                                             : BoxFit.fitHeight;
                                       }
@@ -954,7 +1011,8 @@ Widget buildPostActions(Post post) {
                 icon: const Icon(Icons.arrow_back), // Back icon
                 onPressed: () {
                   setState(() {
-                    _isCommentInputVisible = false; // Return to buildPostActions
+                    _isCommentInputVisible =
+                        false; // Return to buildPostActions
                   });
                 },
               ),
@@ -1012,98 +1070,99 @@ Widget buildPostActions(Post post) {
     );
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: buildPostHeader(postFuture),
-    ),
-    body: GestureDetector(
-      onTap: () {
-        // When the comment section is expanded, clicking outside collapses it
-        if (_isCommentsVisible) {
-          setState(() {
-            _isCommentsVisible = false;
-            _isCommentInputVisible = false;
-          });
-        }
-      },
-      behavior: HitTestBehavior.opaque, // Ensure clicking on empty space triggers the event
-      child: FutureBuilder<Post>(
-        future: postFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text("Post not found"));
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: buildPostHeader(postFuture),
+      ),
+      body: GestureDetector(
+        onTap: () {
+          // When the comment section is expanded, clicking outside collapses it
+          if (_isCommentsVisible) {
+            setState(() {
+              _isCommentsVisible = false;
+              _isCommentInputVisible = false;
+            });
           }
+        },
+        behavior: HitTestBehavior
+            .opaque, // Ensure clicking on empty space triggers the event
+        child: FutureBuilder<Post>(
+          future: postFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            } else if (!snapshot.hasData) {
+              return const Center(child: Text("Post not found"));
+            }
 
-          final post = snapshot.data!;
+            final post = snapshot.data!;
 
-          return Column(
-            children: [
-              // ✅ Post Content with Dynamic Height
-              Expanded(
-                flex: 1, // Post content always takes up 1 part of the space
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      // ✅ Post Content without Fixed Height
-                      buildPostContent(post),
-
-                      // ✅ Divider
-                      const Divider(),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ✅ Comment Section (Scrollable)
-              if (_isCommentsVisible) // Only show comment section when expanded
+            return Column(
+              children: [
+                // ✅ Post Content with Dynamic Height
                 Expanded(
-                  flex: 9, // Comment section takes up 9 parts of the space (90%)
-                  child: GestureDetector(
-                    onTap: () {
-                      // Clicking inside the comment section does not collapse it
-                      // Prevent event from bubbling up
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white, // Background color
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16), // Top rounded corners
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1), // Shadow color
-                            blurRadius: 8, // Shadow blur radius
-                            offset: const Offset(0, -2), // Shadow offset
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: buildCommentsSection(),
-                      ),
+                  flex: 1, // Post content always takes up 1 part of the space
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // ✅ Post Content without Fixed Height
+                        buildPostContent(post),
+
+                        // ✅ Divider
+                        const Divider(),
+                      ],
                     ),
                   ),
                 ),
 
-              // ✅ Post Actions (Like, Save) at the Bottom
-              if (!_isCommentInputVisible) buildPostActions(post),
+                // ✅ Comment Section (Scrollable)
+                if (_isCommentsVisible) // Only show comment section when expanded
+                  Expanded(
+                    flex:
+                        9, // Comment section takes up 9 parts of the space (90%)
+                    child: GestureDetector(
+                      onTap: () {
+                        // Clicking inside the comment section does not collapse it
+                        // Prevent event from bubbling up
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white, // Background color
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16), // Top rounded corners
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  Colors.black.withOpacity(0.1), // Shadow color
+                              blurRadius: 8, // Shadow blur radius
+                              offset: const Offset(0, -2), // Shadow offset
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: buildCommentsSection(),
+                        ),
+                      ),
+                    ),
+                  ),
 
-              // ✅ Comment Input Always Stays at the Bottom
-              if (_isCommentInputVisible) buildCommentInput(),
-            ],
-          );
-        },
+                // ✅ Post Actions (Like, Save) at the Bottom
+                if (!_isCommentInputVisible) buildPostActions(post),
+
+                // ✅ Comment Input Always Stays at the Bottom
+                if (_isCommentInputVisible) buildCommentInput(),
+              ],
+            );
+          },
+        ),
       ),
-    ),
-  );
-}
-
-
+    );
+  }
 }
