@@ -172,11 +172,22 @@ class NotificationService {
 
   Future<void> markAllAsRead() async {
     try {
+      // Use the correct format for the request body
+      final Map<String, dynamic> requestBody = {
+        'mark_all': "true",
+      };
+
+      print('📱 Marking all notifications as read');
+      print('📱 Request body: ${json.encode(requestBody)}');
+
       final response = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/notifications/mark-read/',
         method: 'POST',
-        body: <String, dynamic>{'mark_all': "true"},
+        body: requestBody,
       );
+
+      print('📱 Mark all read response status: ${response.statusCode}');
+      print('📱 Mark all read response body: ${response.body}');
 
       if (response.statusCode == 200) {
         // Update state immediately
@@ -184,12 +195,16 @@ class NotificationService {
 
         // Double check server state after a short delay
         await Future.delayed(const Duration(milliseconds: 1000));
-        await NotificationService().fetchNotifications();
+        await fetchNotifications();
+      } else {
+        throw Exception(
+            'Failed to mark all notifications as read: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('❌ Error marking all as read: $e');
       // Recheck state on error
-      await NotificationService().fetchNotifications();
+      await fetchNotifications();
+      rethrow; // Rethrow to handle in UI
     }
   }
 

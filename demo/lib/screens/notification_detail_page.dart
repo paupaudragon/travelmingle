@@ -183,25 +183,63 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         return;
       }
 
+      // Update local state immediately for better UX
       setState(() {
-        for (final item in unreadItems) {
-          final index = _items.indexWhere((i) => i['id'] == item['id']);
-          if (index != -1) {
-            _items[index] = Map.from(_items[index])..['is_read'] = true;
-          }
-        }
+        // Create new list items with updated read status
+        _items = _items.map((item) {
+          // Create a new map to avoid modifying the original
+          final newItem = Map<String, dynamic>.from(item);
+          newItem['is_read'] = true;
+          return newItem;
+        }).toList();
       });
 
+      // Create a properly typed NotificationService instance
       NotificationService notificationService = NotificationService();
-      notificationService.notificationState.setUnreadStatus(false);
+
+      // Call the API to mark all as read
       await notificationService.markAllAsRead();
+
+      // Update the UI state
+      notificationService.notificationState.setUnreadStatus(false);
+
+      // Refresh the notifications list completely from the server
       await notificationService.fetchNotifications();
+
+      // Force refresh the local list to match server state
+      await _loadAllNotifications();
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All notifications marked as read'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       print('❌ Error marking all as read: $e');
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error marking all as read: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+      // Reload to ensure UI consistency
+      await _loadAllNotifications();
     } finally {
-      setState(() {
-        _isMarking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isMarking = false;
+        });
+      }
     }
   }
 
