@@ -570,29 +570,47 @@ class ApiService {
   }) async {
     const String url = "$baseApiUrl/register/";
 
-    final request = http.MultipartRequest('POST', Uri.parse(url))
-      ..fields['username'] = username
-      ..fields['email'] = email
-      ..fields['password'] = password;
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse(url))
+        ..fields['username'] = username
+        ..fields['email'] = email
+        ..fields['password'] = password;
 
-    if (bio != null) request.fields['bio'] = bio;
-    if (profileImagePath != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-        'profile_picture',
-        profileImagePath,
-      ));
-    }
+      if (bio != null) request.fields['bio'] = bio;
+      if (profileImagePath != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'profile_picture',
+          profileImagePath,
+        ));
+      }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-    final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
 
-    if (response.statusCode == 201) {
-      return responseData; // ✅ Return full response as Map
-    } else {
-      print("❌ Registration failed: ${response.body}");
-      return {"error": responseData['error'] ?? 'Unknown error occurred'};
+      if (response.statusCode == 201) {
+        return responseData; // ✅ Return full response as Map
+      } else {
+        print("❌ Registration failed: ${response.body}");
+
+        // Handle nested error format
+        if (responseData.containsKey('error')) {
+          final errors = responseData['error'];
+
+          if (errors is Map<String, dynamic>) {
+            // This matches your specific error format
+            return {"error": errors};
+          } else {
+            return {"error": errors.toString()};
+          }
+        }
+
+        return {"error": responseData['error'] ?? 'Unknown error occurred'};
+      }
+    } catch (e) {
+      print("❌ Registration exception: $e");
+      return {"error": "Connection error: $e"};
     }
   }
 
