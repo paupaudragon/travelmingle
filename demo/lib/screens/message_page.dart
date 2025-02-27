@@ -107,37 +107,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
-  // Future<String> _fetchMessageContent(int messageId) async {
-  //   try {
-  //     final response = await _apiService.makeAuthenticatedRequest(
-  //       url: '${ApiService.baseApiUrl}/messages/conversations/',
-  //       method: 'GET',
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       final List<dynamic> messages = json.decode(response.body);
-
-  //       // ✅ Find the message with the matching ID
-  //       final message = messages.firstWhere(
-  //         (msg) => msg['id'] == messageId,
-  //         orElse: () => null,
-  //       );
-  //       if (message != null) {
-  //         return message['content'] ?? 'No content available';
-  //       } else {
-  //         print('❌ Message ID $messageId not found.');
-  //         return 'No content available';
-  //       }
-  //     } else {
-  //       print('❌ Error fetching message content for ID $messageId');
-  //       return 'No content available';
-  //     }
-  //   } catch (e) {
-  //     print('❌ Exception fetching message content: $e');
-  //     return 'No content available';
-  //   }
-  // }
-
   Future<void> _fetchNotifications() async {
     if (!mounted || _isRefreshing) return;
 
@@ -339,10 +308,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         final message = _directMessages[index];
         final int senderId = message['sender'];
         final int receiverId = message['receiver'];
-        // final String content = message['message_content'] ?? 'No content';
-        // final String timestamp = message['timestamp'];
-        // final bool isRead = message['is_read'] ?? false;
-
         final bool isSentByCurrentUser = senderId == _currentUserId;
         final int chatPartnerId = isSentByCurrentUser ? receiverId : senderId;
 
@@ -361,9 +326,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             final chatPartnerUsername = userProfile['username'] ?? "Unknown";
             final chatPartnerProfilePic = userProfile['profile_picture_url'] ?? "";
 
-            // final String content = isSentByCurrentUser
-            //     ? "You: ${message['content']}"
-            //     : message['content'] ?? "No content";
             final String content = message['content'] ?? 'No content';
             final timestamp = message['timestamp'] ?? "";
             final bool isRead = message['is_read'] ?? false;
