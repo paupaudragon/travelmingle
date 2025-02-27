@@ -1,10 +1,10 @@
 class Message {
   final int id;
-  final int sender;  // ✅ FIXED: Use integer, not a map
+  final int sender; // ✅ FIXED: Use integer, not a map
   final int receiver;
   final String content;
   final DateTime timestamp;
-  final bool isRead;
+  bool isRead;
 
   Message({
     required this.id,
@@ -18,11 +18,11 @@ class Message {
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
       id: json['id'],
-      sender: json['sender'],  // ✅ FIXED: Integer value
-      receiver: json['receiver'],  // ✅ FIXED: Integer value
+      sender: json['sender'], // ✅ FIXED: Integer value
+      receiver: json['receiver'], // ✅ FIXED: Integer value
       content: json['content'],
       timestamp: DateTime.parse(json['timestamp']),
-      isRead: json['is_read'],  // ✅ FIXED: Boolean value
+      isRead: json['is_read'], // ✅ FIXED: Boolean value
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:demo/screens/direct_messages_list.dart';
 import 'package:demo/screens/message_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/enums/notification_types.dart';
@@ -506,8 +505,20 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ),
               onTap: () async {
                 print("✅ Opening chat with $chatPartnerUsername");
+                setState(() {
+                  // Find this message in the direct messages list and mark it as read
+                  for (var i = 0; i < _directMessages.length; i++) {
+                    if (_directMessages[i]['id'] == message['id']) {
+                      _directMessages[i] = {
+                        ..._directMessages[i],
+                        'is_read': true,
+                      };
+                      break;
+                    }
+                  }
+                });
 
-                // Navigate to chat screen and await return
+                // Navigate to chat screen first for better UX
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -519,7 +530,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 // Refresh notifications when returning from chat
                 if (mounted) {
                   print('🔄 Returning from chat - refreshing notifications');
-                  _fetchNotifications();
+                  await _fetchNotifications();
                 }
               },
             );

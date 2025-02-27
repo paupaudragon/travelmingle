@@ -1031,18 +1031,6 @@ class ApiService {
     }
   }
 
-  // **3. Mark a Message as Read**
-  Future<void> markMessageAsRead(int messageId) async {
-    final response = await makeAuthenticatedRequest(
-      url: '$baseApiUrl/messages/$messageId/mark-read/',
-      method: 'PATCH',
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception("Failed to mark message as read");
-    }
-  }
-
   Future<void> registerDeviceToken(String token) async {
     final response = await makeAuthenticatedRequest(
       url: '$baseApiUrl/register-device/',

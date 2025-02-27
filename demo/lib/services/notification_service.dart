@@ -286,20 +286,186 @@ class NotificationService {
             .where((n) => n['recipient']['id'] == currentUserId)
             .toList();
 
-        // Cache only the current user's notifications
+        // Cache all notifications
         _cachedNotifications = List<Map<String, dynamic>>.from(notifications);
 
-        // Count only the current user's unread notifications
-        final unreadNotifications =
-            notifications.where((n) => n['is_read'] == false).toList();
+        // Check for unread messages specifically
+        final bool hasUnreadMessages =
+            await _checkForUnreadMessages(currentUserId);
 
-        final unreadCount = unreadNotifications.length;
-        print('📱 Updated unread count for user $currentUserId: $unreadCount');
+        // Count unread notifications (excluding message notifications since they're handled separately)
+        final unreadNotifications = notifications
+            .where((n) =>
+                n['is_read'] == false && n['notification_type'] != 'message')
+            .toList();
 
-        _notificationState.setUnreadStatus(unreadCount > 0);
+        final int unreadCount = unreadNotifications.length;
+
+        // Determine if we should show unread notification indicator
+        final bool hasUnreadContent = unreadCount > 0 || hasUnreadMessages;
+
+        print(
+            '📱 Updated unread count: $unreadCount, hasUnreadMessages: $hasUnreadMessages');
+        _notificationState.setUnreadStatus(hasUnreadContent);
       }
     } catch (e) {
       print('❌ Error fetching notifications: $e');
+    }
+  }
+
+  Future<void> markConversationAsRead(int otherUserId) async {
+    try {
+      print(
+          "🔔 NotificationService: Marking messages with user $otherUserId as read");
+
+      // Get current user ID
+      final currentUserId = await _apiService.getCurrentUserId();
+      if (currentUserId == null) {
+        print('❌ Cannot mark messages as read: No current user ID');
+        return;
+      }
+
+      // Fetch all messages in the conversation
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/messages/?other_user_id=$otherUserId',
+        method: 'GET',
+      );
+
+      if (response.statusCode != 200) {
+        print("❌ Failed to fetch messages. Status: ${response.statusCode}");
+        return;
+      }
+
+      // Parse the messages
+      final List<dynamic> messages = json.decode(response.body);
+      print("✅ Found ${messages.length} messages with user $otherUserId");
+
+      // Find all unread messages where current user is the receiver
+      int markedCount = 0;
+      for (var message in messages) {
+        final bool isRead = message['is_read'] ?? true;
+        final int receiverId = message['receiver'] ?? 0;
+        final int messageId = message['id'] ?? 0;
+
+        // Only mark messages where current user is the receiver and message is unread
+        if (!isRead && receiverId == currentUserId && messageId > 0) {
+          try {
+            // Use the confirmed endpoint for marking individual messages as read
+            final markResponse = await _apiService.makeAuthenticatedRequest(
+              url: '${ApiService.baseApiUrl}/messages/$messageId/mark-read/',
+              method: 'PATCH',
+            );
+
+            if (markResponse.statusCode == 200) {
+              markedCount++;
+            } else {
+              print(
+                  "⚠️ Failed to mark message $messageId as read. Status: ${markResponse.statusCode}");
+            }
+          } catch (e) {
+            print("⚠️ Error marking message $messageId as read: $e");
+          }
+        }
+      }
+
+      print("✅ Successfully marked $markedCount messages as read");
+
+      // Force a refresh of the notification state if any messages were marked
+      if (markedCount > 0) {
+        // Delay slightly to allow the backend to process the updates
+        await Future.delayed(Duration(milliseconds: 300));
+        await fetchNotifications();
+      }
+    } catch (e) {
+      print("❌ Error in markConversationAsRead: $e");
+    }
+  }
+
+  Future<bool> _checkForUnreadMessages(int currentUserId) async {
+    try {
+      // Fetch all conversations
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/messages/conversations/',
+        method: 'GET',
+      );
+
+      if (response.statusCode != 200) {
+        print('❌ Failed to fetch conversations');
+        return false;
+      }
+
+      final List<dynamic> conversations = json.decode(response.body);
+
+      // Check if any conversation has unread messages where current user is the receiver
+      for (var message in conversations) {
+        final bool isRead = message['is_read'] ?? true;
+        final int receiverId = message['receiver'] ?? 0;
+
+        if (!isRead && receiverId == currentUserId) {
+          print('📱 Found unread message in conversations');
+          return true;
+        }
+      }
+
+      print('📱 No unread messages found in conversations');
+      return false;
+    } catch (e) {
+      print('❌ Error checking for unread messages: $e');
+      return false;
+    }
+  }
+
+  // **3. Mark a Message as Read**
+  Future<void> markMessageAsRead(int messageId) async {
+    try {
+      print('📱 Service - Marking notification $messageId as read');
+
+      // Make API request
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/messages/$messageId/mark-read/',
+        method: 'PATCH',
+      );
+
+      print('📱 Mark read response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        // Force refresh notifications to update state
+        await fetchNotifications();
+      } else {
+        throw Exception(
+            'Failed to mark message as read: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error in markMessageAsRead: $e');
+      throw e;
+    }
+  }
+
+  Future<bool> markAllMessagesFromSenderAsRead(int senderId) async {
+    try {
+      print("🔍 API Service: Marking all messages from user $senderId as read");
+
+      // Make the API request
+      final response = await _apiService.makeAuthenticatedRequest(
+        url: '${ApiService.baseApiUrl}/messages/mark-sender-read/',
+        method: 'POST',
+        body: {
+          "sender_id": senderId,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Successfully marked all messages from user $senderId as read");
+        return true;
+      } else {
+        print(
+            "❌ Failed to mark messages as read. Status: ${response.statusCode}");
+        print("❌ Response: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error marking messages from sender as read: $e");
+      return false;
     }
   }
 }

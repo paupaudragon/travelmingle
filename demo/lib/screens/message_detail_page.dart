@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:demo/models/message_model.dart';
 import 'package:demo/services/firebase_service.dart';
+import 'package:demo/services/notification_service.dart';
 import 'package:demo/services/notification_state.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 
 class MessageDetailPage extends StatefulWidget {
   final int userId; // The user you are chatting with
-
   const MessageDetailPage({Key? key, required this.userId}) : super(key: key);
 
   @override
@@ -19,6 +19,8 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final NotificationService _notificationService = NotificationService();
+
   List<dynamic> messages = [];
   bool _isLoading = true;
   bool _sendingMessage = false;
@@ -27,6 +29,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
   @override
   void initState() {
     super.initState();
+    _markAllFromSenderAsRead();
     _fetchMessages();
     _startAutoRefresh();
 
@@ -42,11 +45,49 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
         // Reload messages in chat screen
         if (mounted) {
           _fetchMessages();
+          if (int.parse(senderId) == widget.userId) {
+            _markAllFromSenderAsRead();
+          }
         }
       },
       notificationState: _notificationState,
     );
     messagingService.initialize();
+  }
+
+  Future<void> _markAllFromSenderAsRead() async {
+    try {
+      print("📱 Marking all messages from user ${widget.userId} as read");
+
+      // Try the dedicated endpoint first
+      bool success = await _notificationService
+          .markAllMessagesFromSenderAsRead(widget.userId);
+
+      // If the dedicated endpoint fails, use the fallback method
+      // if (!success) {
+      //   print("⚠️ Primary method failed, using fallback...");
+      //   await _notificationService
+      //       .markAllMessagesFromSenderAsReadFallback(widget.userId);
+      // }
+
+      // Update UI to show all messages as read
+      if (mounted && messages.isNotEmpty) {
+        setState(() {
+          for (int i = 0; i < messages.length; i++) {
+            if (messages[i].sender == widget.userId && !messages[i].isRead) {
+              messages[i].isRead = true;
+            }
+          }
+        });
+      }
+
+      // Refresh notification state
+      NotificationService().fetchNotifications();
+
+      print("✅ Finished marking messages as read");
+    } catch (e) {
+      print("❌ Error marking messages as read: $e");
+    }
   }
 
   @override
@@ -65,10 +106,10 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
 
   Future<void> _fetchMessages() async {
     try {
-      // ✅ Ensure current user ID is available
+      // Ensure current user ID is available
       if (_apiService.currentUserId == null) {
         print("🔍 Fetching current user ID...");
-        await _apiService.getCurrentUserId(); // Ensure it's fetched
+        await _apiService.getCurrentUserId();
       }
 
       print(
@@ -77,19 +118,24 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
       List<Message> fetchedMessages =
           await _apiService.fetchMessages(widget.userId);
 
+      // Update read status for messages from this sender
+      for (var i = 0; i < fetchedMessages.length; i++) {
+        if (fetchedMessages[i].sender == widget.userId &&
+            !fetchedMessages[i].isRead) {
+          fetchedMessages[i].isRead = true;
+        }
+      }
+
       if (mounted) {
         setState(() {
           messages = fetchedMessages
-            ..sort((a, b) =>
-                a.timestamp.compareTo(b.timestamp)); // ✅ Sort messages by time
+            ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
         });
       }
 
       // Scroll to bottom after loading messages
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
-      _markMessagesAsRead(); // Automatically mark as read after fetching
     } catch (e) {
       print("Error fetching messages: $e");
       if (mounted) setState(() => _isLoading = false);
@@ -98,14 +144,51 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
 
   void _markMessagesAsRead() async {
     try {
-      for (var message in messages) {
-        if (!message.isRead == false) {
-          // ❌ Incorrect: message['is_read']
-          await _apiService.markMessageAsRead(message.id);
+      print("🔍 Marking messages as read in detail page");
+
+      // Only mark messages where current user is the receiver and messages are unread
+      List unreadMessages = messages
+          .where((message) =>
+              !message.isRead && message.receiver == _apiService.currentUserId)
+          .toList();
+
+      if (unreadMessages.isEmpty) {
+        print("✅ No unread messages to mark");
+        return;
+      }
+
+      print(
+          "🔔 Found ${unreadMessages.length} unread messages to mark as read");
+
+      // Update local state immediately for better UX
+      setState(() {
+        for (var i = 0; i < messages.length; i++) {
+          if (!messages[i].isRead &&
+              messages[i].receiver == _apiService.currentUserId) {
+            messages[i].isRead = true;
+          }
+        }
+      });
+
+      // Make API calls to mark each message as read
+      for (var message in unreadMessages) {
+        try {
+          print("🔔 Marking message ID ${message.id} as read");
+          await _apiService.makeAuthenticatedRequest(
+            url: '${ApiService.baseApiUrl}/messages/${message.id}/mark-read/',
+            method: 'PATCH',
+          );
+        } catch (e) {
+          print("❌ Error marking message ${message.id} as read: $e");
         }
       }
+
+      // Explicitly update notification state via NotificationService
+      await NotificationService().fetchNotifications();
+
+      print("✅ All messages marked as read");
     } catch (e) {
-      print("Error marking messages as read: $e");
+      print("❌ Error marking messages as read: $e");
     }
   }
 

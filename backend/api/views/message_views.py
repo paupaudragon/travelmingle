@@ -148,3 +148,41 @@ class ConversationsListView(APIView):
             print(traceback.format_exc())  # Print full error traceback
             return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class MarkSenderMessagesReadView(APIView):
+    """
+    Mark all messages from a specific sender as read.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        sender_id = request.data.get('sender_id')
+        
+        if not sender_id:
+            return Response(
+                {"error": "sender_id is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get current user
+        current_user = request.user
+        
+        # Find all unread messages where:
+        # 1. Current user is the receiver
+        # 2. Specified user is the sender
+        # 3. Messages are not read yet
+        unread_messages = Message.objects.filter(
+            receiver=current_user,
+            sender_id=sender_id,
+            is_read=False
+        )
+        
+        # Count for response
+        message_count = unread_messages.count()
+        
+        # Mark all as read
+        unread_messages.update(is_read=True)
+        
+        return Response({
+            "success": True,
+            "messages_marked": message_count
+        })
