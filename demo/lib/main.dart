@@ -15,6 +15,8 @@ const Color colorLike = Color(0xFF747f7f);
 const Color colorLiked = Color(0xFFffad08);
 const Color primaryColor = Color(0xFFffad08);
 const Color iconColor = Color(0xff1d1d1d);
+const Color insertBoxBgColor = Color(0xFFe0e0e0);
+const Color insertBoxTextColor = Color(0xFF1d1d1d);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

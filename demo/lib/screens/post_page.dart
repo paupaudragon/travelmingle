@@ -8,6 +8,7 @@ import '../models/comment_model.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
 import 'dart:async';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PostPage extends StatefulWidget {
   final int postId;
@@ -292,29 +293,6 @@ class _PostPageState extends State<PostPage> {
                         ),
                       );
                     },
-                    // child: Row(
-                    //   children: [
-                    //     CircleAvatar(
-                    //       backgroundImage:
-                    //           NetworkImage(post.user.profilePictureUrl),
-                    //     ),
-                    //     const SizedBox(width: 10),
-                    //     Expanded(
-                    //       child: Column(
-                    //         crossAxisAlignment: CrossAxisAlignment.start,
-                    //         children: [
-                    //           Text(
-                    //             post.user.username,
-                    //             style: const TextStyle(
-                    //               fontSize: 16,
-                    //               fontWeight: FontWeight.bold,
-                    //             ),
-                    //           ),
-                    //         ],
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
                   ),
                 ),
                 // Only show follow button for other users
@@ -405,45 +383,84 @@ class _PostPageState extends State<PostPage> {
             color: Colors.grey,
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Comment button
-                IconButton(
-                  icon:
-                      const Icon(Icons.chat_bubble_outline, color: Colors.grey),
-                  onPressed: () {
+                GestureDetector(
+                  onTap: () => {
                     setState(() {
                       _isCommentsVisible =
                           !_isCommentsVisible; // Toggle comment section visibility
                       _isCommentInputVisible = false; // Reset input box state
-                    });
+                    }),
                   },
+                  child: Column(children: [
+                    SvgPicture.asset('assets/icons/comment.svg',
+                        width: 32,
+                        height: 32,
+                        colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn))
+                  ]),
                 ),
-                Text(formatNumber(commentsCache?.length ?? 0)),
+                const SizedBox(width: 6),
+                Text(
+                  formatNumber(commentsCache?.length ?? 0),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w400),
+                ),
+
+                const SizedBox(width: 10),
 
                 // Like button
-                IconButton(
-                  icon: Icon(
-                    post.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: post.isLiked ? Colors.red : Colors.grey,
-                  ),
-                  onPressed: () => togglePostLike(post),
+                GestureDetector(
+                  onTap: () => togglePostLike(post),
+                  child: Column(children: [
+                    SvgPicture.asset(
+                        post.isLiked
+                            ? 'assets/icons/heart_filled.svg'
+                            : 'assets/icons/heart.svg',
+                        width: 32,
+                        height: 32,
+                        colorFilter: ColorFilter.mode(
+                            post.isLiked ? colorLiked : iconColor, 
+                            BlendMode.srcIn))
+                  ]),
                 ),
-                Text(formatNumber(post.likesCount)),
+                const SizedBox(width: 6),
+
+                Text(
+                  formatNumber(post.likesCount),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w400),
+                ),
+
+                const SizedBox(width: 10),
 
                 // Save button
-                IconButton(
-                  icon: Icon(
-                    post.isSaved ? Icons.bookmark : Icons.bookmark_border,
-                    color: post.isSaved
-                        ? const Color.fromARGB(255, 255, 193, 7)
-                        : Colors.grey,
-                  ),
-                  onPressed: () => togglePostSave(post),
+                GestureDetector(
+                  onTap: () => togglePostSave(post),
+                  child: Column(children: [
+                    SvgPicture.asset(
+                        post.isSaved
+                            ? 'assets/icons/star_filled.svg'
+                            : 'assets/icons/star.svg',
+                        width: 32,
+                        height: 32,
+                        colorFilter: ColorFilter.mode(
+                            post.isSaved ? colorLiked : iconColor, 
+                            BlendMode.srcIn))
+                  ]),
                 ),
-                Text(formatNumber(post.savesCount)),
+                const SizedBox(width: 6),
+
+                Text(
+                  formatNumber(post.savesCount),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w400),
+                ),
+
+                const SizedBox(width: 6),
 
                 // Input box
                 if (_isCommentsVisible && !_isCommentInputVisible)
@@ -452,28 +469,29 @@ class _PostPageState extends State<PostPage> {
                       onTap: () {
                         setState(() {
                           _isCommentInputVisible = true; // Show full input box
+
                         });
                       },
                       child: Container(
-                        height: 40, // Custom height
+                        height: 32, // Custom height
                         margin: const EdgeInsets.only(
                             left: 12), // Keep distance from icon
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16), // Padding
+                            horizontal: 14), // Padding
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF0F0F0), // Background color
+                          color: insertBoxBgColor, // Background color
                           borderRadius:
-                              BorderRadius.circular(13), // Rounded corners
-                          border: Border.all(
-                            color: Colors.black, // Border color
-                            width: 1, // Border width
-                          ),
+                              BorderRadius.circular(16), // Rounded corners
+                          // border: Border.all(
+                          //   color: Colors.black, // Border color
+                          //   width: 1, // Border width
+                          // ),
                         ),
                         child: Align(
-                          alignment: Alignment.centerLeft,
+                          alignment: Alignment.center,
                           child: const Text(
                             "Say something...",
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: insertBoxTextColor),
                           ),
                         ),
                       ),
