@@ -5,5 +5,6 @@ enum NotificationType {
   reply,
   mention,
   collect,
-  follow
+  follow,
+  message,
 }

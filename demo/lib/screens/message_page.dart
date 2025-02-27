@@ -9,6 +9,7 @@ import 'package:demo/screens/notification_detail_page.dart';
 import 'package:demo/services/api_service.dart';
 import 'package:demo/services/notification_service.dart';
 import 'package:demo/widgets/footer.dart';
+import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final VoidCallback? onHomePressed;
@@ -148,6 +149,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
       print('📩 Notifications fetched: ${notifications.length}');
 
+      // Filter only message notifications
+      final messageNotifications = notifications
+          .where((n) => n['notification_type'] == 'message')
+          .toList();
+
+      // Sort messages by newest
+      messageNotifications.sort((a, b) => DateTime.parse(b['created_at'])
+          .compareTo(DateTime.parse(a['created_at'])));
+
       // Update categories with all notifications
       final updatedCategories = NotificationCategory.updateWithNotifications(
         NotificationCategory.getDefaultCategories(),
@@ -157,6 +167,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       if (mounted) {
         setState(() {
           _categories = updatedCategories; // ✅ Force update categories
+          _directMessages = messageNotifications; // ✅ Store messages separately
           _isLoading = false;
           _isRefreshing = false;
           _error = null;
@@ -181,7 +192,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         });
       }
 
-      final unreadCount = unreadNotifications.length;
+      final unreadCount =
+          notifications.where((n) => n['is_read'] == false).length;
       _notificationService.notificationState.setUnreadStatus(unreadCount > 0);
       print('✅ Notifications updated, unread count: $unreadCount');
     } catch (e, stackTrace) {
@@ -322,7 +334,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           Text(
             category.name,
             style: TextStyle(
-              color: Colors.grey[300],
+              color: Colors.black,
               fontSize: 12,
             ),
           ),
@@ -344,61 +356,34 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       );
     }
 
-    // ✅ Ensure currentUserId is initialized before rendering messages
-    if (_currentUserId == null) {
-      return Center(child: CircularProgressIndicator());
-    }
-
     return ListView.builder(
-      itemCount: _directMessages.length, // ✅ Show all direct messages
+      shrinkWrap: true, // ✅ Allows messages to appear below categories
+      physics:
+          NeverScrollableScrollPhysics(), // ✅ Prevents independent scrolling
+      itemCount: _directMessages.length,
       itemBuilder: (context, index) {
         final message = _directMessages[index];
-
-        // ✅ Ensure message content is shown correctly
-        final messageContent =
-            message['message_content'] ?? "No message content";
         final sender = message['sender'];
-        final receiver = message['receiver'];
-
-        // ✅ Determine the chat partner
-        final chatPartnerId =
-            sender['id'] == _currentUserId ? receiver['id'] : sender['id'];
-        final chatPartnerUsername = sender['id'] == _currentUserId
-            ? receiver['username']
-            : sender['username'];
+        final content = message['content'] ?? 'No content';
+        final timestamp = message['created_at'];
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: NetworkImage(receiver['profile_picture_url']),
-            radius: 24,
+            backgroundImage: NetworkImage(sender['profile_picture_url']),
           ),
-          title: Text(
-            chatPartnerUsername,
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(sender['username']),
+          subtitle: Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: Text(
+            DateFormat.jm().format(DateTime.parse(timestamp)),
+            style: TextStyle(color: Colors.grey),
           ),
-          subtitle: Text(
-            messageContent,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                color: message['is_read'] ? Colors.grey : Colors.white),
-          ),
-          trailing: message['is_read']
-              ? Icon(Icons.done_all, color: Colors.green)
-              : Icon(Icons.markunread,
-                  color: Colors.red), // ✅ Indicate unread messages
-          onTap: () async {
-            print("📨 Opening conversation with $chatPartnerUsername");
-
-            await Navigator.push(
+          onTap: () {
+            Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MessageDetailPage(userId: chatPartnerId),
+                builder: (context) => MessageDetailPage(userId: sender['id']),
               ),
             );
-
-            // ✅ Refresh messages after returning from chat
-            _fetchDirectMessages();
           },
         );
       },
@@ -436,13 +421,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Messages'),
-              TextButton(
-                onPressed: () {},
-                child: const Text('More Groups'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.grey,
-                ),
-              ),
             ],
           ),
           automaticallyImplyLeading: false,
