@@ -52,14 +52,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Add this line
     _focusNode.addListener(_onFocusChange);
-    // _notificationService.notificationState.hasUnreadStream.listen((hasUnread) {
-    //   if (mounted && !_isRefreshing) {
-    //     _fetchNotifications();
-    //   }
-    // });
     _fetchNotifications();
-    _fetchCurrentUserId(); // ✅ Load user ID
+    _fetchCurrentUserId();
   }
 
   @override
@@ -75,8 +71,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // App came to foreground
       print("🔄 App resumed - Refreshing notifications...");
       _fetchNotifications();
+      _fetchCurrentUserId();
     }
   }
 
@@ -168,14 +166,32 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         throw Exception('No logged-in user found');
       }
 
-      _currentUserId = userInfo['id'];
+      final int currentUserId = userInfo['id'];
 
       final data = json.decode(response.body);
       final notifications = data['notifications'] as List;
 
       print('📩 Notifications fetched: ${notifications.length}');
 
-      // ✅ Fetch the latest messages from conversations
+      // Update categories with all notifications
+      final updatedCategories = NotificationCategory.updateWithNotifications(
+        NotificationCategory.getDefaultCategories(),
+        notifications,
+      );
+
+      // Debug category content
+      for (var category in updatedCategories) {
+        print(
+            '📋 Category ${category.name}: ${category.items.length} items, unread: ${category.hasUnread}');
+      }
+
+      // Count unread notifications
+      final unreadNotifications = notifications
+          .where((n) =>
+              n['is_read'] == false && n['recipient']['id'] == currentUserId)
+          .toList();
+
+      // Fetch direct messages (no change needed here)
       final conversationsResponse = await _apiService.makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/messages/conversations/',
         method: 'GET',
@@ -189,13 +205,13 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       final List<dynamic> conversations =
           json.decode(conversationsResponse.body);
 
-      // ✅ Keep only the latest message per conversation
+      // Process conversations (no change needed here)
       Map<int, dynamic> latestMessages = {};
       for (var message in conversations) {
         int senderId = message['sender'];
         int receiverId = message['receiver'];
 
-        int chatPartnerId = senderId == _currentUserId ? receiverId : senderId;
+        int chatPartnerId = senderId == currentUserId ? receiverId : senderId;
 
         if (!latestMessages.containsKey(chatPartnerId) ||
             DateTime.parse(message['timestamp']).isAfter(
@@ -205,23 +221,19 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       }
 
       final filteredMessageNotifications = latestMessages.values.toList();
-
-      // ✅ Sort messages by newest
       filteredMessageNotifications.sort((a, b) => DateTime.parse(b['timestamp'])
           .compareTo(DateTime.parse(a['timestamp'])));
 
-      // ✅ Add prefix if the current user sent the latest message
       for (var msg in filteredMessageNotifications) {
         int senderId = msg['sender'];
-
-        if (senderId == _currentUserId) {
+        if (senderId == currentUserId) {
           msg['content'] = "You: ${msg['content']}";
         }
       }
 
-      // ✅ Update state with filtered messages
       if (mounted) {
         setState(() {
+          _categories = updatedCategories;
           _directMessages = filteredMessageNotifications;
           _isLoading = false;
           _isRefreshing = false;
@@ -229,8 +241,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         });
       }
 
-      final unreadCount =
-          notifications.where((n) => n['is_read'] == false).length;
+      final unreadCount = unreadNotifications.length;
       _notificationService.notificationState.setUnreadStatus(unreadCount > 0);
       print('✅ Notifications updated, unread count: $unreadCount');
     } catch (e, stackTrace) {
@@ -240,6 +251,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       if (mounted) {
         setState(() {
           _error = e.toString();
+          _categories = NotificationCategory.getDefaultCategories();
           _isLoading = false;
           _isRefreshing = false;
         });
@@ -318,6 +330,105 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
+  // Widget _buildDirectMessagesList() {
+  //   if (_directMessages.isEmpty) {
+  //     return Center(
+  //       child: Text(
+  //         'No messages yet',
+  //         style: TextStyle(
+  //           color: Colors.grey[600],
+  //           fontSize: 16,
+  //         ),
+  //       ),
+  //     );
+  //   }
+
+  //   return ListView.builder(
+  //     shrinkWrap: true,
+  //     physics: NeverScrollableScrollPhysics(),
+  //     itemCount: _directMessages.length,
+  //     itemBuilder: (context, index) {
+  //       final message = _directMessages[index];
+  //       final int senderId = message['sender'];
+  //       final int receiverId = message['receiver'];
+  //       // final String content = message['message_content'] ?? 'No content';
+  //       // final String timestamp = message['timestamp'];
+  //       // final bool isRead = message['is_read'] ?? false;
+
+  //       final bool isSentByCurrentUser = senderId == _currentUserId;
+  //       final int chatPartnerId = isSentByCurrentUser ? receiverId : senderId;
+
+  //       return FutureBuilder<Map<String, dynamic>>(
+  //         future: _apiService.fetchUserProfile(chatPartnerId),
+  //         builder: (context, snapshot) {
+  //           if (!snapshot.hasData || snapshot.data!.isEmpty) {
+  //             return ListTile(
+  //               title: Text("Loading..."),
+  //               subtitle: Text("Fetching chat details..."),
+  //               leading: CircleAvatar(backgroundColor: Colors.grey[300]),
+  //             );
+  //           }
+
+  //           final userProfile = snapshot.data!;
+  //           final chatPartnerUsername = userProfile['username'] ?? "Unknown";
+  //           final chatPartnerProfilePic =
+  //               userProfile['profile_picture_url'] ?? "";
+
+  //           // final String content = isSentByCurrentUser
+  //           //     ? "You: ${message['content']}"
+  //           //     : message['content'] ?? "No content";
+  //           final String content = message['content'] ?? 'No content';
+  //           final timestamp = message['timestamp'] ?? "";
+  //           final bool isRead = message['is_read'] ?? false;
+
+  //           return ListTile(
+  //             leading: CircleAvatar(
+  //               backgroundImage: chatPartnerProfilePic.isNotEmpty
+  //                   ? NetworkImage(chatPartnerProfilePic)
+  //                   : AssetImage('assets/images/default_avatar.png')
+  //                       as ImageProvider,
+  //             ),
+  //             title: Text(chatPartnerUsername),
+  //             subtitle:
+  //                 Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
+  //             trailing: Row(
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 Text(
+  //                   DateFormat.jm().format(DateTime.parse(timestamp)),
+  //                   style: TextStyle(color: Colors.grey),
+  //                 ),
+  //                 if (!isRead)
+  //                   Container(
+  //                     width: 8,
+  //                     height: 8,
+  //                     decoration: BoxDecoration(
+  //                       color: Colors.red,
+  //                       shape: BoxShape.circle,
+  //                     ),
+  //                   ),
+  //               ],
+  //             ),
+  //             onTap: () async {
+  //               print("✅ Opening chat with $chatPartnerUsername");
+  //               await _notificationService
+  //                   .markNotificationAsRead(message['id']);
+
+  //               Navigator.push(
+  //                 context,
+  //                 MaterialPageRoute(
+  //                   builder: (context) =>
+  //                       MessageDetailPage(userId: chatPartnerId),
+  //                 ),
+  //               );
+  //             },
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
   Widget _buildDirectMessagesList() {
     if (_directMessages.isEmpty) {
       return Center(
@@ -333,15 +444,12 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
     return ListView.builder(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: AlwaysScrollableScrollPhysics(), // Change to allow scrolling
       itemCount: _directMessages.length,
       itemBuilder: (context, index) {
         final message = _directMessages[index];
         final int senderId = message['sender'];
         final int receiverId = message['receiver'];
-        // final String content = message['message_content'] ?? 'No content';
-        // final String timestamp = message['timestamp'];
-        // final bool isRead = message['is_read'] ?? false;
 
         final bool isSentByCurrentUser = senderId == _currentUserId;
         final int chatPartnerId = isSentByCurrentUser ? receiverId : senderId;
@@ -359,11 +467,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
             final userProfile = snapshot.data!;
             final chatPartnerUsername = userProfile['username'] ?? "Unknown";
-            final chatPartnerProfilePic = userProfile['profile_picture_url'] ?? "";
+            final chatPartnerProfilePic =
+                userProfile['profile_picture_url'] ?? "";
 
-            // final String content = isSentByCurrentUser
-            //     ? "You: ${message['content']}"
-            //     : message['content'] ?? "No content";
             final String content = message['content'] ?? 'No content';
             final timestamp = message['timestamp'] ?? "";
             final bool isRead = message['is_read'] ?? false;
@@ -385,10 +491,12 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                     DateFormat.jm().format(DateTime.parse(timestamp)),
                     style: TextStyle(color: Colors.grey),
                   ),
+                  SizedBox(width: 4),
                   if (!isRead)
                     Container(
                       width: 8,
                       height: 8,
+                      margin: EdgeInsets.only(left: 4),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
@@ -398,16 +506,21 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ),
               onTap: () async {
                 print("✅ Opening chat with $chatPartnerUsername");
-                await _notificationService
-                    .markNotificationAsRead(message['id']);
 
-                Navigator.push(
+                // Navigate to chat screen and await return
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
                         MessageDetailPage(userId: chatPartnerId),
                   ),
                 );
+
+                // Refresh notifications when returning from chat
+                if (mounted) {
+                  print('🔄 Returning from chat - refreshing notifications');
+                  _fetchNotifications();
+                }
               },
             );
           },
@@ -416,16 +529,33 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  void _onCategoryTap(NotificationCategory category) {
-    Navigator.push(
+  Future<void> _onCategoryTap(NotificationCategory category) async {
+    // Make sure to update the category items before navigating
+    final updatedCategory = _categories.firstWhere(
+      (c) => c.uiType == category.uiType,
+      orElse: () => category,
+    );
+
+    print('📋 Opening category: ${updatedCategory.name}');
+    print('📋 Has unread: ${updatedCategory.hasUnread}');
+    print('📋 Items count: ${updatedCategory.items.length}');
+
+    // Use await with Navigator.push to handle the return action
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CategoryDetailScreen(
-          category: category,
+          category: updatedCategory,
           onMessageRead: _handleNotificationRead,
         ),
       ),
     );
+
+    // Refresh the screen when returning from the category detail
+    if (mounted) {
+      print('🔄 Returning from category - refreshing notifications');
+      _fetchNotifications();
+    }
   }
 
   Future<void> _handleNotificationRead(NotificationType type, String id) async {
