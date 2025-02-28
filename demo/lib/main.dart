@@ -11,7 +11,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 // Color constants
 const Color headerColor = Color(0xFFfafafa);
-const Color footerColor = Color(0xFFfafafa);
+const Color footerColor = Color(0xFFf2f2f2);
 const Color whiteColor = Color(0xFFfafafa);
 const Color filterPageColor = Color(0xFFfafafa);
 const Color gridBackgroundColor = Color(0xFFeeeeee);
@@ -20,6 +20,8 @@ const Color colorLike = Color(0xFF747f7f);
 const Color colorLiked = Color(0xFFffad08);
 const Color primaryColor = Color(0xFFffad08);
 const Color iconColor = Color(0xff1d1d1d);
+const Color insertBoxBgColor = Color(0xFFe0e0e0);
+const Color insertBoxTextColor = Color(0xFF1d1d1d);
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

@@ -1,18 +1,18 @@
 import 'dart:io';
-
+import 'package:demo/main.dart';
 import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
-import 'package:demo/widgets/ProgressIndicatorWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../models/comment_model.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
+import 'dart:async';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PostPage extends StatefulWidget {
   final int postId;
-  final void Function(Post updatedPost)? onPostUpdated; // Add callback
+  final void Function(Post updatedPost)? onPostUpdated;
 
   const PostPage({super.key, required this.postId, this.onPostUpdated});
 
@@ -21,6 +21,8 @@ class PostPage extends StatefulWidget {
 }
 
 class _PostPageState extends State<PostPage> {
+  bool _isCommentsVisible = false;
+  bool _isCommentInputVisible = false;
   final FocusNode _commentFocusNode = FocusNode();
   final TextEditingController _commentController = TextEditingController();
   late Future<Post> postFuture;
@@ -30,14 +32,8 @@ class _PostPageState extends State<PostPage> {
   final Map<int, bool> expandedComments = {};
   int? activeReplyToCommentId;
   String? replyingToUsername;
-
-  // Image comments
-  File? _commentImage; // To store the selected image for the comment
-
-  // Controller for the PageView
+  File? _commentImage;
   final PageController _pageController = PageController();
-
-  // Multiple day post
   int _currentDayIndex = 0;
 
   @override
@@ -52,7 +48,7 @@ class _PostPageState extends State<PostPage> {
 
   @override
   void dispose() {
-    _pageController.dispose(); // Dispose of the PageController
+    _pageController.dispose();
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
@@ -177,6 +173,7 @@ class _PostPageState extends State<PostPage> {
     setState(() {
       activeReplyToCommentId = commentId;
       replyingToUsername = username;
+      _isCommentInputVisible = true;
     });
     _commentFocusNode.requestFocus();
   }
@@ -185,6 +182,7 @@ class _PostPageState extends State<PostPage> {
     setState(() {
       activeReplyToCommentId = null;
       replyingToUsername = null;
+      _isCommentInputVisible = false;
     });
   }
 
@@ -215,6 +213,18 @@ class _PostPageState extends State<PostPage> {
       activeReplyToCommentId = null; // Clear reply-to state
       replyingToUsername = null; // Clear the replying username
     });
+  }
+
+  String formatNumber(int number) {
+    if (number < 1000) {
+      return number.toString();
+    } else if (number < 1000000) {
+      double result = number / 1000;
+      return "${result.toStringAsFixed(result.truncateToDouble() == result ? 0 : 1)}K"; // 1.1K
+    } else {
+      double result = number / 1000000;
+      return "${result.toStringAsFixed(result.truncateToDouble() == result ? 0 : 1)}M"; // 1.1M
+    }
   }
 
   Future<void> addComment(int postId) async {
@@ -255,99 +265,6 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-  Widget buildPostHeader(Future<Post> postFuture) {
-    return FutureBuilder<Post>(
-      future: postFuture,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Text("Post Details");
-        final post = snapshot.data!;
-
-        return FutureBuilder<Map<String, dynamic>?>(
-          future: apiService.getUserInfo(),
-          builder: (context, userSnapshot) {
-            final isCurrentUser = userSnapshot.hasData &&
-                userSnapshot.data!['id'] == post.user.id;
-
-            return Row(
-              children: [
-                // Make avatar and username clickable
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfilePage(
-                            userId: isCurrentUser ? null : post.user.id,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundImage:
-                              NetworkImage(post.user.profilePictureUrl),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post.user.username,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Only show follow button for other users
-                if (!isCurrentUser && userSnapshot.hasData)
-                  SizedBox(
-                    height: 36,
-                    child: OutlinedButton(
-                      onPressed: post.user.isFollowing
-                          ? null
-                          : () => _handleFollowPress(post.user.id),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: post.user.isFollowing
-                            ? Colors.grey[200]
-                            : Colors.white,
-                        side: BorderSide(
-                          color:
-                              post.user.isFollowing ? Colors.grey : Colors.blue,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      child: Text(
-                        post.user.isFollowing ? 'Following' : 'Follow',
-                        style: TextStyle(
-                          color: post.user.isFollowing
-                              ? Colors.grey[700]
-                              : Colors.blue,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _handleFollowPress(int userId) async {
     try {
       print("Attempting to follow user: $userId"); // Debug print
@@ -382,125 +299,481 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-  Widget buildPostActions(Post post) {
-    return Row(
-      children: [
-        IconButton(
-          icon: Icon(
-            post.isLiked ? Icons.favorite : Icons.favorite_border,
-            color: post.isLiked ? Colors.red : Colors.grey,
-          ),
-          onPressed: () => togglePostLike(post),
-        ),
-        Text("${post.likesCount}"),
-        IconButton(
-          icon: Icon(
-            post.isSaved ? Icons.bookmark : Icons.bookmark_border,
-            color: post.isSaved
-                ? const Color.fromARGB(255, 255, 193, 7)
-                : Colors.grey,
-          ),
-          onPressed: () => togglePostSave(post),
-        ),
-        Text("${post.savesCount}"),
-      ],
+  Widget buildPostHeader(Future<Post> postFuture) {
+    return FutureBuilder<Post>(
+      future: postFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Text("Post Details");
+        final post = snapshot.data!;
+
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: apiService.getUserInfo(),
+          builder: (context, userSnapshot) {
+            final isCurrentUser = userSnapshot.hasData &&
+                userSnapshot.data!['id'] == post.user.id;
+
+            return Row(
+              children: [
+                if (post.period != 'multipleday') ...[
+                  // Make avatar and username clickable
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfilePage(
+                              userId: isCurrentUser ? null : post.user.id,
+                            ),
+                          ),
+                        );
+                      },
+                      // # MARK 1
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundImage:
+                                NetworkImage(post.user.profilePictureUrl),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  post.user.username,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Only show follow button for other users
+                  if (!isCurrentUser && userSnapshot.hasData)
+                    SizedBox(
+                      height: 36,
+                      child: OutlinedButton(
+                        onPressed: post.user.isFollowing
+                            ? null
+                            : () => _handleFollowPress(post.user.id),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: post.user.isFollowing
+                              ? Colors.grey[200]
+                              : primaryColor,
+                          side: BorderSide(
+                            color: post.user.isFollowing
+                                ? Colors.grey
+                                : primaryColor,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                        child: Text(
+                          post.user.isFollowing ? 'Following' : 'Follow',
+                          style: TextStyle(
+                              color: post.user.isFollowing
+                                  ? Colors.grey[700]
+                                  : whiteColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                ] else ...[
+                  // TODO: multi days indicator
+                ]
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
+// # button bar
+  Widget buildPostActions(Post post) {
+    return Container(
+      color: whiteColor,
+      child: SafeArea(
+        // not cover system gesture area
+        bottom: true,
+        child: Column(
+          children: [
+            const Divider(
+              height: 1,
+              thickness: 0.2,
+              color: Colors.grey,
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                  16, 12, 12, 12), // l，up，r，d
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Comment button
+                  GestureDetector(
+                    onTap: () => {
+                      setState(() {
+                        _isCommentsVisible =
+                            !_isCommentsVisible; // Toggle comment section visibility
+                        _isCommentInputVisible = false; // Reset input box state
+                      }),
+                    },
+                    child: Column(children: [
+                      SvgPicture.asset(
+                          _isCommentsVisible
+                              ? 'assets/icons/comment_filled.svg'
+                              : 'assets/icons/comment.svg',
+                          width: 32,
+                          height: 32,
+                          colorFilter:
+                              ColorFilter.mode(iconColor, BlendMode.dst))
+                    ]),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    formatNumber(commentsCache?.length ?? 0),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w400),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Like button
+                  GestureDetector(
+                    onTap: () => togglePostLike(post),
+                    child: Column(children: [
+                      SvgPicture.asset(
+                          post.isLiked
+                              ? 'assets/icons/heart_filled.svg'
+                              : 'assets/icons/heart.svg',
+                          width: 32,
+                          height: 32,
+                          colorFilter: ColorFilter.mode(
+                              post.isLiked ? colorLiked : iconColor,
+                              BlendMode.srcIn))
+                    ]),
+                  ),
+                  const SizedBox(width: 6),
+
+                  Text(
+                    formatNumber(post.likesCount),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w400),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Save button
+                  GestureDetector(
+                    onTap: () => togglePostSave(post),
+                    child: Column(children: [
+                      SvgPicture.asset(
+                          post.isSaved
+                              ? 'assets/icons/star_filled.svg'
+                              : 'assets/icons/star.svg',
+                          width: 32,
+                          height: 32,
+                          colorFilter: ColorFilter.mode(
+                              post.isSaved ? colorLiked : iconColor,
+                              BlendMode.srcIn))
+                    ]),
+                  ),
+                  const SizedBox(width: 6),
+
+                  Text(
+                    formatNumber(post.savesCount),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w400),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // Input box
+                  if (_isCommentsVisible && !_isCommentInputVisible)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isCommentInputVisible =
+                                true; // Show full input box
+                          });
+                        },
+                        child: Container(
+                          height: 34, // Custom height
+                          margin: const EdgeInsets.only(
+                              left: 12), // Keep distance from icon
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10), // Padding
+                          decoration: BoxDecoration(
+                            color: insertBoxBgColor, // Background color
+                            borderRadius:
+                                BorderRadius.circular(16), // Rounded corners
+                            // border: Border.all(
+                            //   color: Colors.black, // Border color
+                            //   width: 1, // Border width
+                            // ),
+                          ),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: const Text(
+                              "Say something...",
+                              style: TextStyle(color: insertBoxTextColor),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // # poster's profile and name
+                  if (!_isCommentsVisible || _isCommentInputVisible)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProfilePage(userId: post.user.id),
+                            ),
+                          );
+                        },
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundImage:
+                                    NetworkImage(post.user.profilePictureUrl),
+                              ),
+                              const SizedBox(width: 9),
+                              Text(
+                                post.user.username,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<Size> _getImageSize(String imageUrl) async {
+    final Completer<Size> completer = Completer();
+    final Image image = Image.network(imageUrl);
+
+    image.image.resolve(ImageConfiguration()).addListener(
+      ImageStreamListener((ImageInfo info, bool _) {
+        completer.complete(Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        ));
+      }),
+    );
+
+    return completer.future;
+  }
+
+  // Define the logic for determining the appropriate `BoxFit` for each image:
+  // 1. The first image always uses `BoxFit.cover`.
+  // 2. For other images:
+  //    - If the image's aspect ratio is similar to the first image's aspect ratio (within a 5% margin of error),
+  //      or if both the first image's aspect ratio and the current image's aspect ratio are below the minimum threshold,
+  //      or if both the first image's aspect ratio and the current image's aspect ratio are above the maximum threshold,
+  //      then use `BoxFit.cover`.
+  //    - Otherwise:
+  //      - If the current image's aspect ratio is wider than the first image's aspect ratio, use `BoxFit.fitWidth`.
+  //      - If the current image's aspect ratio is taller than the first image's aspect ratio, use `BoxFit.fitHeight`.
+  // # post each day
   Widget buildSingleDayContent(Post day) {
     final PageController _imageController = PageController();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      // padding: const EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (day.images.isNotEmpty)
-            Column(
+            FutureBuilder<Size>(
+              future: _getImageSize(day.images[0].imageUrl),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done &&
+                    snapshot.hasData) {
+                  // Get the aspect ratio of the first image
+                  double firstImageAspectRatio =
+                      snapshot.data!.width / snapshot.data!.height;
+
+                  // Define the minimum and maximum aspect ratio
+                  const double minAspectRatio = 5 / 7; // Minimum aspect ratio
+                  const double maxAspectRatio = 4 / 3; // Maximum aspect ratio
+
+                  // Clamp the first image's aspect ratio between the minimum and maximum values
+                  double clampedAspectRatio = firstImageAspectRatio.clamp(
+                      minAspectRatio, maxAspectRatio);
+
+                  return Column(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: clampedAspectRatio,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: PageView.builder(
+                            controller: _imageController,
+                            itemCount: day.images.length,
+                            itemBuilder: (context, index) {
+                              // Get the width and height of the current image
+                              return FutureBuilder<Size>(
+                                future:
+                                    _getImageSize(day.images[index].imageUrl),
+                                builder: (context, sizeSnapshot) {
+                                  if (sizeSnapshot.connectionState ==
+                                          ConnectionState.done &&
+                                      sizeSnapshot.hasData) {
+                                    double imageAspectRatio =
+                                        sizeSnapshot.data!.width /
+                                            sizeSnapshot.data!.height;
+
+                                    // Determine the BoxFit type
+                                    BoxFit fit;
+                                    if (index == 0) {
+                                      // The first image uses BoxFit.cover
+                                      fit = BoxFit.cover;
+                                    } else {
+                                      // Check if the aspect ratio is similar (within 5% error)
+                                      bool isAspectRatioSimilar =
+                                          (imageAspectRatio -
+                                                      firstImageAspectRatio)
+                                                  .abs() <=
+                                              firstImageAspectRatio * 0.05;
+
+                                      // Check if both are below the minimum or above the maximum
+                                      bool isBothBelowMin =
+                                          imageAspectRatio < minAspectRatio &&
+                                              firstImageAspectRatio <
+                                                  minAspectRatio;
+                                      bool isBothAboveMax =
+                                          imageAspectRatio > maxAspectRatio &&
+                                              firstImageAspectRatio >
+                                                  maxAspectRatio;
+
+                                      // If aspect ratios are similar, or both are below min or above max, use BoxFit.cover
+                                      if (isAspectRatioSimilar ||
+                                          isBothBelowMin ||
+                                          isBothAboveMax) {
+                                        fit = BoxFit.cover;
+                                      } else {
+                                        // Otherwise, choose BoxFit based on the image aspect ratio
+                                        fit = imageAspectRatio >
+                                                firstImageAspectRatio
+                                            ? BoxFit.fitWidth
+                                            : BoxFit.fitHeight;
+                                      }
+                                    }
+
+                                    return Image.network(
+                                      day.images[index].imageUrl,
+                                      fit: fit,
+                                      width: double.infinity,
+                                    );
+                                  } else {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return const Center(child: CircularProgressIndicator());
+                }
+              },
+            ),
+          // const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, // align to left
               children: [
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: PageView.builder(
-                      controller: _imageController,
-                      itemCount: day.images.length,
-                      itemBuilder: (context, index) {
-                        return Image.network(
-                          day.images[index].imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                        );
-                      },
-                    ),
+                Text(
+                  day.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
-                SmoothPageIndicator(
-                  controller: _imageController,
-                  count: day.images.length,
-                  effect: const ExpandingDotsEffect(
-                    dotHeight: 8,
-                    dotWidth: 8,
-                    activeDotColor: Colors.blue,
+                Text(
+                  day.content ?? "No content provided",
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // if (day.location.name.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LocationPostsPage(
+                            locationName: day.location.name,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.grey,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            day.location.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          const SizedBox(height: 16),
-          Text(
-            day.title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            day.content ?? "No content provided",
-            style: const TextStyle(
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (day.location.name.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LocationPostsPage(
-                        locationName: day.location.name,
-                      ),
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      color: Colors.grey,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        day.location.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.blue,
-                          decoration: TextDecoration.underline,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -530,50 +803,51 @@ class _PostPageState extends State<PostPage> {
             },
           ),
         ),
+        // # dot indicator
         // Fixed progress indicator and buttons at the bottom
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          color: Colors.white.withOpacity(0.9), // Background for visibility
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Previous button
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios),
-                onPressed: _currentDayIndex > 0 ? _goToPreviousDay : null,
-              ),
-              // Centered dots
-              Expanded(
-                child: Center(
-                  child: SmoothPageIndicator(
-                    controller: _pageController,
-                    count: post.childPosts!.length,
-                    effect: const WormEffect(
-                      dotHeight: 8,
-                      dotWidth: 8,
-                      activeDotColor: Colors.blue,
-                      dotColor: Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-              // Next button
-              IconButton(
-                icon: const Icon(Icons.arrow_forward_ios),
-                onPressed: _currentDayIndex < post.childPosts!.length - 1
-                    ? () => _goToNextDay(post.childPosts!.length)
-                    : null,
-              ),
-            ],
-          ),
-        ),
+        // Container(
+        //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        //   color: Colors.white.withOpacity(0.9), // Background for visibility
+        //   child: Row(
+        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //     children: [
+        //       // Previous button
+        //       IconButton(
+        //         icon: const Icon(Icons.arrow_back_ios),
+        //         onPressed: _currentDayIndex > 0 ? _goToPreviousDay : null,
+        //       ),
+        //       // Centered dots
+        //       Expanded(
+        //         child: Center(
+        //           child: SmoothPageIndicator(
+        //             controller: _pageController,
+        //             count: post.childPosts!.length,
+        //             effect: const WormEffect(
+        //               dotHeight: 8,
+        //               dotWidth: 8,
+        //               activeDotColor: Colors.blue,
+        //               dotColor: Colors.grey,
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //       // Next button
+        //       IconButton(
+        //         icon: const Icon(Icons.arrow_forward_ios),
+        //         onPressed: _currentDayIndex < post.childPosts!.length - 1
+        //             ? () => _goToNextDay(post.childPosts!.length)
+        //             : null,
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ],
     );
   }
 
   Widget buildPostContent(Post post) {
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.45, // Fixed height
+      height: MediaQuery.of(context).size.height,
       child: post.period == 'multipleday'
           ? buildMultiDayPost(post)
           : SingleChildScrollView(
@@ -623,7 +897,10 @@ class _PostPageState extends State<PostPage> {
     );
   }
 
-  Widget buildCommentTree(Comment comment) {
+  Widget buildCommentTree(Comment comment, {int depth = 0}) {
+    // Set the radius based on the depth
+    double r = depth == 0 ? 18 : 14; // Main comment: r = 20, Replies: r = 15
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0), // Add space between comments
       child: Column(
@@ -637,9 +914,10 @@ class _PostPageState extends State<PostPage> {
               children: [
                 // Avatar
                 CircleAvatar(
+                  radius: r,
                   backgroundImage: NetworkImage(comment.user.profilePictureUrl),
                 ),
-                const SizedBox(width: 10), // Space between avatar and content
+                const SizedBox(width: 8), // Space between avatar and content
                 // Comment content
                 Expanded(
                   child: Column(
@@ -685,17 +963,19 @@ class _PostPageState extends State<PostPage> {
                                 fontSize: 13, color: Colors.grey),
                           ),
                           const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => activateReplyTo(
-                                comment.id, comment.user.username),
-                            child: const Text(
-                              "Reply",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color.fromARGB(255, 120, 120, 120),
+                          // Show "Reply" button only for depth = 0
+                          if (depth == 0)
+                            GestureDetector(
+                              onTap: () => activateReplyTo(
+                                  comment.id, comment.user.username),
+                              child: const Text(
+                                "Reply",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color.fromARGB(255, 120, 120, 120),
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ],
@@ -725,9 +1005,9 @@ class _PostPageState extends State<PostPage> {
             ),
           ),
           // If the comment has replies, show "View # replies" button
-          if (comment.replies.isNotEmpty)
+          if (comment.replies.isNotEmpty && depth == 0)
             Padding(
-              padding: const EdgeInsets.only(left: 45.0), // Indent replies
+              padding: const EdgeInsets.only(left: 15.0), // Indent replies
               child: TextButton(
                 onPressed: () {
                   toggleExpand(comment.id);
@@ -740,9 +1020,15 @@ class _PostPageState extends State<PostPage> {
           // If replies are expanded, display them
           if (expandedComments[comment.id] == true)
             Padding(
-              padding: const EdgeInsets.only(left: 45.0), // Indent replies
+              padding: EdgeInsets.only(
+                left: depth == 0 ? 25.0 : 0.0, // Indent only if depth == 1
+              ),
               child: Column(
-                children: comment.replies.map(buildCommentTree).toList(),
+                children: comment.replies
+                    .map((reply) => buildCommentTree(reply,
+                        depth: depth +
+                            1)) // Recursively build replies with increased depth
+                    .toList(),
               ),
             ),
         ],
@@ -751,6 +1037,80 @@ class _PostPageState extends State<PostPage> {
   }
 
   Widget buildCommentInput() {
+    return Container(
+        color: whiteColor,
+        child: SafeArea(
+            bottom: true,
+            child: Column(
+              children: [
+                const Divider(
+                  height: 1,
+                  thickness: 0.2,
+                  color: Colors.grey,
+                ),
+                Container(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Back button
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back), // Back icon
+                          onPressed: () {
+                            setState(() {
+                              _isCommentInputVisible =
+                                  false; // Return to buildPostActions
+                            });
+                          },
+                        ),
+                        // Input box
+                        Expanded(
+                          child: Container(
+                            height: 45, // Set the height as per your requirement
+                            child: TextField(
+                              controller: _commentController,
+                              focusNode: _commentFocusNode,
+                              decoration: InputDecoration(
+                                hintText: activeReplyToCommentId == null
+                                    ? "Say something..."
+                                    : "Replying...",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFE8E8E8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // // Image selection button
+                        // GestureDetector(
+                        //   onTap: () => _pickCommentImage,
+                        //   child: Column(children: [
+                        //     SvgPicture.asset(
+                        //       'assets/icons/gallery.svg',
+                        //       width: 32,
+                        //       height: 32,
+                        //       colorFilter:                             ColorFilter.mode(iconColor, BlendMode.dst))
+                        //   ],)
+                        // ),
+                        IconButton(
+                          icon: const Icon(Icons.photo),
+                          onPressed: _pickCommentImage,
+                        ),
+                        // Send button
+                        IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed: () => addComment(widget.postId),
+                        ),
+                      ],
+                    ))
+              ],
+            )));
+  }
+
+  Widget buildCommentInput1() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF0F0F0),
@@ -781,33 +1141,46 @@ class _PostPageState extends State<PostPage> {
                 ],
               ),
             ),
+          // Reply section
           Row(
-            //Comment box
             children: [
+              // Back button
+              IconButton(
+                icon: const Icon(Icons.arrow_back), // Back icon
+                onPressed: () {
+                  setState(() {
+                    _isCommentInputVisible =
+                        false; // Return to buildPostActions
+                  });
+                },
+              ),
+              // Input box
               Expanded(
-                child: TextField(
-                  controller: _commentController,
-                  focusNode: _commentFocusNode,
-                  decoration: InputDecoration(
-                    hintText: activeReplyToCommentId == null
-                        ? "Say something..."
-                        : "Replying...",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+                child: Container(
+                  height: 50, // Set the height as per your requirement
+                  child: TextField(
+                    controller: _commentController,
+                    focusNode: _commentFocusNode,
+                    decoration: InputDecoration(
+                      hintText: activeReplyToCommentId == null
+                          ? "Say something..."
+                          : "Replying...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFE8E8E8),
                     ),
-                    filled: true,
-                    fillColor: const Color(0xFFE8E8E8),
                   ),
                 ),
               ),
-              //Image picker
+              // Image selection button
               IconButton(
                 icon: const Icon(Icons.photo),
                 onPressed: _pickCommentImage,
               ),
-              //Add comment
-              // Add comment button
+              // Send button
               IconButton(
                 icon: const Icon(Icons.send),
                 onPressed: () => addComment(widget.postId),
@@ -844,94 +1217,93 @@ class _PostPageState extends State<PostPage> {
       appBar: AppBar(
         title: buildPostHeader(postFuture),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder<Post>(
-              future: postFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                } else if (!snapshot.hasData) {
-                  return const Center(child: Text("Post not found"));
-                }
+      body: GestureDetector(
+        onTap: () {
+          // When the comment section is expanded, clicking outside collapses it
+          if (_isCommentsVisible) {
+            setState(() {
+              _isCommentsVisible = false;
+              _isCommentInputVisible = false;
+            });
+          }
+        },
+        behavior: HitTestBehavior
+            .opaque, // Ensure clicking on empty space triggers the event
+        child: FutureBuilder<Post>(
+          future: postFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            } else if (!snapshot.hasData) {
+              return const Center(child: Text("Post not found"));
+            }
 
-                final post = snapshot.data!;
-                final commentCount = commentsCache?.length ?? 0;
+            final post = snapshot.data!;
 
-                return Column(
-                  children: [
-                    // ✅ Multi-Day Progress Indicator (for Multi-Day Posts)
-                    if (post.period == 'multipleday')
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 4.0),
-                        child: LinearProgressIndicator(
-                          value:
-                              (_currentDayIndex + 1) / post.childPosts!.length,
-                          backgroundColor: Colors.grey[300],
-                          color: Colors.blue,
-                          minHeight: 4,
-                        ),
-                      ),
+            return Column(
+              children: [
+                // ✅ Post Content with Dynamic Height
+                Expanded(
+                  flex: 1, // Post content always takes up 1 part of the space
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // ✅ Post Content without Fixed Height
+                        buildPostContent(post),
 
-                    // ✅ Post Content with Fixed Height
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: 0,
-                        maxHeight: MediaQuery.of(context).size.height * 0.45,
-                      ),
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            buildPostContent(post),
-                          ],
-                        ),
-                      ),
+                        // ✅ Divider
+                        const Divider(),
+                      ],
                     ),
+                  ),
+                ),
 
-                    // ✅ Post Actions (Like, Save)
-                    buildPostActions(post),
-
-                    // ✅ Divider
-                    const Divider(),
-
-                    // ✅ Comment Count
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        "$commentCount comments",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: Colors.grey[700],
+                // ✅ Comment Section (Scrollable)
+                if (_isCommentsVisible) // Only show comment section when expanded
+                  Expanded(
+                    flex:
+                        9, // Comment section takes up 9 parts of the space (90%)
+                    child: GestureDetector(
+                      onTap: () {
+                        // Clicking inside the comment section does not collapse it
+                        // Prevent event from bubbling up
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(
+                                0), // Top rounded corners: can't make it transparent
+                          ),
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color:
+                          //         Colors.black.withOpacity(0.3), // Shadow color
+                          //     blurRadius: 8, // Shadow blur radius
+                          //     offset: const Offset(0, -2), // Shadow offset
+                          //   ),
+                          // ],
                         ),
-                      ),
-                    ),
-
-                    // ✅ Comment Section (Scrollable)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 16),
                           child: buildCommentsSection(),
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
-          ),
+                  ),
 
-          // ✅ Comment Input Always Stays at the Bottom
-          buildCommentInput(),
-        ],
+                // ✅ Post Actions (Like, Save) at the Bottom
+                if (!_isCommentInputVisible) buildPostActions(post),
+
+                // ✅ Comment Input Always Stays at the Bottom
+                if (_isCommentInputVisible) buildCommentInput(),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
