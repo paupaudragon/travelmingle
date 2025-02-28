@@ -45,8 +45,6 @@ class Header extends StatelessWidget {
             tooltip: 'Filter by Categories',
           ),
 
-          // SizedBox(width: 10), // Small spacing between filter and tabs
-
           SizedBox(
             width: 220, // Set width
             height: 35,
@@ -93,20 +91,6 @@ class Header extends StatelessWidget {
           ),
 
         SizedBox(width: 50), // Small spacing between filter and tabs
-
-          // //Search icon
-          // Positioned(
-          //   right: 10,
-          //   top: 3,
-          //   child: IconButton(
-          //     icon: SvgPicture.asset(
-          //       'assets/icons/search.svg',
-          //       width: 22,
-          //       height: 22,
-          //     ),
-          //     onPressed: () => onSearchPressed(),
-          //   ),
-          // ),
         ],
       ),
     );

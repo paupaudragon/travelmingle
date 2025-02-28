@@ -430,22 +430,22 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.category.name),
-        actions: [
-          if (hasUnread)
-            TextButton(
-              onPressed: _isMarking ? null : _markAllAsRead,
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
-              ),
-              child: _isMarking
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Mark All Read'),
-            ),
-        ],
+        // actions: [
+        //   if (hasUnread)
+        //     TextButton(
+        //       onPressed: _isMarking ? null : _markAllAsRead,
+        //       style: TextButton.styleFrom(
+        //         foregroundColor: Theme.of(context).colorScheme.primary,
+        //       ),
+        //       child: _isMarking
+        //           ? const SizedBox(
+        //               width: 16,
+        //               height: 16,
+        //               child: CircularProgressIndicator(strokeWidth: 2),
+        //             )
+        //           : const Text('Mark All Read'),
+        //     ),
+        // ],
       ),
       body: _items.isEmpty
           ? Center(
