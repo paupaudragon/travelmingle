@@ -15,7 +15,7 @@ from .views import (
     ToggleLikeView, PostCommentsView, ToggleSaveView,
     FollowView, UserFollowingListView, UserFollowersListView, PostListByLocationView, NearbyPostsView, FollowPostView,
     NotificationMarkReadView, RegisterDevice, SendNotification, TestFirebaseNotification,
-    MessageListView, SendMessageView, MarkMessageReadView, ConversationsListView,
+    MessageListView, SendMessageView, MarkMessageReadView, ConversationsListView,MarkConversationReadView
 )
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -102,4 +102,5 @@ urlpatterns = [
      path("messages/send/", SendMessageView.as_view(), name="send-message"),
      path("messages/<int:message_id>/mark-read/", MarkMessageReadView.as_view(), name="mark-message-read"),
      path("messages/conversations/", ConversationsListView.as_view(), name="conversations-list"),
+      path('messages/mark-read/<int:user_id>/', MarkConversationReadView.as_view(), name='mark_conversation_read'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

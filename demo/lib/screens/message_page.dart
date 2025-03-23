@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:demo/screens/direct_messages_list.dart';
 import 'package:demo/screens/message_detail_page.dart';
+import 'package:demo/services/firebase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/enums/notification_types.dart';
 import 'package:demo/models/message_category.dart';
@@ -49,13 +50,29 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   bool _isInitialized = false;
   int? _currentUserId;
 
+  StreamSubscription? _notificationSubscription;
+  StreamSubscription? _firebaseMessageSubscription;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Add this line
+    WidgetsBinding.instance.addObserver(this);
     _focusNode.addListener(_onFocusChange);
     _fetchNotifications();
     _fetchCurrentUserId();
+
+    // Listen for new message events from Firebase
+    _firebaseMessageSubscription =
+        FirebaseMessagingService().messageStream.listen(_handleFirebaseMessage);
+  }
+
+  void _handleFirebaseMessage(Map<String, dynamic> messageData) {
+    print("📱 New message event in NotificationsScreen: $messageData");
+
+    if (mounted) {
+      // Refresh conversations list to show new message
+      _fetchNotifications();
+    }
   }
 
   @override
@@ -80,10 +97,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // ✅ Remove observer
+    WidgetsBinding.instance.removeObserver(this);
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
-    _refreshTimer?.cancel();
+
+    // Cancel subscriptions
+    _notificationSubscription?.cancel();
+    _firebaseMessageSubscription?.cancel();
+
     super.dispose();
   }
 
@@ -442,90 +463,25 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       );
     }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: AlwaysScrollableScrollPhysics(), // Change to allow scrolling
-      itemCount: _directMessages.length,
-      itemBuilder: (context, index) {
-        final message = _directMessages[index];
+    return DirectMessagesList(
+      messages: _directMessages,
+      currentUserId: _currentUserId!,
+      onMessageTap: (message) async {
         final int senderId = message['sender'];
         final int receiverId = message['receiver'];
+        final int chatPartnerId =
+            senderId == _currentUserId ? receiverId : senderId;
 
-        final bool isSentByCurrentUser = senderId == _currentUserId;
-        final int chatPartnerId = isSentByCurrentUser ? receiverId : senderId;
-
-        return FutureBuilder<Map<String, dynamic>>(
-          future: _apiService.fetchUserProfile(chatPartnerId),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return ListTile(
-                title: Text("Loading..."),
-                subtitle: Text("Fetching chat details..."),
-                leading: CircleAvatar(backgroundColor: Colors.grey[300]),
-              );
-            }
-
-            final userProfile = snapshot.data!;
-            final chatPartnerUsername = userProfile['username'] ?? "Unknown";
-            final chatPartnerProfilePic =
-                userProfile['profile_picture_url'] ?? "";
-
-            final String content = message['content'] ?? 'No content';
-            final timestamp = message['timestamp'] ?? "";
-            final bool isRead = message['is_read'] ?? false;
-
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: chatPartnerProfilePic.isNotEmpty
-                    ? NetworkImage(chatPartnerProfilePic)
-                    : AssetImage('assets/images/default_avatar.png')
-                        as ImageProvider,
-              ),
-              title: Text(chatPartnerUsername),
-              subtitle:
-                  Text(content, maxLines: 1, overflow: TextOverflow.ellipsis),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    DateFormat.jm().format(DateTime.parse(timestamp)),
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  SizedBox(width: 4),
-                  if (!isRead)
-                    Container(
-                      width: 8,
-                      height: 8,
-                      margin: EdgeInsets.only(left: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                ],
-              ),
-              onTap: () async {
-                print("✅ Opening chat with $chatPartnerUsername");
-
-                // Navigate to chat screen and await return
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        MessageDetailPage(userId: chatPartnerId),
-                  ),
-                );
-
-                // Refresh notifications when returning from chat
-                if (mounted) {
-                  print('🔄 Returning from chat - refreshing notifications');
-                  _fetchNotifications();
-                }
-              },
-            );
-          },
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MessageDetailPage(userId: chatPartnerId),
+          ),
         );
+
+        _fetchNotifications(); // Refresh after returning
       },
+      onRefreshRequested: _fetchNotifications,
     );
   }
 

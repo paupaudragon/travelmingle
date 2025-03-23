@@ -1,6 +1,6 @@
 import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/map_page.dart';
-import 'package:demo/services/notification_service.dart';
+import 'package:demo/services/firebase_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,22 +25,29 @@ const Color insertBoxTextColor = Color(0xFF1d1d1d);
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+// Use the top-level background handler defined in firebase_service.dart
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialize Firebase first
   await Firebase.initializeApp();
-  await NotificationService.handleBackgroundMessage(message);
+
+  // Call the background handler from firebase_service.dart
+  await firebaseMessagingBackgroundHandler(message);
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
   await Firebase.initializeApp();
+
+  // Set the background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // final notificationService = NotificationService();
-  // await notificationService.initialize();
-
+  // Clear cached auth data on startup (for development)
   await clearCachedAuth();
-  runApp(MyApp());
+
+  runApp(const MyApp());
 }
 
 Future<void> clearCachedAuth() async {

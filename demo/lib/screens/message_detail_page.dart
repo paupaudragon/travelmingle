@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:demo/models/message_model.dart';
 import 'package:demo/services/firebase_service.dart';
-import 'package:demo/services/notification_state.dart';
+import 'package:demo/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 
@@ -22,57 +22,56 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
   List<dynamic> messages = [];
   bool _isLoading = true;
   bool _sendingMessage = false;
-  Timer? _refreshTimer;
+
+  // Stream subscriptions
+  StreamSubscription? _firebaseMessageSubscription;
 
   @override
   void initState() {
     super.initState();
+
+    // Initial fetch of messages
     _fetchMessages();
-    _startAutoRefresh();
 
-    final NotificationState _notificationState = NotificationState();
-
-    FirebaseMessagingService messagingService = FirebaseMessagingService(
-      registerDeviceToken: (String token) {
-        _apiService.registerDeviceToken(token);
-      },
-      onNewMessageReceived: (String senderId, String messageId) {
-        print("🔔 New message from user $senderId, message ID: $messageId");
-
-        // Reload messages in chat screen
-        if (mounted) {
-          _fetchMessages();
-        }
-      },
-      notificationState: _notificationState,
-    );
-    messagingService.initialize();
+    // Listen for new messages from Firebase
+    _firebaseMessageSubscription =
+        FirebaseMessagingService().messageStream.listen(_handleFirebaseMessage);
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    // Clean up subscriptions
+    _firebaseMessageSubscription?.cancel();
+
+    // Clean up controllers
     _scrollController.dispose();
     _messageController.dispose();
+
     super.dispose();
   }
 
-  void _startAutoRefresh() {
-    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      _fetchMessages(); // ✅ Fetch messages every 5 seconds
-    });
+  // Handle new messages from Firebase
+  void _handleFirebaseMessage(Map<String, dynamic> messageData) {
+    final senderId = messageData['sender_id'];
+    final messageId = messageData['message_id'];
+
+    print("🔔 Message event in chat: sender $senderId, message ID: $messageId");
+
+    // Only refresh if this message is from the user we're chatting with
+    if (senderId == widget.userId.toString()) {
+      if (mounted) {
+        print("🔄 Refreshing messages for this chat");
+        _fetchMessages();
+      }
+    }
   }
 
   Future<void> _fetchMessages() async {
     try {
-      // ✅ Ensure current user ID is available
+      // Ensure current user ID is available
       if (_apiService.currentUserId == null) {
-        print("🔍 Fetching current user ID...");
-        await _apiService.getCurrentUserId(); // Ensure it's fetched
+        await _apiService.getCurrentUserId();
       }
-
-      print(
-          "🔎 Current User ID inside _fetchMessages: ${_apiService.currentUserId}");
 
       List<Message> fetchedMessages =
           await _apiService.fetchMessages(widget.userId);
@@ -80,8 +79,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
       if (mounted) {
         setState(() {
           messages = fetchedMessages
-            ..sort((a, b) =>
-                a.timestamp.compareTo(b.timestamp)); // ✅ Sort messages by time
+            ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
         });
       }
@@ -89,7 +87,8 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
       // Scroll to bottom after loading messages
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-      _markMessagesAsRead(); // Automatically mark as read after fetching
+      // Mark messages as read
+      _markMessagesAsRead();
     } catch (e) {
       print("Error fetching messages: $e");
       if (mounted) setState(() => _isLoading = false);
@@ -98,12 +97,16 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
 
   void _markMessagesAsRead() async {
     try {
+      bool hasUnreadMessages = false;
+
       for (var message in messages) {
-        if (!message.isRead == false) {
-          // ❌ Incorrect: message['is_read']
+        if (!message.isRead && message.sender != _apiService.currentUserId) {
+          hasUnreadMessages = true;
           await _apiService.markMessageAsRead(message.id);
         }
       }
+
+      await NotificationService().fetchNotifications();
     } catch (e) {
       print("Error marking messages as read: $e");
     }
@@ -134,7 +137,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
   }
 
   String _formatTimestamp(DateTime timestamp) {
-    return "${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}"; // ✅ Example: "14:05"
+    return "${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}";
   }
 
   Widget _buildMessageList() {
@@ -143,12 +146,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
-        final isSender = message.sender ==
-            _apiService.currentUserId; // ✅ FIXED: Compare integers directly
-
-        // ✅ Print Debug Info
-        print(
-            "Message ID: ${message.id}, Sender: ${message.sender}, Receiver: ${message.receiver}, Current User ID: ${_apiService.currentUserId}, isSender: $isSender");
+        final isSender = message.sender == _apiService.currentUserId;
 
         return Align(
           alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
@@ -163,13 +161,12 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  message.content, // ✅ FIXED: Directly access 'content'
+                  message.content,
                   style:
                       TextStyle(color: isSender ? Colors.white : Colors.black),
                 ),
                 Text(
-                  _formatTimestamp(
-                      message.timestamp), // ✅ FIXED: Corrected timestamp access
+                  _formatTimestamp(message.timestamp),
                   style: TextStyle(
                     color: isSender ? Colors.white70 : Colors.black54,
                     fontSize: 10,
