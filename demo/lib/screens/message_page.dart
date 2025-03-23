@@ -229,6 +229,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       // Process conversations (no change needed here)
       Map<int, dynamic> latestMessages = {};
       for (var message in conversations) {
+        if (message['is_read'] == null) {
+          message['is_read'] = false; // Default to unread if null
+        }
         int senderId = message['sender'];
         int receiverId = message['receiver'];
 
@@ -479,9 +482,18 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
         );
 
-        _fetchNotifications(); // Refresh after returning
+        if (mounted) {
+          _fetchNotifications();
+        }
       },
-      onRefreshRequested: _fetchNotifications,
+      onRefreshRequested: () {
+        if (mounted) {
+          setState(() {
+            _isLoading = true;
+          });
+          _fetchNotifications();
+        }
+      },
     );
   }
 

@@ -148,6 +148,9 @@ class ConversationsListView(APIView):
             print(traceback.format_exc())  # Print full error traceback
             return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+#NEW 
+
 class MarkConversationReadView(APIView):
     """
     Mark all messages from a specific user as read.
@@ -156,13 +159,18 @@ class MarkConversationReadView(APIView):
 
     def post(self, request, user_id):
         try:
-
             current_user = request.user
             other_user = Users.objects.get(id=user_id)
 
             print("🔐 Request user:", request.user, request.user.id)
             print("👥 Other user:", other_user, other_user.id)
 
+            # Get all notifications first
+            all_notifications = Notifications.objects.filter(
+                recipient=current_user,
+                is_read=False
+            )
+            print(f"✅ Found {all_notifications.count()} notifications")
 
             # ✅ Step 1: Get all unread messages from other_user → current_user
             unread_messages = Message.objects.filter(
@@ -180,13 +188,27 @@ class MarkConversationReadView(APIView):
             marked_messages = unread_messages.update(is_read=True)
 
             # ✅ Step 3: Mark notifications as read based on those message IDs
+            # FIXED: Changed message_id__in to message__in to match the field name
             marked_notifications = Notifications.objects.filter(
                 recipient=current_user,
                 sender=other_user,
                 notification_type='message',
-                message_id__in=message_ids,
+                message__in=message_ids,  # FIXED: Changed from message_id__in to message__in
                 is_read=False
             ).update(is_read=True)
+
+            # If no messages were found but we know there are message notifications,
+            # try to mark those notifications as read
+            if marked_messages == 0 and marked_notifications == 0:
+                # Directly mark message notifications from this sender as read
+                marked_notifications = Notifications.objects.filter(
+                    recipient=current_user,
+                    sender=other_user,
+                    notification_type='message',
+                    is_read=False
+                ).update(is_read=True)
+                
+                print(f"📝 Updated {marked_notifications} notifications directly")
 
             # ✅ Step 4: Return updated unread notification count
             unread_count = Notifications.objects.filter(

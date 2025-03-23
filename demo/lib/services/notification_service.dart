@@ -226,8 +226,11 @@ class NotificationService {
     await firebaseMessagingBackgroundHandler(message);
   }
 
-  Future<void> markConversationAsRead(int userId) async {
+  /// Mark conversation as read - FIXED to properly refresh UI and return confirmation
+  Future<bool> markConversationAsRead(int userId) async {
     try {
+      print('📱 Marking conversation with user $userId as read');
+
       final response = await ApiService().makeAuthenticatedRequest(
         url: '${ApiService.baseApiUrl}/messages/mark-read/$userId/',
         method: 'POST',
@@ -235,12 +238,20 @@ class NotificationService {
 
       if (response.statusCode == 200) {
         print("✅ Conversation with $userId marked as read");
-        await fetchNotifications(); // Refresh red dot
+
+        // Explicitly fetch notifications to update the global notification state
+        await fetchNotifications();
+
+        // Return success status
+        return true;
       } else {
-        print("❌ Failed to mark conversation as read: ${response.statusCode}");
+        print(
+            "❌ Failed to mark conversation as read: ${response.statusCode} - ${response.body}");
+        return false;
       }
     } catch (e) {
       print("❌ Error in markConversationAsRead: $e");
+      return false;
     }
   }
 }

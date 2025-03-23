@@ -1,5 +1,3 @@
-import 'package:demo/main.dart';
-import 'package:demo/services/notification_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -7,9 +5,11 @@ class MessageIconWithStatus extends StatelessWidget {
   final VoidCallback onTap;
   final Color iconColor;
   final bool hasUnread;
-  final NotificationState _notificationState = NotificationState(); // Singleton
 
-  MessageIconWithStatus({
+  // We no longer need to instantiate the NotificationState here
+  // since we're now using the passed value directly
+
+  const MessageIconWithStatus({
     Key? key,
     required this.onTap,
     required this.iconColor,
@@ -18,7 +18,7 @@ class MessageIconWithStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Remove StreamBuilder and use the prop directly
+    // Use the passed hasUnread prop directly
     return GestureDetector(
       onTap: onTap,
       child: Column(

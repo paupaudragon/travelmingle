@@ -28,8 +28,19 @@ class DirectMessagesList extends StatelessWidget {
         final int receiverId = message['receiver'];
         final String content = message['content'] ?? '';
         final String timestamp = message['timestamp'] ?? '';
-        final bool isRead = message['is_read'] ?? false;
+        final bool isRead = message['is_read'] == true;
         final chatPartnerId = currentUserId == senderId ? receiverId : senderId;
+
+        // Only show unread indicator if:
+        // 1. The message is not read AND
+        // 2. The current user is the RECEIVER (not the sender)
+        // This ensures we only show red dots for messages sent TO the current user
+        final bool shouldShowUnreadIndicator =
+            !isRead && senderId != currentUserId;
+
+        // Debug unread status
+        print(
+            'Message ${message['id']} isRead: $isRead, senderId: $senderId, currentUserId: $currentUserId, shouldShowUnread: $shouldShowUnreadIndicator');
 
         return FutureBuilder<Map<String, dynamic>>(
           future: ApiService().fetchUserProfile(chatPartnerId),
@@ -47,6 +58,7 @@ class DirectMessagesList extends StatelessWidget {
                 child: const Icon(Icons.mark_email_read, color: Colors.white),
               ),
               confirmDismiss: (direction) async {
+                // Show confirmation dialog
                 final confirmed = await showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -67,12 +79,40 @@ class DirectMessagesList extends StatelessWidget {
                 );
 
                 if (confirmed == true) {
-                  await NotificationService()
+                  // Use the updated markConversationAsRead method which returns a bool
+                  final success = await NotificationService()
                       .markConversationAsRead(chatPartnerId);
-                  await NotificationService().fetchNotifications();
-                  onRefreshRequested?.call(); // ✅ Trigger screen refresh
+
+                  if (success) {
+                    // If successful, fetch notifications and refresh UI
+                    await NotificationService().fetchNotifications();
+
+                    // Show success message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content:
+                            Text('Conversation with $username marked as read'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+
+                    // Call refresh callback
+                    if (onRefreshRequested != null) {
+                      onRefreshRequested!();
+                    }
+                  } else {
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to mark conversation as read'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 }
 
+                // Always return false to prevent dismissal
                 return false;
               },
               child: ListTile(
@@ -93,7 +133,8 @@ class DirectMessagesList extends StatelessWidget {
                       style: const TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(width: 6),
-                    if (!isRead)
+                    // Show red dot only if message is not read AND sent TO the current user
+                    if (shouldShowUnreadIndicator)
                       const CircleAvatar(
                         radius: 4,
                         backgroundColor: Colors.red,
