@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:demo/models/message_model.dart';
 import 'package:demo/services/firebase_service.dart';
 import 'package:demo/services/notification_service.dart';
@@ -87,28 +86,73 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
       // Scroll to bottom after loading messages
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-      // Mark messages as read
-      _markMessagesAsRead();
+      // We no longer automatically mark messages as read when viewing the conversation
+      // This fixes the issue where the red dot disappears without the backend being updated
     } catch (e) {
       print("Error fetching messages: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _markMessagesAsRead() async {
+  // This method is now only called when explicitly requested by the user
+  Future<void> _markMessagesAsRead() async {
     try {
-      bool hasUnreadMessages = false;
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 16),
+              Text('Marking conversation as read...'),
+            ],
+          ),
+          duration: Duration(seconds: 1),
+        ),
+      );
 
-      for (var message in messages) {
-        if (!message.isRead && message.sender != _apiService.currentUserId) {
-          hasUnreadMessages = true;
-          await _apiService.markMessageAsRead(message.id);
-        }
+      // Call the API to mark the conversation as read
+      final success =
+          await NotificationService().markConversationAsRead(widget.userId);
+
+      if (success) {
+        // Update global notification status
+        await NotificationService().fetchNotifications();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Conversation marked as read'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to mark conversation as read'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
-
-      await NotificationService().fetchNotifications();
     } catch (e) {
       print("Error marking messages as read: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -183,7 +227,17 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Chat")),
+      appBar: AppBar(
+        title: const Text("Chat"),
+        actions: [
+          // Add explicit button to mark conversation as read
+          IconButton(
+            icon: Icon(Icons.mark_email_read),
+            onPressed: _markMessagesAsRead,
+            tooltip: 'Mark conversation as read',
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(

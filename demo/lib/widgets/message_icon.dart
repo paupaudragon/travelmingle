@@ -1,3 +1,5 @@
+import 'package:demo/main.dart';
+import 'package:demo/services/notification_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -5,9 +7,6 @@ class MessageIconWithStatus extends StatelessWidget {
   final VoidCallback onTap;
   final Color iconColor;
   final bool hasUnread;
-
-  // We no longer need to instantiate the NotificationState here
-  // since we're now using the passed value directly
 
   const MessageIconWithStatus({
     Key? key,
@@ -18,7 +17,7 @@ class MessageIconWithStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use the passed hasUnread prop directly
+    // Use the passed hasUnread prop directly from NotificationService
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -33,8 +32,8 @@ class MessageIconWithStatus extends StatelessWidget {
                 height: 22,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
-              // Show red dot for unread messages
-              if (hasUnread) // Use the prop here
+              // Show red dot for unread messages based on backend state
+              if (hasUnread)
                 Positioned(
                   right: -5,
                   top: -5,
