@@ -1,89 +1,158 @@
+import 'dart:async';
 import 'package:demo/services/api_service.dart';
 import 'package:demo/services/notification_state.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class FirebaseMessagingService {
-  final NotificationState _notificationState;
-  final Function(String) registerDeviceToken;
-  final Function(String senderId, String messageId) onNewMessageReceived;
+  // Singleton pattern
+  static final FirebaseMessagingService _instance =
+      FirebaseMessagingService._internal();
+  factory FirebaseMessagingService() => _instance;
+  FirebaseMessagingService._internal();
 
-  FirebaseMessagingService({
-    required this.registerDeviceToken,
-    required this.onNewMessageReceived,
-    required NotificationState notificationState, // Accept as a parameter
-  }) : _notificationState = notificationState; // ✅ Store in private variable
+  final NotificationState _notificationState = NotificationState();
+  bool _isInitialized = false;
 
+  // Stream for message events
+  final _messageStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get messageStream =>
+      _messageStreamController.stream;
+
+  // Local notifications plugin for displaying notifications when app is in foreground
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  /// Initialize Firebase Messaging service
   Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    print('🔥 Initializing Firebase Messaging Service...');
+
     try {
+      // Initialize local notifications
+      await _initializeLocalNotifications();
+
       // Request permission
       NotificationSettings settings =
           await FirebaseMessaging.instance.requestPermission(
         alert: true,
-        announcement: false,
         badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
         sound: true,
       );
 
       print('🔔 User granted permission: ${settings.authorizationStatus}');
 
-      // Get the token
+      // Set up foreground message handler
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+
+      // Set up message opened handler
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleAppOpenedFromMessage);
+
+      // Get token and register with backend
       String? token = await FirebaseMessaging.instance.getToken();
-      print('🔥 FCM Token: $token');
+      if (token != null) {
+        print('📱 FCM Token: ${token.substring(0, 10)}...');
+        await ApiService().registerDeviceToken(token);
+      }
 
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        print("📩 Incoming Firebase notification: ${message.data}");
-
-        if (message.data['type'] == 'message') {
-          String senderId = message.data['sender_id'];
-          String messageId = message.data['message_id'];
-
-          print(
-              "📨 New message from sender: $senderId (Message ID: $messageId)");
-
-          // Call the callback to update UI
-          onNewMessageReceived(senderId, messageId);
-        } else {
-          print("ℹ️ Received non-message notification: ${message.data}");
-        }
+      // Set up token refresh listener
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        print('🔄 FCM Token refreshed: ${newToken.substring(0, 10)}...');
+        await ApiService().registerDeviceToken(newToken);
       });
+
+      _isInitialized = true;
+      print('✅ Firebase Messaging Service initialized successfully');
     } catch (e) {
       print('❌ Error initializing Firebase Messaging: $e');
     }
   }
 
-  void _handleIncomingMessage(RemoteMessage message) {
-    print("📩 Incoming Firebase notification: ${message.data}");
+  // Initialize local notifications
+  Future<void> _initializeLocalNotifications() async {
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+    const initSettings =
+        InitializationSettings(android: androidSettings, iOS: iosSettings);
 
-    // Get the current user ID
-    final currentUserId = ApiService().currentUserId;
+    await _localNotifications.initialize(initSettings);
 
-    if (currentUserId == null) {
-      print("⚠️ No current user ID found, ignoring message");
-      return;
-    }
+    // Define notification channel for Android
+    const androidChannel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.max,
+    );
 
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(androidChannel);
+  }
+
+  // Handler for foreground messages
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    print('📩 Foreground message received: ${message.data}');
+
+    // Show a local notification
+    await _showLocalNotification(message);
+
+    // Check if this is a chat message
     if (message.data['type'] == 'message') {
-      String senderId = message.data['sender_id'];
-      String messageId = message.data['message_id'];
-
-      // If the message recipient ID doesn't match current user, ignore it
-      String? recipientId = message.data['recipient_id'];
-      if (recipientId != null && int.parse(recipientId) != currentUserId) {
-        print(
-            "⚠️ Message intended for user $recipientId, but current user is $currentUserId. Ignoring.");
-        return;
-      }
-
-      print("📨 New message from sender: $senderId (Message ID: $messageId)");
-
-      // Call the callback to update UI
+      // Update notification state
       _notificationState.setUnreadStatus(true);
-      onNewMessageReceived(senderId, messageId);
-    } else {
-      print("ℹ️ Received non-message notification: ${message.data}");
+
+      // Extract message data
+      final messageData = {
+        'sender_id': message.data['sender_id'],
+        'message_id': message.data['message_id'],
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      // Broadcast to all listeners
+      _messageStreamController.add(messageData);
     }
   }
+
+  // Show local notification
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    await _localNotifications.show(
+      message.hashCode,
+      notification.title ?? 'New Message',
+      notification.body ?? '',
+      NotificationDetails(
+        android: const AndroidNotificationDetails(
+          'high_importance_channel',
+          'High Importance Notifications',
+          priority: Priority.high,
+          importance: Importance.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  // Handler for when app is opened from a notification
+  void _handleAppOpenedFromMessage(RemoteMessage message) {
+    print('🔔 App opened from notification: ${message.data}');
+    // Navigation would be handled here based on notification data
+  }
+
+  // Clean up resources
+  void dispose() {
+    _messageStreamController.close();
+  }
+}
+
+// This needs to be defined at the top level
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('📱 Background message received: ${message.data}');
+  // You could store the message for later processing when the app is opened
 }

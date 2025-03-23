@@ -115,15 +115,15 @@ class NotificationsModelTest(TestCase):
         self.notification = Notifications.objects.create(
             recipient=self.recipient,
             sender=self.sender,
-            notification_type='follow',
-            message='You have a new follower'
+            message_text="You have a new follower",
+            notification_type="follow"
         )
 
     def test_notification_creation(self):
         self.assertEqual(self.notification.recipient.username, 'recipient')
         self.assertEqual(self.notification.sender.username, 'sender')
         self.assertEqual(self.notification.notification_type, 'follow')
-        self.assertEqual(self.notification.message, 'You have a new follower')
+        self.assertEqual(self.notification.message_text, 'You have a new follower')
 
 
 class DeviceModelTest(TestCase):

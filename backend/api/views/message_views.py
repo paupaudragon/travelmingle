@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q, Max
-from ..models import Message, Users
+from ..models import Message, Users, Notifications
 from ..serializers import MessageSerializer
 
 from drf_yasg.utils import swagger_auto_schema
@@ -72,7 +72,7 @@ class SendMessageView(APIView):
         except Users.DoesNotExist:
             return Response({"error": "Receiver not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        message = Message.objects.create(sender=request.user, receiver=receiver, content=content)
+        message = Message.objects.create(sender=request.user, receiver=receiver, content=content, is_read=False)
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -148,3 +148,83 @@ class ConversationsListView(APIView):
             print(traceback.format_exc())  # Print full error traceback
             return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+#NEW 
+
+class MarkConversationReadView(APIView):
+    """
+    Mark all messages from a specific user as read.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, user_id):
+        try:
+            current_user = request.user
+            other_user = Users.objects.get(id=user_id)
+
+            print("🔐 Request user:", request.user, request.user.id)
+            print("👥 Other user:", other_user, other_user.id)
+
+            # Get all notifications first
+            all_notifications = Notifications.objects.filter(
+                recipient=current_user,
+                is_read=False
+            )
+            print(f"✅ Found {all_notifications.count()} notifications")
+
+            # ✅ Step 1: Get all unread messages from other_user → current_user
+            unread_messages = Message.objects.filter(
+                sender=other_user,
+                receiver=current_user,
+                is_read=False
+            )
+
+            print("🔍 Matching messages count:", unread_messages.count())
+
+            # ✅ Get the IDs before update
+            message_ids = list(unread_messages.values_list('id', flat=True))
+
+            # ✅ Step 2: Mark messages as read
+            marked_messages = unread_messages.update(is_read=True)
+
+            # ✅ Step 3: Mark notifications as read based on those message IDs
+            # FIXED: Changed message_id__in to message__in to match the field name
+            marked_notifications = Notifications.objects.filter(
+                recipient=current_user,
+                sender=other_user,
+                notification_type='message',
+                message__in=message_ids,  # FIXED: Changed from message_id__in to message__in
+                is_read=False
+            ).update(is_read=True)
+
+            # If no messages were found but we know there are message notifications,
+            # try to mark those notifications as read
+            if marked_messages == 0 and marked_notifications == 0:
+                # Directly mark message notifications from this sender as read
+                marked_notifications = Notifications.objects.filter(
+                    recipient=current_user,
+                    sender=other_user,
+                    notification_type='message',
+                    is_read=False
+                ).update(is_read=True)
+                
+                print(f"📝 Updated {marked_notifications} notifications directly")
+
+            # ✅ Step 4: Return updated unread notification count
+            unread_count = Notifications.objects.filter(
+                recipient=current_user,
+                is_read=False
+            ).count()
+
+            return Response({
+                "marked_messages": marked_messages,
+                "marked_notifications": marked_notifications,
+                "unread_count": unread_count,
+            }, status=status.HTTP_200_OK)
+
+        except Users.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        except Exception as e:
+            print(f"❌ Error in MarkConversationReadView: {e}")
+            return Response({"error": str(e)}, status=500)

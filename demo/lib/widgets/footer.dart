@@ -11,6 +11,7 @@ class Footer extends StatelessWidget {
   final Function onMePressed;
   // final Function onMapPressed;
   final Function onSearchPressed;
+  final bool hasUnreadMessages;
 
   const Footer({
     Key? key,
@@ -20,7 +21,7 @@ class Footer extends StatelessWidget {
     required this.onMePressed,
     // required this.onMapPressed,
     required this.onSearchPressed,
-    required bool hasUnreadMessages,
+    required this.hasUnreadMessages, // Fix: add this. to assign to the property
   }) : super(key: key);
 
   @override
@@ -78,30 +79,6 @@ class Footer extends StatelessWidget {
             ),
           ),
 
-          // /// **Map Button**
-          // GestureDetector(
-          //   onTap: () => onMapPressed(),
-          //   child: Column(
-          //     mainAxisSize: MainAxisSize.min,
-          //     children: [
-          //       SvgPicture.asset(
-          //         'assets/icons/map.svg',
-          //         width: 22,
-          //         height: 22,
-          //         colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-          //       ),
-          //       const SizedBox(height: 1),
-          //       const Text(
-          //         "Map",
-          //         style: TextStyle(
-          //             fontSize: 10,
-          //             fontWeight: FontWeight.w400,
-          //             color: iconColor),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-
           /// **"+" Button (Create)**
           Transform.translate(
             offset: Offset(0, -1),
@@ -119,6 +96,8 @@ class Footer extends StatelessWidget {
               ),
             ),
           ),
+
+          // Pass hasUnreadMessages to MessageIconWithStatus
           MessageIconWithStatus(
             onTap: () {
               print("📩 Message icon clicked - Fetching notifications...");
@@ -127,6 +106,7 @@ class Footer extends StatelessWidget {
               onMessagesPressed(); // ✅ Navigates to the messages page
             },
             iconColor: iconColor,
+            hasUnread: hasUnreadMessages, // Pass the property here
           ),
 
           /// **Me Button**

@@ -30,13 +30,12 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   List<Post> posts = [];
   bool isLoading = true;
   bool isLoggedIn = false;
-  double _radius = 10.0; // this is where the range is
-  Timer? _refreshTimer;
-  final NotificationService _notificationService = NotificationService();
-
+  final double _radius = 50.0;
   String source = "explore";
   List<String> travelFilters = [];
   List<String> periodFilters = [];
+
+  StreamSubscription? _notificationSubscription;
 
   //Category and period filter
   List<String> selectedTravelTypes = [];
@@ -58,10 +57,65 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     checkLoginStatus();
     _loadPosts("explore");
-    _refreshTimer = Timer.periodic(Duration(seconds: 10), (timer) {
-      NotificationService().fetchNotifications();
-    });
+
+    _setupNotificationService();
+
+    // _initializeNotificationServices();
+
+    // _notificationSubscription =
+    //     NotificationService().notificationUpdateStream.listen((hasUnread) {
+    //   if (mounted) {
+    //     setState(() {
+    //       // This will trigger a rebuild when notification state changes
+    //     });
+    //   }
+    // });
   }
+
+  Future<void> _setupNotificationService() async {
+    try {
+      final userId = await _apiService.getCurrentUserId();
+      if (userId != null) {
+        await NotificationService().initialize(userId: userId);
+        print('✅ NotificationService initialized in FeedPage');
+
+        // ✅ Listen for real-time updates from Firebase
+        NotificationService().notificationUpdateStream.listen((hasUnread) {
+          if (mounted) {
+            setState(() {
+              print('🔔 Notification stream updated - hasUnread: $hasUnread');
+              // Force rebuild to trigger footer
+            });
+          }
+        });
+
+        await NotificationService().fetchNotifications();
+      }
+    } catch (e) {
+      print("❌ Error initializing notification services: $e");
+    }
+  }
+
+  // Future<void> _initializeNotificationServices() async {
+  //   try {
+  //     final userId = await _apiService.getCurrentUserId();
+  //     if (userId != null) {
+  //       // Initialize notification service
+  //       await NotificationService().initialize(userId: userId);
+
+  //       // Listen for notification updates
+  //       NotificationService().notificationUpdateStream.listen((hasUnread) {
+  //         if (mounted) {
+  //           setState(() {
+  //             // Update UI if needed
+  //           });
+  //         }
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print("❌ Error initializing notification services: $e");
+  //   }
+  // }
 
   @override
   void didChangeDependencies() {
@@ -71,9 +125,9 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _notificationSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _refreshController.dispose();
-    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -81,6 +135,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _loadPosts(source);
+
+      NotificationService().fetchNotifications();
     }
   }
 
@@ -480,22 +536,31 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       ),
 
       //Footer (Navigation Bar)
-      bottomNavigationBar: Footer(
-        onHomePressed: () => _loadPosts("explore"),
-        onSearchPressed: () => navigateToSearchPage(),
-        onPlusPressed: () {
-          navigateToCreatePost();
+      bottomNavigationBar: StreamBuilder<bool>(
+        stream: NotificationService().notificationState.hasUnreadStream,
+        initialData: NotificationService().notificationState.hasUnread,
+        builder: (context, snapshot) {
+          final hasUnread = snapshot.data ?? false;
+          print(
+              "🔔 Feed footer rebuilding - hasUnread: $hasUnread"); // Debug log
+          return Footer(
+            onHomePressed: () => _loadPosts("explore"),
+            onSearchPressed: () => navigateToSearchPage(),
+            onPlusPressed: () {
+              navigateToCreatePost();
+            },
+            onMessagesPressed: () {
+              navigateToMessagePage();
+            },
+            onMePressed: () {
+              navigateToProfilePage();
+            },
+            // onMapPressed: () => requireLogin(context, onSuccess: () {
+            //   Navigator.pushNamed(context, '/map');
+            // }),
+            hasUnreadMessages: hasUnread, // Use the stream's current value
+          );
         },
-        onMessagesPressed: () {
-          navigateToMessagePage();
-        },
-        onMePressed: () {
-          navigateToProfilePage();
-        },
-        // onMapPressed: () => requireLogin(context, onSuccess: () {
-        //   Navigator.pushNamed(context, '/map');
-        // }),
-        hasUnreadMessages: NotificationService().notificationState.hasUnread,
       ),
     );
   }
