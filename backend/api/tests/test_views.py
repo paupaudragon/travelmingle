@@ -139,7 +139,7 @@ class NotificationTestCase(APITestCase):
         self.user2 = get_user_model().objects.create_user(
             username='user88', email='test88@example.com', password='pass')
         Notifications.objects.create(recipient=self.user, sender=self.user2,
-                                     notification_type='follow', message='User2 followed you')
+                                     notification_type='follow',  message_text='User2 followed you')
         self.access_token = str(AccessToken.for_user(self.user))
         self.client.credentials(
             HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
