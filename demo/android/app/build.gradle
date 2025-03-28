@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.travelmingle.demo" // Need to match the name in google-services
+    namespace = "com.example.demo" // Need to match the name in google-services
     compileSdk = 34  // Changed from 35 to 34
     ndkVersion = "27.0.12077973"
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.travelmingle.demo" // Need to match the name in google-services
+        applicationId = "com.example.demo" // Need to match the name in google-services
         minSdkVersion 26
         targetSdk = 34  // Changed from 35 to 34
         targetSdkVersion = 34  // Changed from 35 to 34

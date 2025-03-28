@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:131491610355:android:d10c1b1af66b82ffd20186",
         "android_client_info": {
-          "package_name": "com.travelmingle.demo"
+          "package_name": "com.example.demo"
         }
       },
       "oauth_client": [],
