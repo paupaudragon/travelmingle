@@ -3,8 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HttpService {
-  // Replace with your actual API base URL
-  final String baseUrl = "http://10.0.2.2:8000/api";
+  // Deployment
+  //final String baseUrl = "http://10.0.2.2:8000/api";
+  final String baseUrl = "http://54.89.74.130:8000/api";
 
   // Get the token from SharedPreferences
   Future<String?> _getToken() async {
