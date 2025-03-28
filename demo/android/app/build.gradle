@@ -32,35 +32,36 @@ android {
 
     signingConfigs {
         release {
+            def keystorePropertiesFile = rootProject.file("key.properties")
             if (project.hasProperty('KEYSTORE_PASSWORD')) {
                 keyAlias System.getenv("KEY_ALIAS")
                 keyPassword System.getenv("KEY_PASSWORD")
                 storeFile file(System.getenv("KEYSTORE_FILE"))
                 storePassword System.getenv("KEYSTORE_PASSWORD")
-            } else {
-                // fallback if env vars aren't set
+            } else if (keystorePropertiesFile.exists()) {
                 def keystoreProperties = new Properties()
-                def keystorePropertiesFile = rootProject.file("key.properties")
-                if (keystorePropertiesFile.exists()) {
-                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-                }
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
                 storeFile file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
+            } else {
+                // No signing config available - skip for debug build
+                println "No keystore found. Skipping release signing config."
             }
         }
     }
 
+
     buildTypes {
         release {
-            // signingConfig = signingConfigs.debug
+        if (project.hasProperty('KEYSTORE_PASSWORD') || rootProject.file("key.properties").exists()) {
             signingConfig signingConfigs.release
-            minifyEnabled false
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-    
+        }
+        minifyEnabled false
+        shrinkResources false
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
