@@ -1,0 +1,29 @@
+{
+    "project_info": {
+      "project_number": "131491610355",
+      "project_id": "travelmingle-b7e67",
+      "storage_bucket": "travelmingle-b7e67.firebasestorage.app"
+    },
+    "client": [
+      {
+        "client_info": {
+          "mobilesdk_app_id": "1:131491610355:android:d10c1b1af66b82ffd20186",
+          "android_client_info": {
+            "package_name": "com.example.demo"
+          }
+        },
+        "oauth_client": [],
+        "api_key": [
+          {
+            "current_key": "AIzaSyCt5Nu7lItIoIXB13jo7CCvqEENkegoAlI"
+          }
+        ],
+        "services": {
+          "appinvite_service": {
+            "other_platform_oauth_client": []
+          }
+        }
+      }
+    ],
+    "configuration_version": "1"
+  }

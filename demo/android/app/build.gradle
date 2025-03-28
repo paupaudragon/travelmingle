@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.demo"
+    namespace = "com.travelmingle.demo" // Need to match the name in google-services
     compileSdk = 34  // Changed from 35 to 34
     ndkVersion = "27.0.12077973"
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.demo"
+        applicationId = "com.travelmingle.demo" // Need to match the name in google-services
         minSdkVersion 26
         targetSdk = 34  // Changed from 35 to 34
         targetSdkVersion = 34  // Changed from 35 to 34
@@ -30,9 +30,37 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs {
+        release {
+            if (project.hasProperty('KEYSTORE_PASSWORD')) {
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+                storeFile file(System.getenv("KEYSTORE_FILE"))
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+            } else {
+                // fallback if env vars aren't set
+                def keystoreProperties = new Properties()
+                def keystorePropertiesFile = rootProject.file("key.properties")
+                if (keystorePropertiesFile.exists()) {
+                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                }
+
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            // signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    
         }
     }
 
