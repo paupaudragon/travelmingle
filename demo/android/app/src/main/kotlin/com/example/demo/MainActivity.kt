@@ -1,4 +1,4 @@
-package com.example.demo
+package com.travelmingle.demo;
 
 import io.flutter.embedding.android.FlutterActivity
 
