@@ -289,10 +289,9 @@ class Comments(models.Model):
         ]
 
     def __str__(self):
-        if self.parent:
-            return f"Reply by {self.user.username} to Comment {self.parent.id}"
+        if self.reply_to:
+            return f"Reply by {self.user.username} to Comment {self.reply_to.id}"
         return f"Comment by {self.user.username} on Post {self.post.title if self.post else 'Unknown'}"
-
 
 class Likes(models.Model):
     """
