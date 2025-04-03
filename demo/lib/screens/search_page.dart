@@ -48,7 +48,7 @@ class _SearchPageState extends State<SearchPage> {
     String query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
-        filteredPosts = posts;  // Show all posts if search is empty
+        filteredPosts = posts; // Show all posts if search is empty
       } else {
         filteredPosts = posts.where((post) {
           return post.title.toLowerCase().contains(query) ||
@@ -98,7 +98,8 @@ class _SearchPageState extends State<SearchPage> {
                                   postId: post.id,
                                   onPostUpdated: (updatedPost) {
                                     setState(() {
-                                      final index = posts.indexWhere((p) => p.id == updatedPost.id);
+                                      final index = posts.indexWhere(
+                                          (p) => p.id == updatedPost.id);
                                       if (index != -1) {
                                         posts[index] = updatedPost;
                                         _filterPosts();
@@ -109,7 +110,22 @@ class _SearchPageState extends State<SearchPage> {
                               ),
                             );
                           },
-                          child: PostCard(post: post),
+                          child: PostCard(
+                            post: post,
+                            onLikePressed: () async {
+                              try {
+                                final result =
+                                    await _apiService.updatePostLikes(post.id);
+                                setState(() {
+                                  post.isLiked = result['is_liked'];
+                                  post.likesCount = result['likes_count'];
+                                  _filterPosts(); // Refresh the filtered list
+                                });
+                              } catch (e) {
+                                print("Error toggling like: $e");
+                              }
+                            },
+                          ),
                         );
                       },
                     ),

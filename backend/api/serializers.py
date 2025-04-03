@@ -2,7 +2,7 @@ from .models import Device
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import Follow, Users, Posts, Location, Comments, PostImages, Likes, CollectionFolders, Collects, Notifications, Message
-
+from django.conf import settings
 from django.db.models import Prefetch
 
 import logging
@@ -50,21 +50,22 @@ class UserSerializer(serializers.ModelSerializer):
 
     # this filed is created on-the-fly to give the absolute url to the front end
     def get_profile_picture_url(self, obj):
-        # First check if user has uploaded a picture
+        request = self.context.get('request')
         if obj.profile_picture:  # If user has uploaded a picture
+            if settings.USE_S3:
+                return obj.profile_picture.url  # S3 returns full URL
             request = self.context.get('request')
             if request:
                 # Return full URL of uploaded picture
                 return request.build_absolute_uri(obj.profile_picture.url)
-            return obj.profile_picture.url  # Return relative URL of uploaded picture
-
-    # This part only runs if obj.profile_picture is None/empty (user didn't upload)
-        request = self.context.get('request')
+            return obj.profile_picture.url 
+        
+        default_url = f"{settings.MEDIA_URL}profile_pictures/default.png"
+        if not settings.USE_S3:
+            request = self.context.get('request')
         if request:
-            # Return full URL of default picture
-            return request.build_absolute_uri('/media/profile_pictures/default.png')
-        # Return relative URL of default picture
-        return '/media/profile_pictures/default.png'
+            return request.build_absolute_uri(default_url)
+        return default_url 
 
     # Add a dynamic is_following field that tells the currently authenticated user whether they are following the user being serialized.
     # Used in any serializers that has a UserSerializer field.
@@ -145,13 +146,13 @@ class PostImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'post', 'image', 'created_at']
 
     def get_image(self, obj):
-        request = self.context.get('request', None)
-
-        # ✅ Check if request exists before using it
-        if request and obj.image:
-            return request.build_absolute_uri(obj.image.url)
-
-        # ✅ Return None if there's no image
+        if obj.image:
+            if settings.USE_S3:
+                return obj.image.url  # S3 returns full URL
+            request = self.context.get('request', None)
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
         return None
 
 
@@ -181,13 +182,15 @@ class CommentSerializer(serializers.ModelSerializer):
         return data
 
     def get_comment_image_url(self, obj):
-        # First check if user has uploaded a picture
         if obj.comment_image:  # If user has uploaded a picture
+            if settings.USE_S3:
+                return obj.comment_image.url  # S3 returns full URL
             request = self.context.get('request')
             if request:
                 # Return full URL of uploaded picture
                 return request.build_absolute_uri(obj.comment_image.url)
             return obj.comment_image.url  # Return relative URL of uploaded picture
+        return None
 
     def get_user(self, obj):
         return {

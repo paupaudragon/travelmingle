@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:demo/main.dart';
 import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
+import 'package:demo/utils/cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/comment_model.dart';
@@ -40,6 +42,9 @@ class _PostPageState extends State<PostPage> {
   void initState() {
     super.initState();
     postFuture = fetchPostDetail();
+    postFuture.then((post) {
+      _precachePostImages(post);
+    });
     commentsFuture = fetchComments().then((comments) {
       commentsCache = comments;
       return comments;
@@ -414,8 +419,7 @@ class _PostPageState extends State<PostPage> {
               color: Colors.grey,
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                  16, 12, 12, 12), // l，up，r，d
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12), // l，up，r，d
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -579,18 +583,46 @@ class _PostPageState extends State<PostPage> {
 
   Future<Size> _getImageSize(String imageUrl) async {
     final Completer<Size> completer = Completer();
-    final Image image = Image.network(imageUrl);
 
-    image.image.resolve(ImageConfiguration()).addListener(
-      ImageStreamListener((ImageInfo info, bool _) {
-        completer.complete(Size(
-          info.image.width.toDouble(),
-          info.image.height.toDouble(),
-        ));
-      }),
-    );
+    // Use CachedNetworkImageProvider instead of regular network image
+    final imageProvider = CachedNetworkImageProvider(imageUrl);
+
+    imageProvider.resolve(ImageConfiguration()).addListener(
+          ImageStreamListener((ImageInfo info, bool _) {
+            completer.complete(Size(
+              info.image.width.toDouble(),
+              info.image.height.toDouble(),
+            ));
+          }, onError: (dynamic exception, StackTrace? stackTrace) {
+            // Fallback to a reasonable default size if there's an error
+            print('Error getting image size: $exception');
+            completer.complete(const Size(300, 300));
+          }),
+        );
 
     return completer.future;
+  }
+
+  void _precachePostImages(Post post) {
+    if (!mounted) return;
+
+    // Pre-cache main post images
+    if (post.images.isNotEmpty) {
+      for (var image in post.images) {
+        OptimizedNetworkImage.preloadImage(context, image.imageUrl);
+      }
+    }
+
+    // Pre-cache child post images for multi-day posts
+    if (post.period == 'multipleday' && post.childPosts != null) {
+      for (var childPost in post.childPosts!) {
+        if (childPost.images.isNotEmpty) {
+          for (var image in childPost.images) {
+            OptimizedNetworkImage.preloadImage(context, image.imageUrl);
+          }
+        }
+      }
+    }
   }
 
   // Define the logic for determining the appropriate `BoxFit` for each image:
@@ -689,8 +721,8 @@ class _PostPageState extends State<PostPage> {
                                       }
                                     }
 
-                                    return Image.network(
-                                      day.images[index].imageUrl,
+                                    return OptimizedNetworkImage(
+                                      imageUrl: day.images[index].imageUrl,
                                       fit: fit,
                                       width: double.infinity,
                                     );
@@ -1066,7 +1098,8 @@ class _PostPageState extends State<PostPage> {
                         // Input box
                         Expanded(
                           child: Container(
-                            height: 45, // Set the height as per your requirement
+                            height:
+                                45, // Set the height as per your requirement
                             child: TextField(
                               controller: _commentController,
                               focusNode: _commentFocusNode,

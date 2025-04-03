@@ -130,7 +130,21 @@ class _LocationPostsPageState extends State<LocationPostsPage> {
                                   ),
                                 );
                               },
-                              child: PostCard(post: post),
+                              child: PostCard(
+                                post: post,
+                                onLikePressed: () async {
+                                  try {
+                                    final result = await _apiService
+                                        .updatePostLikes(post.id);
+                                    setState(() {
+                                      post.isLiked = result['is_liked'];
+                                      post.likesCount = result['likes_count'];
+                                    });
+                                  } catch (e) {
+                                    print("Error toggling like: $e");
+                                  }
+                                },
+                              ),
                             );
                           },
                         ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:demo/screens/post_page.dart';
+import 'package:demo/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -78,7 +79,7 @@ class RecapPage extends StatelessWidget {
     required ScreenshotController controller,
     required Post? post,
     required String text,
-    required String textTail, 
+    required String textTail,
     required String metricValue,
     required Color metricColor,
     required Color backgroundColor,
@@ -129,7 +130,23 @@ class RecapPage extends StatelessWidget {
                       ),
                       child: SizedBox(
                         width: MediaQuery.of(context).size.width * 0.8,
-                        child: PostCard(post: post),
+                        child: PostCard(
+                          post: post,
+                          onLikePressed: () async {
+                            try {
+                              final result =
+                                  await ApiService().updatePostLikes(post.id);
+                              // Directly update the post object
+                              post.isLiked = result['is_liked'];
+                              post.likesCount = result['likes_count'];
+
+                              // You might need to force a rebuild with a different approach
+                              // If possible, notify a parent widget to rebuild
+                            } catch (e) {
+                              print("Error toggling like: $e");
+                            }
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -237,8 +254,8 @@ class RecapPage extends StatelessWidget {
                 buttonTextColor: Colors.pinkAccent,
                 shareButtonColor: Colors.pinkAccent,
                 shareButtonTextColor: Colors.black,
-                onSharePressed: () =>
-                    shareRecap(context, mostLikedController), // Use dedicated controller
+                onSharePressed: () => shareRecap(
+                    context, mostLikedController), // Use dedicated controller
               ),
               // Second Recap: Most Commented Post
               buildRecapContent(
@@ -255,8 +272,8 @@ class RecapPage extends StatelessWidget {
                 buttonTextColor: Colors.black,
                 shareButtonColor: const Color.fromARGB(255, 255, 242, 7),
                 shareButtonTextColor: Colors.black,
-                onSharePressed: () =>
-                    shareRecap(context, mostCommentedController), // Use dedicated controller
+                onSharePressed: () => shareRecap(context,
+                    mostCommentedController), // Use dedicated controller
               ),
               buildRecapContent(
                 context: context,
@@ -271,8 +288,8 @@ class RecapPage extends StatelessWidget {
                 buttonTextColor: Colors.black,
                 shareButtonColor: const Color.fromARGB(255, 251, 246, 163),
                 shareButtonTextColor: Colors.black,
-                onSharePressed: () =>
-                    shareRecap(context, mostSavedController), // Use dedicated controller
+                onSharePressed: () => shareRecap(
+                    context, mostSavedController), // Use dedicated controller
               ),
             ],
           ),

@@ -1,365 +1,223 @@
-import 'package:flutter/material.dart';
-import '../models/post_model.dart';
-import '../screens/profile_page.dart';
 import 'dart:async';
-import 'package:demo/main.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../utils/cache_manager.dart';
-import 'dart:io';
 import 'dart:ui';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:demo/main.dart';
+import 'package:demo/models/post_model.dart';
+import 'package:demo/utils/cache_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
-  final VoidCallback? onLikePressed;
+  final VoidCallback onLikePressed;
 
   const PostCard({
     Key? key,
     required this.post,
-    this.onLikePressed,
+    required this.onLikePressed,
   }) : super(key: key);
 
   @override
-  _PostCardState createState() => _PostCardState();
+  State<PostCard> createState() => _PostCardState();
 }
 
 class _PostCardState extends State<PostCard> {
-  File? _cachedImage;
-  Size? _imageSize;
-  bool _isLoadingImage = true;
+  Size? _cachedImageSize;
 
   @override
   void initState() {
     super.initState();
-
-    if (widget.post.images.isNotEmpty || widget.post.period == "multipleday") {
-      _loadAndCacheImage();
-    } else {
-      _isLoadingImage = false; // No need to load if there are no images
+    // Pre-calculate image dimensions if post has images
+    if (widget.post.images.isNotEmpty) {
+      _calculateImageSize(widget.post.images[0].imageUrl);
     }
   }
 
-  // Download & compress image
-  Future<void> _loadAndCacheImage() async {
-    String? imageUrl;
+  Future<void> _calculateImageSize(String imageUrl) async {
+    try {
+      final imageProvider = CachedNetworkImageProvider(imageUrl);
+      final completer = Completer<Size>();
 
-    // Check if the post is a multiple-day post and has child posts
-    if (widget.post.childPosts == null) {
-      print("❌ ERROR: childPosts is NULL in Post_Card");
-    } else {
-      print(
-          "✅ childPosts exists in Post_Card: ${widget.post.childPosts!.length} items");
-    }
-    if (widget.post.period == "multipleday" &&
-        widget.post.childPosts != null &&
-        widget.post.childPosts!.isNotEmpty) {
-      // Retrieve the first image of Day 1
-      final day1 = widget.post.childPosts!.first;
-      if (day1.images.isNotEmpty) {
-        imageUrl = day1.images.first.imageUrl;
-        print("Multiple-day post - Day 1 image URL: $imageUrl"); // Debug print
-      }
-    } else if (widget.post.images.isNotEmpty) {
-      // Retrieve the first image for single-day posts
-      imageUrl = widget.post.images.first.imageUrl;
-      print("Single-day post image URL: $imageUrl"); // Debug print
-    }
+      imageProvider.resolve(ImageConfiguration()).addListener(
+            ImageStreamListener((ImageInfo info, bool _) {
+              if (mounted) {
+                setState(() {
+                  _cachedImageSize = Size(
+                    info.image.width.toDouble(),
+                    info.image.height.toDouble(),
+                  );
+                });
+              }
+              completer.complete(_cachedImageSize);
+            }, onError: (exception, stackTrace) {
+              print('Error loading image: $exception');
+              completer.completeError(exception);
+            }),
+          );
 
-    if (imageUrl != null) {
-      try {
-        // Cache and resize the image
-        final resizedImage =
-            await CustomCacheManager().downloadAndCompressImage(imageUrl);
-
-        if (resizedImage.existsSync()) {
-          final size = await _getImageDimension(resizedImage);
-
-          if (mounted) {
-            setState(() {
-              _cachedImage = resizedImage;
-              _imageSize = _clampAspectRatio(size);
-              _isLoadingImage = false;
-            });
-          }
-        }
-      } catch (e) {
-        print("Error loading image: $e");
-        setState(() {
-          _isLoadingImage = false;
-        });
-      }
-    } else {
-      setState(() {
-        _isLoadingImage = false; // No image available
-      });
+      await completer.future;
+    } catch (e) {
+      print('Error calculating image size: $e');
     }
   }
 
-  // Get image dimensions
-  Future<Size> _getImageDimension(File imageFile) async {
-    final Image image = Image.file(imageFile);
-    final Completer<Size> completer = Completer<Size>();
+  Widget _buildPostImage() {
+    if (widget.post.images.isEmpty) {
+      return Container(); // No image
+    }
 
-    image.image.resolve(const ImageConfiguration()).addListener(
-      ImageStreamListener((ImageInfo info, bool _) {
-        completer.complete(Size(
-          info.image.width.toDouble(),
-          info.image.height.toDouble(),
-        ));
-      }),
+    final imageUrl = widget.post.images[0].imageUrl;
+
+    // If we have cached dimensions, use them for the aspect ratio
+    if (_cachedImageSize != null) {
+      double width = _cachedImageSize!.width;
+      double height = _cachedImageSize!.height;
+
+      if (height <= 0) height = 1.0;
+      if (width <= 0) width = 1.0;
+
+      double aspectRatio = width / height;
+
+      if (!aspectRatio.isFinite) {
+        aspectRatio =
+            1.0; // Default to square aspect ratio if calculation fails
+      } else {
+        // Clamp to reasonable limits
+        aspectRatio = aspectRatio.clamp(0.5, 1.5);
+      }
+
+      return AspectRatio(
+        aspectRatio: aspectRatio,
+        child: OptimizedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // Fallback fixed height approach
+    return OptimizedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      height: 200,
+      width: double.infinity,
     );
-    return completer.future;
   }
 
-  // Clamp aspect ratio between 4:3 and 5:7
-  Size _clampAspectRatio(Size size) {
-    const double minAspectRatio = 5 / 7;
-    const double maxAspectRatio = 4 / 3;
-
-    double aspectRatio = size.width / size.height;
-    aspectRatio = aspectRatio.clamp(minAspectRatio, maxAspectRatio);
-
-    return Size(size.width, size.width / aspectRatio);
+  String formatNumber(int number) {
+    if (number < 1000) {
+      return number.toString();
+    } else if (number < 1000000) {
+      double result = number / 1000;
+      return "${result.toStringAsFixed(result.truncateToDouble() == result ? 0 : 1)}K";
+    } else {
+      double result = number / 1000000;
+      return "${result.toStringAsFixed(result.truncateToDouble() == result ? 0 : 1)}M";
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final post = widget.post;
+
     return Card(
-      color: Color(0xFFfafafa),
-      margin: const EdgeInsets.all(3.0),
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      elevation: 2.0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cover Photo
-          if (widget.post.images.isNotEmpty ||
-              (widget.post.period == "multipleday" &&
-                  widget.post.childPosts != null &&
-                  widget.post.childPosts!.isNotEmpty &&
-                  widget.post.childPosts!.first.images.isNotEmpty))
-            _cachedImage != null
-                ? Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: AspectRatio(
-                      aspectRatio: _imageSize!.width / _imageSize!.height,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(8), // Top left corner 8
-                          topRight: Radius.circular(8), // Top right corner 8
-                          bottomLeft:
-                              Radius.circular(2), // Bottom left corner 2
-                          bottomRight:
-                              Radius.circular(2), // Bottom right corner 2
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Use cached image
-                            Image.file(
-                              _cachedImage!,
-                              fit: BoxFit.cover,
-                            ),
+          // Post Image
+          if (post.images.isNotEmpty) _buildPostImage(),
 
-                            // Display location information on the image
-                            if (widget.post.location.name.isNotEmpty)
-                              if (widget.post.location.name.isNotEmpty)
-                                Positioned(
-                                  top: 0, // Position adjustment
-                                  left: 0,
-                                  right: 0,
-                                  child: Stack(
-                                    children: [
-                                      // Blurred background, but does not affect text
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(4),
-                                          topRight: Radius.circular(4),
-                                        ),
-                                        child: BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                              sigmaX: 2,
-                                              sigmaY: 4), // Slight blur
-                                          child: Container(
-                                            height:
-                                                25, // Limit blur height to reduce impact
-                                            color: Colors
-                                                .transparent, // Transparent background
-                                          ),
-                                        ),
-                                      ),
-
-                                      // Foreground layer, display text & gradient
-                                      Container(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            4, 2, 4, 8),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.black.withOpacity(
-                                                  0.4), // Start with 40% transparent black
-                                              Colors.black.withOpacity(0.2),
-                                              Colors
-                                                  .transparent, // Gradually become transparent
-                                            ],
-                                            stops: [0.0, 0.5, 1.0],
-                                          ),
-                                        ),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on_rounded,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                            Expanded(
-                                              child: Text(
-                                                ' ${widget.post.location.name}',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-
-                // Show Loading Indicator if the image is loading
-                : Container(
-                    height: 120, // Reserve space
-                    alignment: Alignment.center,
-                    child: CircularProgressIndicator(),
-                  ),
-
-          // Reserve fixed space for pure text post
-
-          // if (widget.post.images.isEmpty)
-          //   SizedBox(height: 8), // Add some spacing
-
-          // Post title
+          // Post Title & Content
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// **始终显示标题**
+                // Title
                 Text(
-                  widget.post.title.isNotEmpty ? widget.post.title : 'No Title',
+                  post.title,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w500,
                     fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.start,
                 ),
 
-                /// **如果没有图片，显示内容**
-                if ((widget.post.images.isEmpty &&
-                        (widget.post.period != "multipleday" ||
-                            widget.post.childPosts == null ||
-                            widget.post.childPosts!.isEmpty)) &&
-                    widget.post.content != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0), // 标题和内容之间的间距
-                    child: Text(
-                      widget.post.content!, // 展示内容
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54, // 让内容颜色稍微淡一些
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis, // 超出部分省略
-                    ),
-                  ),
-              ],
-            ),
-          ),
+                const SizedBox(height: 4),
 
-          // Username & Like button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Username
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ProfilePage(userId: widget.post.user.id),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12.0, vertical: 6.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundImage:
-                            NetworkImage(widget.post.user.profilePictureUrl),
-                        radius: 13,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.post.user.username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                // Content preview (if any)
+                if (post.content != null && post.content!.isNotEmpty)
+                  Text(
+                    post.content!,
+                    style: const TextStyle(fontSize: 14),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ),
 
-              // Like button
-              Padding(
-                padding: const EdgeInsets.only(right: 12.0), // Adjust right padding to bring the elements closer
-                child: Row(
-                  mainAxisSize: MainAxisSize
-                      .min, // Prevent Row from taking up the entire space
+                const SizedBox(height: 8),
+
+                // User info & stats
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      icon: Icon(
-                        widget.post.isLiked
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: widget.post.isLiked ? colorLiked : colorLike,
-                      ),
-                      iconSize: 20,
-                      visualDensity:
-                          VisualDensity.compact, // Make IconButton more compact
-                      padding: EdgeInsets.zero, // Remove default padding
-                      constraints: const BoxConstraints(), // Remove extra space
-                      onPressed: widget.onLikePressed,
+                    // User avatar and username
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: CachedNetworkImageProvider(
+                            post.user.profilePictureUrl,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          post.user.username,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '${widget.post.likesCount}',
-                      style: const TextStyle(fontSize: 13),
+
+                    // Like count
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: widget.onLikePressed,
+                          child: SvgPicture.asset(
+                            post.isLiked
+                                ? 'assets/icons/heart_filled.svg'
+                                : 'assets/icons/heart.svg',
+                            width: 18,
+                            height: 18,
+                            colorFilter: ColorFilter.mode(
+                              post.isLiked ? colorLiked : iconColor,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          formatNumber(post.likesCount),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
