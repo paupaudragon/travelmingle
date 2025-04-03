@@ -267,11 +267,18 @@ class PostListCreateView(APIView):
             )
 
         except Exception as e:
-            logger.error(f"Error creating post: {str(e)}")
-            print("❌ Unexpected error:", str(e))
+            logger = logging.getLogger(__name__)
+            logger.error(f"❌ Post creation failed: {str(e)}")
+
+            # Optional: If you want to debug image upload errors separately
+            if 'AccessControlListNotSupported' in str(e):
+                return Response(
+                    {'error': 'S3 bucket ACL error. Please disable ACL setting in code.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
             return Response(
-                {'error': 'An unexpected error occurred while creating the post'},
+                {'error': f'Post creation failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

@@ -35,48 +35,8 @@ class OptimizedNetworkImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return CachedNetworkImage(
       imageUrl: imageUrl,
-      cacheManager: CustomCacheManager.instance,
-      width: width,
-      height: height,
-      fit: fit,
-      placeholder: (context, url) => Container(
-        color: Colors.grey[200],
-        child: Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.0,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
-            ),
-          ),
-        ),
-      ),
-      errorWidget: (context, url, error) {
-        print('Image error: $error for $url');
-        // Return a placeholder image with error icon
-        return Container(
-          color: Colors.grey[200],
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.image_not_supported,
-                    color: Colors.red[300], size: 32),
-                const SizedBox(height: 8),
-                Text(
-                  'Image not available',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      fadeInDuration: const Duration(milliseconds: 200),
-      // Add retry options for network errors
-      maxHeightDiskCache: 800,
-      maxWidthDiskCache: 800,
+      placeholder: (context, url) => CircularProgressIndicator(),
+      errorWidget: (context, url, error) => Icon(Icons.broken_image),
     );
   }
 

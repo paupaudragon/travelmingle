@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'django.contrib.gis',
+    'storages',
 ]
 
 AUTH_USER_MODEL = 'api.Users'
@@ -235,24 +236,20 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 
-# S3 Configuration
 USE_S3 = env.bool('USE_S3', default=True)
 
 if USE_S3:
-    # AWS settings
     AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
-    AWS_DEFAULT_ACL = 'public-read'
+    AWS_DEFAULT_ACL = None
     AWS_LOCATION = 'media'
     
-    # s3 static settings
     STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     
-    # s3 media settings
     DEFAULT_FILE_STORAGE = 'backend.storage_backends.MediaStorage'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
 else:
@@ -261,4 +258,3 @@ else:
     STATIC_ROOT = os.path.join(BASE_DIR, 'static')
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    print(MEDIA_ROOT) 
