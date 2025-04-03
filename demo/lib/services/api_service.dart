@@ -21,8 +21,8 @@ class ApiService {
     print("🔧 Creating new ApiService instance");
   }
   //Deployment
-  static const String baseApiUrl = "http://10.0.2.2:8000/api";
-  // static const String baseApiUrl = "http://54.89.74.130:8000/api";
+  // static const String baseApiUrl = "http://10.0.2.2:8000/api";
+  static const String baseApiUrl = "http://54.89.74.130:8000/api";
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String? _cachedToken;
 
