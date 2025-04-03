@@ -55,12 +55,14 @@ INSTALLED_APPS = [
     'drf_yasg',
     'django.contrib.gis',
     'storages',
+    'corsheaders',
 ]
 
 AUTH_USER_MODEL = 'api.Users'
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -69,6 +71,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CORS Settings
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'backend.urls'
 
@@ -222,18 +228,20 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'
 
 # Tingting computer
 # GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309.dll'
-GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+#GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
 
 # Andy computer
-GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
+#GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
 
 
 # Firebase setup
 FIREBASE_CREDENTIALS_PATH = "firebaseAccount.json"
-
-if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
+try: 
+    if os.path.exists(FIREBASE_CREDENTIALS_PATH) and not firebase_admin._apps:
+   	 cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+   	 firebase_admin.initialize_app(cred)
+except Exception as e:
+    print(f"Firebase initialization error: {e}")
 
 
 USE_S3 = env.bool('USE_S3', default=True)
@@ -258,3 +266,7 @@ else:
     STATIC_ROOT = os.path.join(BASE_DIR, 'static')
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Add this line after FIREBASE_CREDENTIALS_PATH
+FIREBASE_SERVICE_ACCOUNT_KEY = FIREBASE_CREDENTIALS_PATH
+
