@@ -390,7 +390,32 @@ class _PostPageState extends State<PostPage> {
                       ),
                     ),
                 ] else ...[
-                  // TODO: multi days indicator
+                  Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: _currentDayIndex > 0
+                            ? _goToPreviousDay
+                            : null,
+                      ),
+                      Text(
+                        'Day ${_currentDayIndex + 1}/${post.childPosts!.length}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: _currentDayIndex < post.childPosts!.length - 1
+                            ? () => _goToNextDay(post.childPosts!.length)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
                 ]
               ],
             );
