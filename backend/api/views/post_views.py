@@ -162,7 +162,7 @@ class PostListCreateView(APIView):
             for image in images:
                 import uuid
                 file_extension = os.path.splitext(image.name)[1]
-                object_key = f"postImages/{uuid.uuid4()}{file_extension}"
+                object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
 
                 image.seek(0)
                 upload_success = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
