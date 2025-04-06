@@ -319,7 +319,6 @@ LOGGING = {
     },
 }
 
-# If you're using django-storages with S3Boto3Storage, update the configuration:
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -335,5 +334,14 @@ STORAGES = {
     "media": {
         "BACKEND": "backend.storage_backends.MediaStorage",
     },
+    "staticfiles": {
+        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        "OPTIONS": {
+            "bucket_name": "travelmingle-media",
+            "custom_domain": f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com",
+            "location": "static",
+        },
+    },
 }
+
 
