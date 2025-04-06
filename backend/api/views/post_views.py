@@ -33,6 +33,8 @@ import boto3
 import os
 from botocore.exceptions import ClientError
 from django.core.files.base import ContentFile
+from django.core.files.base import File
+
 
 
 class PostListCreateView(APIView):
