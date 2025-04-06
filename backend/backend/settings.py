@@ -228,10 +228,10 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'
 
 # Tingting computer
 # GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309.dll'
-#GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
 
 # Andy computer
-#GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
+GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
 
 
 # Firebase setup
@@ -256,13 +256,16 @@ if USE_S3:
     AWS_LOCATION = 'media'
 
     STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "default_acl": None,  # Disable ACL setting
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "bucket_name": "travelmingle-media",
+                "region_name": "us-east-1",  # Your bucket region
+                "file_overwrite": False,
+                "default_acl": None,  # Don't set ACLs
+            }
         },
-    },
-}
+    }
     AWS_S3_REGION_NAME = 'us-east-1' 
     AWS_S3_SIGNATURE_VERSION = 's3v4'
     AWS_S3_ADDRESSING_STYLE = 'virtual'
@@ -271,9 +274,7 @@ if USE_S3:
     AWS_S3_SIGNATURE_VERSION = 's3v4'
     
     STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     
-    DEFAULT_FILE_STORAGE = 'backend.storage_backends.MediaStorage'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
 else:
     # Local settings for development
@@ -323,19 +324,16 @@ STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "default_acl": None,  # Disable ACL setting
-            "bucket_name": "travelmingle-media",  # Your bucket name
+            "default_acl": None,
+            "bucket_name": "travelmingle-media",
             "file_overwrite": False,
             "object_parameters": {
                 "CacheControl": "max-age=86400",
             },
         },
     },
+    "media": {
+        "BACKEND": "backend.storage_backends.MediaStorage",
+    },
 }
 
-# Alternatively, if using older style config:
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-AWS_STORAGE_BUCKET_NAME = 'travelmingle-media'
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}

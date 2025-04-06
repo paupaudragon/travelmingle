@@ -59,6 +59,8 @@ class PostListCreateView(APIView):
     """
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [IsAuthenticated]
+    logger = logging.getLogger(__name__)
+
 
     @swagger_auto_schema(
         operation_summary="Create a new post",
@@ -70,8 +72,6 @@ class PostListCreateView(APIView):
             401: "Unauthorized"
         }
     )
-    logger = logging.getLogger(__name__)
-
 
     def upload_directly_to_s3(file_obj, bucket_name, object_key):
         """Upload a file directly to S3, bypassing Django storage."""
