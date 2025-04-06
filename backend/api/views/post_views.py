@@ -163,18 +163,21 @@ class PostListCreateView(APIView):
                 file_extension = os.path.splitext(image.name)[1]
                 object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
                 
-                # Upload directly to S3
-                file_url = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
+                # Upload image to S3 manually
+                upload_success = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
+                if upload_success:
+                    # Set the file name only (relative path from MEDIA_ROOT or MEDIA_URL)
+                    from django.core.files.base import File
+                    from django.core.files.storage import default_storage
 
-                if file_url:
-                    filename = object_key.split('/')[-1]  # just the UUID + extension
+                    # Create a dummy file object pointing to S3 key
+                    image_field_file = File(image)
+                    image_field_file.name = object_key  # <- this makes Django recognize where to find it
+
                     PostImages.objects.create(
                         post=parent_post,
-                        image=ContentFile(b'', name=filename)  # empty content, correct name
+                        image=image_field_file
                     )
-                else:
-                    print(f"❌ Skipping image record due to upload failure")
-
             # Handle multi-day child posts
             if is_multi_day:
                 print("🔄 Processing multi-day child posts...")
