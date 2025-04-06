@@ -32,6 +32,7 @@ from rest_framework.permissions import IsAuthenticated
 import boto3
 import os
 from botocore.exceptions import ClientError
+from django.core.files.base import ContentFile
 
 
 class PostListCreateView(APIView):
@@ -164,12 +165,12 @@ class PostListCreateView(APIView):
                 
                 # Upload directly to S3
                 file_url = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
-                
+
                 if file_url:
-                    # Create PostImage object with the URL
+                    filename = object_key.split('/')[-1]  # just the UUID + extension
                     PostImages.objects.create(
                         post=parent_post,
-                        image=file_url 
+                        image=ContentFile(b'', name=filename)  # empty content, correct name
                     )
                 else:
                     print(f"❌ Skipping image record due to upload failure")
