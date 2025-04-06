@@ -158,26 +158,26 @@ class PostListCreateView(APIView):
             print(f"📸 Received {len(images)} images for post {parent_post.id}")
             # Replace your image upload section with this
             for image in images:
-                # Generate a unique key for S3
                 import uuid
                 file_extension = os.path.splitext(image.name)[1]
                 object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
-                
-                # Upload image to S3 manually
-                upload_success = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
-                if upload_success:
-                    # Set the file name only (relative path from MEDIA_ROOT or MEDIA_URL)
-                    from django.core.files.base import File
-                    from django.core.files.storage import default_storage
 
-                    # Create a dummy file object pointing to S3 key
-                    image_field_file = File(image)
-                    image_field_file.name = object_key  # <- this makes Django recognize where to find it
+                # Reset the file pointer BEFORE uploading
+                image.seek(0)
+                upload_success = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
+
+                if upload_success:
+                    # Now create a Django File object just with the path (no actual upload needed)
+                    # This just tricks Django into registering the already uploaded image
+                    dummy_file = File(image)
+                    dummy_file.name = object_key
 
                     PostImages.objects.create(
                         post=parent_post,
-                        image=image_field_file
+                        image=dummy_file  # Django won't re-upload since it's already at the S3 path
                     )
+                else:
+                    print(f"❌ Skipping image due to upload failure")
             # Handle multi-day child posts
             if is_multi_day:
                 print("🔄 Processing multi-day child posts...")
