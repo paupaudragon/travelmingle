@@ -1,3 +1,4 @@
+import 'package:demo/screens/S3Test.dart';
 import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/services/firebase_service.dart';
@@ -79,6 +80,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/map': (context) => const MapTestScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        '/s3test': (context) => const S3TestPage(),
       },
     );
   }

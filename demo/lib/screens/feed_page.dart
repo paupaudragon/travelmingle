@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:demo/main.dart';
+import 'package:demo/screens/S3Test.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/post_page.dart';
@@ -560,6 +561,25 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
             // }),
             hasUnreadMessages: hasUnread, // Use the stream's current value
           );
+        },
+      ),
+      floatingActionButton: Builder(
+        builder: (context) {
+          // Only show in debug mode
+          if (const bool.fromEnvironment('dart.vm.product') == false) {
+            return FloatingActionButton(
+              backgroundColor: Colors.grey[800],
+              mini: true,
+              child: const Icon(Icons.bug_report),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const S3TestPage()),
+                );
+              },
+            );
+          }
+          return const SizedBox.shrink(); // Don't show button in release mode
         },
       ),
     );

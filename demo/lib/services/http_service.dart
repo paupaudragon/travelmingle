@@ -22,15 +22,36 @@ class HttpService {
     };
   }
 
-  // GET request
+// Also update your HttpService class in http_service.dart
   Future<dynamic> get(String endpoint) async {
     try {
+      // Determine if this is a full URL (like an S3 URL) or a relative endpoint
+      final bool isFullUrl = endpoint.startsWith('http');
+      final String url = isFullUrl ? endpoint : '$baseUrl$endpoint';
+
+      // Check if this is an S3 URL
+      final bool isS3Url = url.contains('amazonaws.com');
+
+      // Get headers, but don't include auth for S3
+      final Map<String, String> headers =
+          isS3Url ? {'Content-Type': 'application/json'} : await _getHeaders();
+
       final response = await http.get(
-        Uri.parse('$baseUrl$endpoint'),
-        headers: await _getHeaders(),
+        Uri.parse(url),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
+        // For images or binary data from S3, return the raw bytes
+        if (isS3Url) {
+          final contentType = response.headers['content-type'] ?? '';
+          if (contentType.startsWith('image/') ||
+              contentType.contains('octet-stream')) {
+            return response.bodyBytes;
+          }
+        }
+
+        // Otherwise parse as JSON
         return json.decode(response.body);
       } else {
         throw HttpException('${response.statusCode}: ${response.body}');
@@ -120,6 +141,17 @@ class HttpService {
       print('Error in PATCH request: $e');
       rethrow;
     }
+  }
+
+  /// Transforms S3 URLs to ensure they have the correct region format
+  String transformS3Url(String url) {
+    // Check if this is an S3 URL without the region
+    if (url.contains('.s3.amazonaws.com')) {
+      // Add the us-east-1 region (update if your region is different)
+      return url.replaceFirst(
+          '.s3.amazonaws.com', '.s3.us-east-1.amazonaws.com');
+    }
+    return url;
   }
 }
 

@@ -39,49 +39,6 @@ class ApiService {
     };
   }
 
-// Centralized authenticated request handler
-  Future<http.Response> makeAuthenticatedRequest({
-    required String url,
-    required String method,
-    Map<String, String>? headers,
-    dynamic body,
-  }) async {
-    final String? token = await getAccessToken();
-
-    if (token == null) {
-      throw Exception("User is not authenticated. No token found.");
-    }
-
-    // Prepare the headers
-    final Map<String, String> requestHeaders = {
-      "Authorization": "Bearer $token",
-      "Content-Type": "application/json",
-      ...?headers,
-    };
-
-    try {
-      switch (method.toUpperCase()) {
-        case 'GET':
-          return await http.get(Uri.parse(url), headers: requestHeaders);
-        case 'POST':
-          return await http.post(Uri.parse(url),
-              headers: requestHeaders, body: jsonEncode(body));
-        case 'PUT':
-          return await http.put(Uri.parse(url),
-              headers: requestHeaders, body: jsonEncode(body));
-        case 'PATCH':
-          return await http.patch(Uri.parse(url),
-              headers: requestHeaders, body: jsonEncode(body));
-        case 'DELETE':
-          return await http.delete(Uri.parse(url), headers: requestHeaders);
-        default:
-          throw Exception("Unsupported HTTP method: $method");
-      }
-    } catch (e) {
-      throw Exception("Error making authenticated request: $e");
-    }
-  }
-
 // Token Management, log in, log out
   Future<String?> getAccessToken() async {
     if (_cachedToken != null) {
@@ -1073,5 +1030,73 @@ class ApiService {
       print('❌ Error fetching user profile: $e');
     }
     return {};
+  }
+
+  //S3 uploading
+
+  /// Transforms S3 URLs to ensure they have the correct region format
+  String transformS3Url(String url) {
+    // Check if this is an S3 URL without the region
+    if (url.contains('.s3.amazonaws.com')) {
+      // Add the us-east-1 region (update if your region is different)
+      return url.replaceFirst(
+          '.s3.amazonaws.com', '.s3.us-east-1.amazonaws.com');
+    }
+    return url;
+  }
+
+  Future<http.Response> makeAuthenticatedRequest({
+    required String url,
+    required String method,
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
+    // Check if this is an S3 URL - if so, don't add auth headers
+    final bool isS3Url = url.contains('amazonaws.com');
+
+    // Prepare the headers - no auth for S3
+    final Map<String, String> requestHeaders;
+
+    if (isS3Url) {
+      // For S3, don't include auth headers
+      requestHeaders = {
+        "Content-Type": "application/json",
+        ...?headers,
+      };
+    } else {
+      // For regular API endpoints, include auth
+      final String? token = await getAccessToken();
+      if (token == null) {
+        throw Exception("User is not authenticated. No token found.");
+      }
+
+      requestHeaders = {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+        ...?headers,
+      };
+    }
+
+    try {
+      switch (method.toUpperCase()) {
+        case 'GET':
+          return await http.get(Uri.parse(url), headers: requestHeaders);
+        case 'POST':
+          return await http.post(Uri.parse(url),
+              headers: requestHeaders, body: jsonEncode(body));
+        case 'PUT':
+          return await http.put(Uri.parse(url),
+              headers: requestHeaders, body: jsonEncode(body));
+        case 'PATCH':
+          return await http.patch(Uri.parse(url),
+              headers: requestHeaders, body: jsonEncode(body));
+        case 'DELETE':
+          return await http.delete(Uri.parse(url), headers: requestHeaders);
+        default:
+          throw Exception("Unsupported HTTP method: $method");
+      }
+    } catch (e) {
+      throw Exception("Error making authenticated request: $e");
+    }
   }
 }

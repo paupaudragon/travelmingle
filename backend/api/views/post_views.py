@@ -29,6 +29,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
+import boto3
+from botocore.exceptions import ClientError
+
 
 class PostListCreateView(APIView):
     """
@@ -67,6 +70,25 @@ class PostListCreateView(APIView):
             401: "Unauthorized"
         }
     )
+    logger = logging.getLogger(__name__)
+
+
+    def upload_directly_to_s3(file_obj, bucket_name, object_key):
+        """Upload a file directly to S3, bypassing Django storage."""
+        try:
+            s3_client = boto3.client('s3')
+            response = s3_client.upload_fileobj(
+                file_obj, 
+                bucket_name,
+                object_key
+            )
+            file_url = f"https://{bucket_name}.s3.amazonaws.com/{object_key}"
+            print(f"✅ Direct S3 upload successful: {file_url}")
+            return file_url
+        except ClientError as e:
+            print(f"❌ Direct S3 upload failed: {str(e)}")
+            return None
+    
     def post(self, request):
         try:
             logger = logging.getLogger(__name__)
@@ -133,9 +155,24 @@ class PostListCreateView(APIView):
             # Handle image uploads
             images = request.FILES.getlist('image')
             print(f"📸 Received {len(images)} images for post {parent_post.id}")
+            # Replace your image upload section with this
             for image in images:
-                PostImages.objects.create(post=parent_post, image=image)
-            print("✅ Images saved successfully")
+                # Generate a unique key for S3
+                import uuid
+                file_extension = os.path.splitext(image.name)[1]
+                object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
+                
+                # Upload directly to S3
+                file_url = upload_directly_to_s3(image, 'travelmingle-media', object_key)
+                
+                if file_url:
+                    # Create PostImage object with the URL
+                    PostImages.objects.create(
+                        post=parent_post,
+                        image_url=file_url  # Assuming you have an image_url field
+                    )
+                else:
+                    print(f"❌ Skipping image record due to upload failure")
 
             # Handle multi-day child posts
             if is_multi_day:
