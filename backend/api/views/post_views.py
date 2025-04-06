@@ -62,19 +62,7 @@ class PostListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     logger = logging.getLogger(__name__)
 
-
-    @swagger_auto_schema(
-        operation_summary="Create a new post",
-        operation_description="Create a new post with title, content, images, location, and other metadata",
-        request_body=PostSerializer,
-        responses={
-            201: PostSerializer,
-            400: "Bad Request",
-            401: "Unauthorized"
-        }
-    )
-
-    def upload_directly_to_s3(file_obj, bucket_name, object_key):
+    def upload_directly_to_s3(self,file_obj, bucket_name, object_key):
         """Upload a file directly to S3, bypassing Django storage."""
         try:
             s3_client = boto3.client('s3')
@@ -90,6 +78,17 @@ class PostListCreateView(APIView):
             print(f"❌ Direct S3 upload failed: {str(e)}")
             return None
     
+    @swagger_auto_schema(
+        operation_summary="Create a new post",
+        operation_description="Create a new post with title, content, images, location, and other metadata",
+        request_body=PostSerializer,
+        responses={
+            201: PostSerializer,
+            400: "Bad Request",
+            401: "Unauthorized"
+        }
+    )
+
     def post(self, request):
         try:
             logger = logging.getLogger(__name__)
