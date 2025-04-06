@@ -169,7 +169,7 @@ class PostListCreateView(APIView):
                     # Create PostImage object with the URL
                     PostImages.objects.create(
                         post=parent_post,
-                        image_url=file_url  # Assuming you have an image_url field
+                        image=file_url 
                     )
                 else:
                     print(f"❌ Skipping image record due to upload failure")
