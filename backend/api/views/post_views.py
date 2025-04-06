@@ -164,7 +164,7 @@ class PostListCreateView(APIView):
                 object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
                 
                 # Upload directly to S3
-                file_url = upload_directly_to_s3(image, 'travelmingle-media', object_key)
+                file_url = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
                 
                 if file_url:
                     # Create PostImage object with the URL
