@@ -19,6 +19,8 @@ import sys
 import boto3
 from botocore.exceptions import ClientError
 
+from ..tasks import upload_comment_image
+
 # Create a logger instance
 logger = logging.getLogger(__name__)
 
@@ -111,25 +113,23 @@ class CommentListCreateView(ListCreateAPIView):
 
         elif request.content_type.startswith('multipart/form-data'):
             data = request.data.copy()
+            image = request.FILES.get('comment_image')
 
-            if 'image' in request.FILES:
-                image = request.FILES['image']
-                try:
-                    compressed = self.resize_and_compress_image(image)
-                    object_key = f"media/commentImages/{uuid.uuid4()}.jpg"
-                    s3_url = self.upload_comment_image_to_s3(compressed, 'travelmingle-media', object_key)
-                    if s3_url:
-                        data['image'] = object_key  # Or s3_url if your model expects full URL
-                    else:
-                        print("⚠️ Failed to upload comment image to S3.")
-                        data.pop('image', None)
-                except Exception as e:
-                    print(f"❌ Image processing error: {str(e)}")
-                    data.pop('image', None)
+            # Temporarily strip image to save comment faster
+            data.pop('comment_image', None)
 
             serializer = self.get_serializer(data=data, context={'request': request})
             if serializer.is_valid():
-                serializer.save()
+                comment = serializer.save()
+
+                # Send image to Celery
+                if image:
+                    upload_comment_image.delay(
+                        comment.id,
+                        image.read(),  # Send raw bytes
+                        image.name
+                    )
+
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
