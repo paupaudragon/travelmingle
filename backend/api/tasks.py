@@ -6,7 +6,7 @@ from io import BytesIO
 import uuid
 import sys
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from comments.models import Comments
+from .models import Comments
 
 @shared_task
 def upload_comment_image(comment_id, image_bytes, image_name):
