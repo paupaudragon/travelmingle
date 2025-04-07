@@ -22,6 +22,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 
 # Always import new models
 from ..models import Location, PostImages, Posts, Likes, Comments, Collects, CollectionFolders
+from ..tasks import upload_post_image
 
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -34,6 +35,11 @@ import os
 from botocore.exceptions import ClientError
 from django.core.files.base import ContentFile
 from django.core.files.base import File
+
+from PIL import Image
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import sys
 
 
 
@@ -65,22 +71,6 @@ class PostListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     logger = logging.getLogger(__name__)
 
-    def upload_directly_to_s3(self,file_obj, bucket_name, object_key):
-        """Upload a file directly to S3, bypassing Django storage."""
-        try:
-            s3_client = boto3.client('s3')
-            response = s3_client.upload_fileobj(
-                file_obj, 
-                bucket_name,
-                object_key
-            )
-            file_url = f"https://{bucket_name}.s3.amazonaws.com/{object_key}"
-            print(f"✅ Direct S3 upload successful: {file_url}")
-            return file_url
-        except ClientError as e:
-            print(f"❌ Direct S3 upload failed: {str(e)}")
-            return None
-    
     @swagger_auto_schema(
         operation_summary="Create a new post",
         operation_description="Create a new post with title, content, images, location, and other metadata",
@@ -91,7 +81,6 @@ class PostListCreateView(APIView):
             401: "Unauthorized"
         }
     )
-
     def post(self, request):
         try:
             logger = logging.getLogger(__name__)
@@ -160,20 +149,12 @@ class PostListCreateView(APIView):
             print(f"📸 Received {len(images)} images for post {parent_post.id}")
             # Replace your image upload section with this
             for image in images:
-                import uuid
-                file_extension = os.path.splitext(image.name)[1]
-                object_key = f"postImages/{uuid.uuid4()}{file_extension}"
-
-                image.seek(0)
-                upload_success = self.upload_directly_to_s3(image, 'travelmingle-media', object_key)
-
-                if upload_success:
-                    PostImages.objects.create(
-                        post=parent_post,
-                        image=object_key 
+                    upload_post_image.delay(
+                        parent_post.id,
+                        image.read(),
+                        image.name,
+                        is_child=False
                     )
-                else:
-                    print(f"❌ Skipping image due to upload failure")
             # Handle multi-day child posts
             if is_multi_day:
                 print("🔄 Processing multi-day child posts...")
@@ -262,16 +243,20 @@ class PostListCreateView(APIView):
 
                     # ✅ Handle Child Post Images
                     child_images = request.FILES.getlist(f'childImages_{i}')
-                    print(f"📸 Received {len(child_images)
-                                        } images for child post {child_post.id}")
+                    print(f"📸 Received {len(child_images)} images for child post {child_post.id}")
+
                     if child_images:
                         for image in child_images:
-                            PostImages.objects.create(
-                                post=child_post, image=image)
-                        print("✅ Child post images saved successfully")
+                            
+                            upload_post_image.delay(
+                                child_post.id,
+                                image.read(),
+                                image.name,
+                                is_child=True
+                            )
                     else:
-                        print(f"❌ No images found for child post {
-                              child_post.id}")
+                        print(f"❌ No images found for child post {child_post.id}")
+
 
                     print(f"""
                     ✅ Child post {i+1} created successfully:
@@ -318,6 +303,7 @@ class PostListCreateView(APIView):
                 {'error': f'Post creation failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
 
     @swagger_auto_schema(
         operation_summary="List all posts",

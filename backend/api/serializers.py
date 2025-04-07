@@ -175,11 +175,15 @@ class CommentSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        # Ensure at least one of `content` or `comment_image` is provided
-        if not data.get('content') and not data.get('comment_image'):
+        content = data.get('content', '').strip()
+        has_image = self.context.get('has_image', False)
+
+        if not content and not has_image:
             raise serializers.ValidationError(
-                "At least one of 'content' or 'comment_image' must be provided.")
+                "At least one of 'content' or 'comment_image' must be provided."
+            )
         return data
+
 
     def get_comment_image_url(self, obj):
         if obj.comment_image:  # If user has uploaded a picture

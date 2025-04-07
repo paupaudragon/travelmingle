@@ -11,6 +11,16 @@ from rest_framework import status
 
 import logging
 
+from PIL import Image
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import sys
+
+import boto3
+from botocore.exceptions import ClientError
+
+from ..tasks import upload_comment_image
+
 # Create a logger instance
 logger = logging.getLogger(__name__)
 
@@ -22,6 +32,57 @@ class CommentListCreateView(ListCreateAPIView):
     queryset = Comments.objects.select_related('user', 'post').all()
     serializer_class = CommentSerializer
     parser_classes = (JSONParser, MultiPartParser, FormParser)
+
+    
+
+    @staticmethod
+    def resize_and_compress_image(image_file, max_width=1024, quality=75):
+        """
+        Resize and compress an uploaded image using Pillow.
+        Returns an InMemoryUploadedFile ready for upload.
+        """
+        img = Image.open(image_file)
+
+        # Convert to RGB to avoid issues with PNG/Transparency
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+
+        # Resize if too wide
+        if img.width > max_width:
+            ratio = max_width / float(img.width)
+            new_height = int((float(img.height) * float(ratio)))
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+
+        # Save to BytesIO buffer
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=quality)
+        buffer.seek(0)
+
+        return InMemoryUploadedFile(
+            buffer,
+            None,
+            f"{image_file.name.split('.')[0]}.jpg",
+            'image/jpeg',
+            sys.getsizeof(buffer),
+            None
+        )
+
+    @staticmethod
+    def upload_comment_image_to_s3(file_obj, bucket_name, object_key):
+        """
+        Uploads a compressed image file to S3.
+        Returns the S3 object key or full URL if successful, otherwise None.
+        """
+        try:
+            s3_client = boto3.client('s3')
+            s3_client.upload_fileobj(file_obj, bucket_name, object_key)
+            print(f"✅ Uploaded to S3: {object_key}")
+            return object_key  # or return full URL: f"https://{bucket_name}.s3.amazonaws.com/{object_key}"
+        except ClientError as e:
+            print(f"❌ S3 Upload Error: {e}")
+            return None
+
+
 
     @swagger_auto_schema(
         operation_summary="List all comments",
@@ -49,14 +110,31 @@ class CommentListCreateView(ListCreateAPIView):
         if request.content_type.startswith('application/json'):
             # JSON payload (text-only comment)
             return super().post(request, *args, **kwargs)
+
         elif request.content_type.startswith('multipart/form-data'):
-            # Multipart payload (image or mixed content)
+            image = request.FILES.get('comment_image')
+
+            # Pass a flag to help validation know an image exists
             serializer = self.get_serializer(
-                data=request.data, context={'request': request})
+                data=request.data,
+                context={'request': request, 'has_image': bool(image)}
+            )
+
             if serializer.is_valid():
-                serializer.save()
+                comment = serializer.save()
+
+                # Send image to Celery after comment is saved
+                if image:
+                    upload_comment_image.delay(
+                        comment.id,
+                        image.read(),
+                        image.name
+                    )
+
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         else:
             # Log unrecognized Content-Type
             return Response(
