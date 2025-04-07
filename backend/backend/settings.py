@@ -231,7 +231,7 @@ GOOGLE_MAPS_API_KEY = 'AIzaSyBSvnqQqYvnRNvYPAYdx55IBKMIGTEJW7U'
 # GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
 
 # Andy computer
-# GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal310.dll'
+GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal310.dll"
 
 
 # Firebase setup
