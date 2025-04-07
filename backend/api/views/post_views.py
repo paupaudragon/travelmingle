@@ -94,7 +94,7 @@ class PostListCreateView(APIView):
         if img.width > max_width:
             ratio = max_width / float(img.width)
             new_height = int((float(img.height) * float(ratio)))
-            img = img.resize((max_width, new_height), Image.ANTIALIAS)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
 
         buffer = BytesIO()
         img.save(buffer, format='JPEG', quality=quality)
