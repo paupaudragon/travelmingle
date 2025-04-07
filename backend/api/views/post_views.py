@@ -22,6 +22,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 
 # Always import new models
 from ..models import Location, PostImages, Posts, Likes, Comments, Collects, CollectionFolders
+from ..tasks import upload_post_image
 
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
