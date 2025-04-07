@@ -70,46 +70,6 @@ class PostListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     logger = logging.getLogger(__name__)
 
-    def upload_directly_to_s3(self,file_obj, bucket_name, object_key):
-        """Upload a file directly to S3, bypassing Django storage."""
-        try:
-            s3_client = boto3.client('s3')
-            response = s3_client.upload_fileobj(
-                file_obj, 
-                bucket_name,
-                object_key
-            )
-            file_url = f"https://{bucket_name}.s3.amazonaws.com/{object_key}"
-            print(f"✅ Direct S3 upload successful: {file_url}")
-            return file_url
-        except ClientError as e:
-            print(f"❌ Direct S3 upload failed: {str(e)}")
-            return None
-
-    def resize_and_compress_image(self, image_file, max_width=1024, quality=75):
-        img = Image.open(image_file)
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-
-        if img.width > max_width:
-            ratio = max_width / float(img.width)
-            new_height = int((float(img.height) * float(ratio)))
-            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-
-        buffer = BytesIO()
-        img.save(buffer, format='JPEG', quality=quality)
-        buffer.seek(0)
-
-        return InMemoryUploadedFile(
-            buffer,
-            None,
-            f"{image_file.name.split('.')[0]}.jpg",
-            'image/jpeg',
-            sys.getsizeof(buffer),
-            None
-        )
-
-    
     @swagger_auto_schema(
         operation_summary="Create a new post",
         operation_description="Create a new post with title, content, images, location, and other metadata",
@@ -188,28 +148,12 @@ class PostListCreateView(APIView):
             print(f"📸 Received {len(images)} images for post {parent_post.id}")
             # Replace your image upload section with this
             for image in images:
-                try:
-                    import uuid
-                    compressed_image = self.resize_and_compress_image(image)  
-                    file_extension = ".jpg" 
-                    object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
-
-                    upload_success = self.upload_directly_to_s3(
-                        compressed_image, 'travelmingle-media', object_key
+                    upload_post_image.delay(
+                        parent_post.id,
+                        image.read(),
+                        image.name,
+                        is_child=False
                     )
-
-                    if upload_success:
-                        PostImages.objects.create(
-                            post=parent_post,
-                            image=object_key
-                        )
-                        print(f"✅ Uploaded parent image to S3: {object_key}")
-                    else:
-                        print(f"❌ Failed to upload parent image")
-
-                except Exception as e:
-                    print(f"❌ Error processing parent image: {str(e)}")
-
             # Handle multi-day child posts
             if is_multi_day:
                 print("🔄 Processing multi-day child posts...")
@@ -302,24 +246,13 @@ class PostListCreateView(APIView):
 
                     if child_images:
                         for image in child_images:
-                            try:
-                                import uuid
-                                compressed_image = self.resize_and_compress_image(image)
-                                file_extension = ".jpg"
-                                object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
-
-                                upload_success = self.upload_directly_to_s3(
-                                    compressed_image, 'travelmingle-media', object_key
-                                )
-
-                                if upload_success:
-                                    PostImages.objects.create(post=child_post, image=object_key)
-                                    print(f"✅ Uploaded image to S3: {object_key}")
-                                else:
-                                    print(f"❌ Failed to upload image for child post {child_post.id}")
-
-                            except Exception as e:
-                                print(f"❌ Error processing child image: {str(e)}")
+                            
+                            upload_post_image.delay(
+                                child_post.id,
+                                image.read(),
+                                image.name,
+                                is_child=True
+                            )
                     else:
                         print(f"❌ No images found for child post {child_post.id}")
 
