@@ -86,7 +86,7 @@ class PostListCreateView(APIView):
             print(f"❌ Direct S3 upload failed: {str(e)}")
             return None
 
-    def resize_and_compress_image(image_file, max_width=1024, quality=75):
+    def resize_and_compress_image(self, image_file, max_width=1024, quality=75):
         img = Image.open(image_file)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
@@ -190,7 +190,7 @@ class PostListCreateView(APIView):
             for image in images:
                 try:
                     import uuid
-                    compressed_image = resize_and_compress_image(image)  
+                    compressed_image = self.resize_and_compress_image(image)  
                     file_extension = ".jpg" 
                     object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
 
@@ -304,7 +304,7 @@ class PostListCreateView(APIView):
                         for image in child_images:
                             try:
                                 import uuid
-                                compressed_image = resize_and_compress_image(image)
+                                compressed_image = self.resize_and_compress_image(image)
                                 file_extension = ".jpg"
                                 object_key = f"media/postImages/{uuid.uuid4()}{file_extension}"
 
