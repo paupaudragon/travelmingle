@@ -329,9 +329,10 @@ class Likes(models.Model):
         db_table = "likes"
 
     def __str__(self):
-        if self.post:
-            return f"Like by {self.user.username} on Post {self.post.title}"
-        return f"Like by {self.user.username} on Comment {self.comment.content[:20]}"
+        if self.parent_post:
+            return f"Child Post of {self.parent_post.title} - {self.title or 'Untitled'}"
+        else:
+            return f"Post by {self.user.username} - {self.title or 'Untitled'}"
 
 
 class CollectionFolders(models.Model):
