@@ -228,7 +228,9 @@ class PostImages(models.Model):
         db_table = "post_images"
 
     def __str__(self):
-        return f"Image for Post: {self.post.title or 'Untitled'} ({self.image.name})"
+        post_title = self.post.title if self.post and self.post.title else 'Untitled'
+        image_name = self.image.name if self.image else 'No Image'
+        return f"Image for Post: {post_title} ({image_name})"
 
 
 class Comments(models.Model):
@@ -329,11 +331,12 @@ class Likes(models.Model):
         db_table = "likes"
 
     def __str__(self):
-        if self.parent_post:
-            return f"Child Post of {self.parent_post.title} - {self.title or 'Untitled'}"
-        else:
-            return f"Post by {self.user.username} - {self.title or 'Untitled'}"
-
+        target = ""
+        if self.post:
+            target = f"post '{self.post.title or 'Untitled'}'"
+        elif self.comment:
+            target = f"comment {self.comment.id}"
+        return f"Like by {self.user.username} on {target}"
 
 class CollectionFolders(models.Model):
     """
