@@ -112,25 +112,27 @@ class CommentListCreateView(ListCreateAPIView):
             return super().post(request, *args, **kwargs)
 
         elif request.content_type.startswith('multipart/form-data'):
-            data = request.data.copy()
             image = request.FILES.get('comment_image')
 
-            # Temporarily strip image to save comment faster
-            data.pop('comment_image', None)
+            # Pass a flag to help validation know an image exists
+            serializer = self.get_serializer(
+                data=request.data,
+                context={'request': request, 'has_image': bool(image)}
+            )
 
-            serializer = self.get_serializer(data=data, context={'request': request})
             if serializer.is_valid():
                 comment = serializer.save()
 
-                # Send image to Celery
+                # Send image to Celery after comment is saved
                 if image:
                     upload_comment_image.delay(
                         comment.id,
-                        image.read(),  # Send raw bytes
+                        image.read(),
                         image.name
                     )
 
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         else:
