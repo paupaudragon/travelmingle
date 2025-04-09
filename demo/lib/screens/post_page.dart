@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:demo/main.dart';
 import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
-import 'package:demo/utils/cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/comment_model.dart';
@@ -11,6 +9,7 @@ import '../models/post_model.dart';
 import '../services/api_service.dart';
 import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class PostPage extends StatefulWidget {
   final int postId;
@@ -42,9 +41,6 @@ class _PostPageState extends State<PostPage> {
   void initState() {
     super.initState();
     postFuture = fetchPostDetail();
-    postFuture.then((post) {
-      _precachePostImages(post);
-    });
     commentsFuture = fetchComments().then((comments) {
       commentsCache = comments;
       return comments;
@@ -394,7 +390,32 @@ class _PostPageState extends State<PostPage> {
                       ),
                     ),
                 ] else ...[
-                  // TODO: multi days indicator
+                  Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: _currentDayIndex > 0
+                            ? _goToPreviousDay
+                            : null,
+                      ),
+                      Text(
+                        'Day ${_currentDayIndex + 1}/${post.childPosts!.length}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: _currentDayIndex < post.childPosts!.length - 1
+                            ? () => _goToNextDay(post.childPosts!.length)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
                 ]
               ],
             );
@@ -419,7 +440,8 @@ class _PostPageState extends State<PostPage> {
               color: Colors.grey,
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12), // l，up，r，d
+              padding: const EdgeInsets.fromLTRB(
+                  16, 12, 12, 12), // l，up，r，d
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -583,46 +605,18 @@ class _PostPageState extends State<PostPage> {
 
   Future<Size> _getImageSize(String imageUrl) async {
     final Completer<Size> completer = Completer();
+    final Image image = Image.network(imageUrl);
 
-    // Use CachedNetworkImageProvider instead of regular network image
-    final imageProvider = CachedNetworkImageProvider(imageUrl);
-
-    imageProvider.resolve(ImageConfiguration()).addListener(
-          ImageStreamListener((ImageInfo info, bool _) {
-            completer.complete(Size(
-              info.image.width.toDouble(),
-              info.image.height.toDouble(),
-            ));
-          }, onError: (dynamic exception, StackTrace? stackTrace) {
-            // Fallback to a reasonable default size if there's an error
-            print('Error getting image size: $exception');
-            completer.complete(const Size(300, 300));
-          }),
-        );
+    image.image.resolve(ImageConfiguration()).addListener(
+      ImageStreamListener((ImageInfo info, bool _) {
+        completer.complete(Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        ));
+      }),
+    );
 
     return completer.future;
-  }
-
-  void _precachePostImages(Post post) {
-    if (!mounted) return;
-
-    // Pre-cache main post images
-    if (post.images.isNotEmpty) {
-      for (var image in post.images) {
-        OptimizedNetworkImage.preloadImage(context, image.imageUrl);
-      }
-    }
-
-    // Pre-cache child post images for multi-day posts
-    if (post.period == 'multipleday' && post.childPosts != null) {
-      for (var childPost in post.childPosts!) {
-        if (childPost.images.isNotEmpty) {
-          for (var image in childPost.images) {
-            OptimizedNetworkImage.preloadImage(context, image.imageUrl);
-          }
-        }
-      }
-    }
   }
 
   // Define the logic for determining the appropriate `BoxFit` for each image:
@@ -636,180 +630,192 @@ class _PostPageState extends State<PostPage> {
   //      - If the current image's aspect ratio is wider than the first image's aspect ratio, use `BoxFit.fitWidth`.
   //      - If the current image's aspect ratio is taller than the first image's aspect ratio, use `BoxFit.fitHeight`.
   // # post each day
-  Widget buildSingleDayContent(Post day) {
-    final PageController _imageController = PageController();
+Widget buildSingleDayContent(Post day) {
+  final PageController _imageController = PageController();
+  // Add a ValueNotifier to track current page
+  final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
 
-    return SingleChildScrollView(
-      // padding: const EdgeInsets.all(10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (day.images.isNotEmpty)
-            FutureBuilder<Size>(
-              future: _getImageSize(day.images[0].imageUrl),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done &&
-                    snapshot.hasData) {
-                  // Get the aspect ratio of the first image
-                  double firstImageAspectRatio =
-                      snapshot.data!.width / snapshot.data!.height;
+  return SingleChildScrollView(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (day.images.isNotEmpty)
+          FutureBuilder<Size>(
+            future: _getImageSize(day.images[0].imageUrl),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done &&
+                  snapshot.hasData) {
+                double firstImageAspectRatio =
+                    snapshot.data!.width / snapshot.data!.height;
+                const double minAspectRatio = 5 / 7;
+                const double maxAspectRatio = 4 / 3;
+                double clampedAspectRatio = firstImageAspectRatio.clamp(
+                    minAspectRatio, maxAspectRatio);
 
-                  // Define the minimum and maximum aspect ratio
-                  const double minAspectRatio = 5 / 7; // Minimum aspect ratio
-                  const double maxAspectRatio = 4 / 3; // Maximum aspect ratio
-
-                  // Clamp the first image's aspect ratio between the minimum and maximum values
-                  double clampedAspectRatio = firstImageAspectRatio.clamp(
-                      minAspectRatio, maxAspectRatio);
-
-                  return Column(
-                    children: [
-                      AspectRatio(
-                        aspectRatio: clampedAspectRatio,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(0),
-                          child: PageView.builder(
-                            controller: _imageController,
-                            itemCount: day.images.length,
-                            itemBuilder: (context, index) {
-                              // Get the width and height of the current image
-                              return FutureBuilder<Size>(
-                                future:
-                                    _getImageSize(day.images[index].imageUrl),
-                                builder: (context, sizeSnapshot) {
-                                  if (sizeSnapshot.connectionState ==
-                                          ConnectionState.done &&
-                                      sizeSnapshot.hasData) {
-                                    double imageAspectRatio =
-                                        sizeSnapshot.data!.width /
-                                            sizeSnapshot.data!.height;
-
-                                    // Determine the BoxFit type
-                                    BoxFit fit;
-                                    if (index == 0) {
-                                      // The first image uses BoxFit.cover
+                return Column(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: clampedAspectRatio,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(0),
+                        child: PageView.builder(
+                          controller: _imageController,
+                          itemCount: day.images.length,
+                          onPageChanged: (index) {
+                            _currentPageNotifier.value = index;
+                          },
+                          itemBuilder: (context, index) {
+                            return FutureBuilder<Size>(
+                              future: _getImageSize(day.images[index].imageUrl),
+                              builder: (context, sizeSnapshot) {
+                                if (sizeSnapshot.connectionState ==
+                                        ConnectionState.done &&
+                                    sizeSnapshot.hasData) {
+                                  double imageAspectRatio =
+                                      sizeSnapshot.data!.width /
+                                          sizeSnapshot.data!.height;
+                                  BoxFit fit;
+                                  if (index == 0) {
+                                    fit = BoxFit.cover;
+                                  } else {
+                                    bool isAspectRatioSimilar =
+                                        (imageAspectRatio -
+                                                    firstImageAspectRatio)
+                                                .abs() <=
+                                            firstImageAspectRatio * 0.05;
+                                    bool isBothBelowMin =
+                                        imageAspectRatio < minAspectRatio &&
+                                            firstImageAspectRatio <
+                                                minAspectRatio;
+                                    bool isBothAboveMax =
+                                        imageAspectRatio > maxAspectRatio &&
+                                            firstImageAspectRatio >
+                                                maxAspectRatio;
+                                    if (isAspectRatioSimilar ||
+                                        isBothBelowMin ||
+                                        isBothAboveMax) {
                                       fit = BoxFit.cover;
                                     } else {
-                                      // Check if the aspect ratio is similar (within 5% error)
-                                      bool isAspectRatioSimilar =
-                                          (imageAspectRatio -
-                                                      firstImageAspectRatio)
-                                                  .abs() <=
-                                              firstImageAspectRatio * 0.05;
-
-                                      // Check if both are below the minimum or above the maximum
-                                      bool isBothBelowMin =
-                                          imageAspectRatio < minAspectRatio &&
-                                              firstImageAspectRatio <
-                                                  minAspectRatio;
-                                      bool isBothAboveMax =
-                                          imageAspectRatio > maxAspectRatio &&
-                                              firstImageAspectRatio >
-                                                  maxAspectRatio;
-
-                                      // If aspect ratios are similar, or both are below min or above max, use BoxFit.cover
-                                      if (isAspectRatioSimilar ||
-                                          isBothBelowMin ||
-                                          isBothAboveMax) {
-                                        fit = BoxFit.cover;
-                                      } else {
-                                        // Otherwise, choose BoxFit based on the image aspect ratio
-                                        fit = imageAspectRatio >
-                                                firstImageAspectRatio
-                                            ? BoxFit.fitWidth
-                                            : BoxFit.fitHeight;
-                                      }
+                                      fit = imageAspectRatio >
+                                              firstImageAspectRatio
+                                          ? BoxFit.fitWidth
+                                          : BoxFit.fitHeight;
                                     }
-
-                                    return OptimizedNetworkImage(
-                                      imageUrl: day.images[index].imageUrl,
-                                      fit: fit,
-                                      width: double.infinity,
-                                    );
-                                  } else {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
                                   }
-                                },
-                              );
-                            },
+                                  return Image.network(
+                                    day.images[index].imageUrl,
+                                    fit: fit,
+                                    width: double.infinity,
+                                  );
+                                } else {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    // Add the indicator here
+                    if (day.images.length > 1) // Only show if multiple images
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _currentPageNotifier,
+                          builder: (context, currentPage, child) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List<Widget>.generate(
+                                day.images.length,
+                                (index) => Container(
+                                  width: 8.0,
+                                  height: 8.0,
+                                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: currentPage == index
+                                        ? primaryColor
+                                        : Colors.grey.withOpacity(0.4),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              } else {
+                return const Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+        // Rest of your content...
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                day.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                day.content ?? "No content provided",
+                style: const TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LocationPostsPage(
+                          locationName: day.location.name,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.grey,
+                        size: 17,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          day.location.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
-                  );
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
-          // const SizedBox(height: 16),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // align to left
-              children: [
-                Text(
-                  day.title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  day.content ?? "No content provided",
-                  style: const TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // if (day.location.name.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LocationPostsPage(
-                            locationName: day.location.name,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_rounded,
-                          color: Colors.grey,
-                          size: 17,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            day.location.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.blue,
-                              decoration: TextDecoration.underline,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget buildMultiDayPost(Post post) {
     if (post.childPosts == null || post.childPosts!.isEmpty) {
@@ -835,44 +841,6 @@ class _PostPageState extends State<PostPage> {
             },
           ),
         ),
-        // # dot indicator
-        // Fixed progress indicator and buttons at the bottom
-        // Container(
-        //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        //   color: Colors.white.withOpacity(0.9), // Background for visibility
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //     children: [
-        //       // Previous button
-        //       IconButton(
-        //         icon: const Icon(Icons.arrow_back_ios),
-        //         onPressed: _currentDayIndex > 0 ? _goToPreviousDay : null,
-        //       ),
-        //       // Centered dots
-        //       Expanded(
-        //         child: Center(
-        //           child: SmoothPageIndicator(
-        //             controller: _pageController,
-        //             count: post.childPosts!.length,
-        //             effect: const WormEffect(
-        //               dotHeight: 8,
-        //               dotWidth: 8,
-        //               activeDotColor: Colors.blue,
-        //               dotColor: Colors.grey,
-        //             ),
-        //           ),
-        //         ),
-        //       ),
-        //       // Next button
-        //       IconButton(
-        //         icon: const Icon(Icons.arrow_forward_ios),
-        //         onPressed: _currentDayIndex < post.childPosts!.length - 1
-        //             ? () => _goToNextDay(post.childPosts!.length)
-        //             : null,
-        //       ),
-        //     ],
-        //   ),
-        // ),
       ],
     );
   }
@@ -1098,8 +1066,7 @@ class _PostPageState extends State<PostPage> {
                         // Input box
                         Expanded(
                           child: Container(
-                            height:
-                                45, // Set the height as per your requirement
+                            height: 45, // Set the height as per your requirement
                             child: TextField(
                               controller: _commentController,
                               focusNode: _commentFocusNode,
