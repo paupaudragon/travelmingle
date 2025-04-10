@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:demo/models/user_model.dart';
 import 'package:demo/services/notification_service.dart';
-import 'package:demo/services/notification_state.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +31,7 @@ class ApiService {
   var _currentUserId;
 
   int? get currentUserId => _currentUserId;
+  LatLng? _lastKnownLocation;
 
 // Add method to get auth headers
   Future<Map<String, String>> _getAuthHeaders() async {
@@ -224,89 +227,233 @@ class ApiService {
     print("✅ Logout completed. User ID is now: $_currentUserId");
   }
 
+  Future<T> retryWithBackoff<T>({
+    required Future<T> Function() operation,
+    required String operationName,
+    int maxRetries = 3,
+    Duration initialBackoff = const Duration(seconds: 1),
+  }) async {
+    int retryCount = 0;
+    Duration backoff = initialBackoff;
+
+    while (true) {
+      try {
+        if (retryCount > 0) {
+          print('🔄 Retry attempt #$retryCount for $operationName');
+        }
+
+        // For nearby posts, use a more aggressive timeout strategy
+        if (operationName.contains("nearby")) {
+          // Use a timeout that scales based on retry count
+          final timeout = Duration(seconds: 5 + (retryCount * 2));
+          return await operation().timeout(timeout);
+        } else {
+          return await operation();
+        }
+      } on TimeoutException catch (e) {
+        if (retryCount >= maxRetries) {
+          print('❌ Max retries reached for $operationName');
+          rethrow;
+        }
+
+        print(
+            '⏱️ Operation $operationName timed out. Retrying in ${backoff.inSeconds}s...');
+        retryCount++;
+        await Future.delayed(backoff);
+
+        // Exponential backoff but with a cap
+        backoff = Duration(
+            milliseconds:
+                min(backoff.inMilliseconds * 2, 5000)); // Cap at 5 seconds
+      } catch (e) {
+        // For other errors, don't retry
+        print('❌ Error in $operationName: $e');
+        rethrow;
+      }
+    }
+  }
+
   Future<List<Post>> fetchPostsBySource({
-    required String source, // 'explore', 'nearby', 'follow'
+    required String source,
     double? latitude,
     double? longitude,
     double radius = 5,
     int limit = 20,
     List<String>? travelTypes,
     List<String>? periods,
+    Duration timeout = const Duration(seconds: 15),
   }) async {
-    try {
-      String url = '$baseApiUrl/posts/'; // Default to 'explore'
+    // For nearby posts, use a more aggressive caching strategy
+    if (source == 'nearby') {
+      // Check if we have cached nearby posts that are less than 5 minutes old
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final cachedTimestamp = prefs.getInt('nearby_cache_timestamp');
 
-      // Handle different sources
-      if (source == 'nearby') {
-        if (latitude == null || longitude == null) {
-          throw Exception(
-              'Latitude and Longitude are required for nearby posts');
+      // If we have a recent cache (less than 5 minutes old)
+      if (cachedTimestamp != null &&
+          DateTime.now().millisecondsSinceEpoch - cachedTimestamp < 300000) {
+        final cachedData = prefs.getString('nearby_cache_data');
+        if (cachedData != null) {
+          try {
+            List<dynamic> data = jsonDecode(cachedData);
+            final cachedPosts = data
+                .map((json) => Post.fromJson(json as Map<String, dynamic>))
+                .toList();
+
+            print('✅ Using cached nearby posts: ${cachedPosts.length}');
+
+            // Start a background refresh of the cache
+            _refreshNearbyPostsCache(
+                latitude, longitude, radius, travelTypes, periods);
+
+            return cachedPosts;
+          } catch (e) {
+            print('❌ Error parsing cached posts: $e');
+            // Continue with normal fetch if cache parsing fails
+          }
         }
-        url =
-            '$baseApiUrl/posts/nearby/?latitude=$latitude&longitude=$longitude&radius=$radius';
-      } else if (source == 'follow') {
-        url = '$baseApiUrl/posts/follow/';
       }
+    }
 
-      // Attach filters dynamically
+    return retryWithBackoff<List<Post>>(
+      operationName: "Fetch $source posts",
+      operation: () async {
+        try {
+          String url = '$baseApiUrl/posts/'; // Default to 'explore'
+
+          // Handle different sources
+          if (source == 'nearby') {
+            if (latitude == null || longitude == null) {
+              throw Exception(
+                  'Latitude and Longitude are required for nearby posts');
+            }
+            url =
+                '$baseApiUrl/posts/nearby/?latitude=$latitude&longitude=$longitude&radius=$radius';
+          } else if (source == 'follow') {
+            url = '$baseApiUrl/posts/follow/';
+          }
+
+          // Attach filters dynamically
+          final Map<String, String> queryParams = {
+            if (travelTypes != null && travelTypes.isNotEmpty)
+              'travel_types': travelTypes.join(','),
+            if (periods != null && periods.isNotEmpty)
+              'periods': periods.join(','),
+            'limit': limit.toString(),
+          };
+
+          // Ensure URL formatting is correct
+          if (queryParams.isNotEmpty) {
+            final queryString = Uri(queryParameters: queryParams).query;
+            url += url.contains('?') ? '&$queryString' : '?$queryString';
+          }
+
+          print('🔍 Fetching $source posts from: $url');
+
+          final response = await makeAuthenticatedRequest(
+            url: url,
+            method: 'GET',
+            timeout: timeout,
+          );
+
+          if (response.statusCode == 200) {
+            final String responseBody = response.body;
+
+            // Debug response body (prints first 200 characters)
+            print(
+                "✅ API Response: ${responseBody.substring(0, responseBody.length > 200 ? 200 : responseBody.length)}");
+
+            final dynamic data = jsonDecode(responseBody);
+
+            // If this is a nearby request, cache the results
+            if (source == 'nearby') {
+              _cacheNearbyPosts(responseBody);
+            }
+
+            // Handling LIST response (if API returns a list of posts directly)
+            if (data is List) {
+              final List<Post> posts = data
+                  .map((json) => Post.fromJson(json as Map<String, dynamic>))
+                  .toList();
+              print('✅ Found ${posts.length} $source posts');
+              return posts;
+            }
+
+            // Handling MAP response (if API wraps posts inside a key)
+            else if (data is Map<String, dynamic> &&
+                data.containsKey('posts') &&
+                data['posts'] is List) {
+              final List<Post> posts = (data['posts'] as List)
+                  .map((json) => Post.fromJson(json as Map<String, dynamic>))
+                  .toList();
+              print('✅ Found ${posts.length} $source posts');
+              return posts;
+            } else {
+              print('❌ Unexpected API response structure: $data');
+              throw Exception('Unexpected API response format');
+            }
+          } else {
+            print('❌ Error fetching $source posts: ${response.body}');
+            throw Exception('Failed to fetch $source posts: ${response.body}');
+          }
+        } on TimeoutException catch (e) {
+          print('⏱️ Timeout fetching $source posts: $e');
+          rethrow; // Rethrow timeout exception to trigger retry
+        } catch (e) {
+          print('❌ Error in fetchPostsBySource: $e');
+          rethrow; // Rethrow to allow the retry mechanism to work properly
+        }
+      },
+      maxRetries: source == 'nearby' ? 2 : 3, // Fewer retries for nearby
+      initialBackoff: const Duration(seconds: 1),
+    );
+  }
+
+  Future<void> _cacheNearbyPosts(String responseBody) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('nearby_cache_data', responseBody);
+      await prefs.setInt(
+          'nearby_cache_timestamp', DateTime.now().millisecondsSinceEpoch);
+      print('✅ Cached nearby posts successfully');
+    } catch (e) {
+      print('❌ Error caching nearby posts: $e');
+    }
+  }
+
+// Helper method to refresh the cache in the background
+  Future<void> _refreshNearbyPostsCache(double? latitude, double? longitude,
+      double radius, List<String>? travelTypes, List<String>? periods) async {
+    // Don't await this - let it run in background
+    try {
+      String url =
+          '$baseApiUrl/posts/nearby/?latitude=$latitude&longitude=$longitude&radius=$radius';
+
+      // Add filters
       final Map<String, String> queryParams = {
         if (travelTypes != null && travelTypes.isNotEmpty)
           'travel_types': travelTypes.join(','),
         if (periods != null && periods.isNotEmpty) 'periods': periods.join(','),
-        'limit': limit.toString(),
       };
 
-      // Ensure URL formatting is correct
       if (queryParams.isNotEmpty) {
         final queryString = Uri(queryParameters: queryParams).query;
         url += url.contains('?') ? '&$queryString' : '?$queryString';
       }
 
-      print('🔍 Fetching $source posts from: $url');
-
       final response = await makeAuthenticatedRequest(
         url: url,
         method: 'GET',
+        timeout: const Duration(
+            seconds: 30), // Longer timeout for background refresh
       );
 
       if (response.statusCode == 200) {
-        final String responseBody = response.body;
-
-        // Debug response body (prints first 200 characters)
-        print(
-            "✅ API Response: ${responseBody.substring(0, responseBody.length > 200 ? 200 : responseBody.length)}");
-
-        final dynamic data = jsonDecode(responseBody);
-
-        // ✅ Handling LIST response (if API returns a list of posts directly)
-        if (data is List) {
-          final List<Post> posts = data
-              .map((json) => Post.fromJson(json as Map<String, dynamic>))
-              .toList();
-          print('✅ Found ${posts.length} $source posts');
-          return posts;
-        }
-
-        // ✅ Handling MAP response (if API wraps posts inside a key)
-        else if (data is Map<String, dynamic> &&
-            data.containsKey('posts') &&
-            data['posts'] is List) {
-          final List<Post> posts = (data['posts'] as List)
-              .map((json) => Post.fromJson(json as Map<String, dynamic>))
-              .toList();
-          print('✅ Found ${posts.length} $source posts');
-          return posts;
-        } else {
-          print('❌ Unexpected API response structure: $data');
-          throw Exception('Unexpected API response format');
-        }
-      } else {
-        print('❌ Error fetching $source posts: ${response.body}');
-        throw Exception('Failed to fetch $source posts: ${response.body}');
+        _cacheNearbyPosts(response.body);
       }
     } catch (e) {
-      print('❌ Error in fetchPostsBySource: $e');
-      return [];
+      print('⚠️ Background cache refresh failed: $e');
+      // Silently fail - this is just a background refresh
     }
   }
 
@@ -840,8 +987,8 @@ class ApiService {
     };
   }
 
-// Get current Location
-  Future<Position> getCurrentLocation() async {
+  Future<Position> getCurrentLocation(
+      {Duration timeout = const Duration(seconds: 5)}) async {
     // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -857,10 +1004,11 @@ class ApiService {
       }
     }
 
-    // Get current position
+    // Get current position with timeout
     return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+      desiredAccuracy:
+          LocationAccuracy.medium, // Use medium accuracy for faster results
+    ).timeout(timeout);
   }
 
   Future<void> saveToken(String token) async {
@@ -1050,6 +1198,8 @@ class ApiService {
     required String method,
     Map<String, String>? headers,
     dynamic body,
+    Duration timeout =
+        const Duration(seconds: 15), // Add timeout parameter with default value
   }) async {
     // Check if this is an S3 URL - if so, don't add auth headers
     final bool isS3Url = url.contains('amazonaws.com');
@@ -1078,25 +1228,103 @@ class ApiService {
     }
 
     try {
+      http.Response response;
+
       switch (method.toUpperCase()) {
         case 'GET':
-          return await http.get(Uri.parse(url), headers: requestHeaders);
+          response = await http
+              .get(Uri.parse(url), headers: requestHeaders)
+              .timeout(timeout); // Add timeout
+          break;
         case 'POST':
-          return await http.post(Uri.parse(url),
-              headers: requestHeaders, body: jsonEncode(body));
+          response = await http
+              .post(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: jsonEncode(body),
+              )
+              .timeout(timeout); // Add timeout
+          break;
         case 'PUT':
-          return await http.put(Uri.parse(url),
-              headers: requestHeaders, body: jsonEncode(body));
+          response = await http
+              .put(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: jsonEncode(body),
+              )
+              .timeout(timeout); // Add timeout
+          break;
         case 'PATCH':
-          return await http.patch(Uri.parse(url),
-              headers: requestHeaders, body: jsonEncode(body));
+          response = await http
+              .patch(
+                Uri.parse(url),
+                headers: requestHeaders,
+                body: jsonEncode(body),
+              )
+              .timeout(timeout); // Add timeout
+          break;
         case 'DELETE':
-          return await http.delete(Uri.parse(url), headers: requestHeaders);
+          response = await http
+              .delete(Uri.parse(url), headers: requestHeaders)
+              .timeout(timeout); // Add timeout
+          break;
         default:
           throw Exception("Unsupported HTTP method: $method");
       }
+
+      return response;
+    } on TimeoutException {
+      throw TimeoutException(
+          "Request to $url timed out after ${timeout.inSeconds} seconds");
     } catch (e) {
       throw Exception("Error making authenticated request: $e");
+    }
+  }
+
+  Future<LatLng?> getCachedLocation() async {
+    try {
+      // First try to get the in-memory cached location
+      if (_lastKnownLocation != null) {
+        print('✅ Using in-memory cached location');
+        return _lastKnownLocation;
+      }
+
+      // Then try to get from device's last known position (fast, no network needed)
+      final lastPosition = await Geolocator.getLastKnownPosition();
+      if (lastPosition != null) {
+        print('✅ Using device last known position');
+        return LatLng(lastPosition.latitude, lastPosition.longitude);
+      }
+
+      // If both failed, try from shared preferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final lat = prefs.getDouble('cached_location_lat');
+      final lng = prefs.getDouble('cached_location_lng');
+
+      if (lat != null && lng != null) {
+        print('✅ Using stored cached location');
+        return LatLng(lat, lng);
+      }
+
+      print('❌ No cached location available');
+      return null;
+    } catch (e) {
+      print('❌ Error getting cached location: $e');
+      return null;
+    }
+  }
+
+  Future<void> cacheLocation(double lat, double lng) async {
+    print('💾 Caching location: $lat, $lng');
+    _lastKnownLocation = LatLng(lat, lng);
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('cached_location_lat', lat);
+      await prefs.setDouble('cached_location_lng', lng);
+      print('✅ Location cached successfully');
+    } catch (e) {
+      print('⚠️ Error caching location: $e');
     }
   }
 }

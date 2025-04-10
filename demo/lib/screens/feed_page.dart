@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:demo/main.dart';
 import 'package:demo/screens/S3Test.dart';
 import 'package:demo/screens/main_navigation_page.dart';
@@ -10,6 +11,7 @@ import 'package:demo/screens/profile_page.dart';
 import 'package:demo/screens/search_page.dart';
 import 'package:demo/services/notification_service.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../widgets/header.dart';
 import '../widgets/footer.dart';
@@ -20,7 +22,6 @@ import 'create_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:demo/widgets/footer_builder.dart';
 import 'package:lottie/lottie.dart';
-
 
 class FeedPage extends StatefulWidget {
   final bool showFooter;
@@ -40,6 +41,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
   String source = "explore";
   List<String> travelFilters = [];
   List<String> periodFilters = [];
+  bool hasError = false;
+  String errorMessage = '';
 
   StreamSubscription? _notificationSubscription;
 
@@ -170,14 +173,113 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
+  // Future<void> _loadPosts(String source) async {
+  //   if (!mounted) return;
+
+  //   setState(() {
+  //     isLoading = true;
+  //     this.source = source;
+
+  //     // Store filters properly
+  //     travelFilters =
+  //         selectedTravelTypes.map((type) => type.toLowerCase()).toList();
+  //     periodFilters = selectedPeriods
+  //         .map((period) => period.toLowerCase().replaceAll(' ', ''))
+  //         .toList();
+  //   });
+
+  //   try {
+  //     // Start connectivity check in parallel but don't wait for it immediately
+  //     final connectivityFuture = Connectivity().checkConnectivity();
+
+  //     // Prepare parameters for API call
+  //     List<Post> fetchedPosts = [];
+  //     Position? position;
+
+  //     // Only get location if we need it (nearby source)
+  //     if (source == "nearby") {
+  //       try {
+  //         // Set a shorter timeout for location services
+  //         position = await _apiService
+  //             .getCurrentLocation()
+  //             .timeout(const Duration(seconds: 5));
+  //       } catch (e) {
+  //         print('Location error: $e');
+  //         // We'll handle this below - don't exit yet
+  //       }
+  //     }
+
+  //     // Now check connectivity result
+  //     final connectivityResult = await connectivityFuture;
+  //     if (connectivityResult == ConnectivityResult.none) {
+  //       if (!mounted) return;
+  //       setState(() {
+  //         isLoading = false;
+  //         posts = [];
+  //       });
+
+  //       _showTimeoutError(
+  //           'No internet connection. Please check your network settings and try again.');
+  //       return;
+  //     }
+
+  //     // Fetch posts based on source
+  //     if (source == "nearby") {
+  //       // If we couldn't get location, show appropriate error
+  //       if (position == null) {
+  //         if (!mounted) return;
+  //         setState(() {
+  //           isLoading = false;
+  //           posts = [];
+  //         });
+  //         _showTimeoutError(
+  //             'Unable to determine your location. Please check your location settings and try again.');
+  //         return;
+  //       }
+
+  //       // Fetch nearby posts with location
+  //       fetchedPosts = await _apiService.fetchPostsBySource(
+  //         source: "nearby",
+  //         latitude: position.latitude,
+  //         longitude: position.longitude,
+  //         radius: _radius,
+  //         travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+  //         periods: periodFilters.isNotEmpty ? periodFilters : null,
+  //         // Shorter timeout for nearby results
+  //         timeout: const Duration(seconds: 10),
+  //       );
+  //     } else {
+  //       // Fetch other types (explore, follow)
+  //       fetchedPosts = await _apiService.fetchPostsBySource(
+  //         source: source,
+  //         travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+  //         periods: periodFilters.isNotEmpty ? periodFilters : null,
+  //       );
+  //     }
+
+  //     // Update UI once posts are fetched
+  //     if (!mounted) return;
+  //     setState(() {
+  //       posts = fetchedPosts;
+  //       isLoading = false;
+  //       hasError = false;
+  //     });
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     setState(() {
+  //       isLoading = false;
+  //       hasError = true;
+  //       errorMessage = 'Unable to load posts. Please try again.';
+  //     });
+  //     print('Error loading posts: $e');
+  //   }
+  // }
+
   Future<void> _loadPosts(String source) async {
     if (!mounted) return;
 
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
+    setState(() {
+      isLoading = true;
       this.source = source;
 
       // Store filters properly
@@ -186,14 +288,59 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       periodFilters = selectedPeriods
           .map((period) => period.toLowerCase().replaceAll(' ', ''))
           .toList();
+    });
 
+    try {
+      // Start connectivity check in parallel but don't wait for it immediately
+      final connectivityFuture = Connectivity().checkConnectivity();
+
+      // Prepare parameters for API call
       List<Post> fetchedPosts = [];
+      Position? position;
 
+      // Only get location if we need it (nearby source)
       if (source == "nearby") {
-        // Get user's current location
-        final position = await _apiService.getCurrentLocation();
+        try {
+          // Set a shorter timeout for location services
+          position = await _apiService
+              .getCurrentLocation()
+              .timeout(const Duration(seconds: 5));
+        } catch (e) {
+          print('Location error: $e');
+          // We'll handle this below - don't exit yet
+        }
+      }
 
-        // Fetch nearby posts
+      // Now check connectivity result
+      final connectivityResult = await connectivityFuture;
+      if (connectivityResult == ConnectivityResult.none) {
+        if (!mounted) return;
+        setState(() {
+          isLoading = false;
+          posts = [];
+          hasError = true;
+          errorMessage =
+              'No internet connection. Please check your network settings and try again.';
+        });
+        return;
+      }
+
+      // Fetch posts based on source
+      if (source == "nearby") {
+        // If we couldn't get location, show appropriate error
+        if (position == null) {
+          if (!mounted) return;
+          setState(() {
+            isLoading = false;
+            posts = [];
+            hasError = true;
+            errorMessage =
+                'Unable to determine your location. Please check your location settings and try again.';
+          });
+          return;
+        }
+
+        // Fetch nearby posts with location
         fetchedPosts = await _apiService.fetchPostsBySource(
           source: "nearby",
           latitude: position.latitude,
@@ -201,13 +348,8 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           radius: _radius,
           travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
           periods: periodFilters.isNotEmpty ? periodFilters : null,
-        );
-      } else if (source == "follow") {
-        // ✅ Fetch followed users' posts
-        fetchedPosts = await _apiService.fetchPostsBySource(
-          source: "follow",
-          travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
-          periods: periodFilters.isNotEmpty ? periodFilters : null,
+          // Shorter timeout for nearby results
+          timeout: const Duration(seconds: 10),
         );
       } else {
         // Fetch other types (explore, follow)
@@ -219,18 +361,18 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       }
 
       // Update UI once posts are fetched
-
       if (!mounted) return;
-
       setState(() {
         posts = fetchedPosts;
         isLoading = false;
+        hasError = false;
       });
     } catch (e) {
       if (!mounted) return;
-
       setState(() {
         isLoading = false;
+        hasError = true;
+        errorMessage = 'Unable to load posts. Please try again.';
       });
       print('Error loading posts: $e');
     }
@@ -474,6 +616,140 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildErrorView(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.signal_wifi_off,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => _loadPosts(source),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorLiked,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyView(String currentSource) {
+    String message;
+    IconData icon;
+
+    switch (currentSource) {
+      case "follow":
+        message =
+            "You don't have any posts from people you follow yet. Start following some users!";
+        icon = Icons.people_outline;
+        break;
+      case "nearby":
+        message = "No posts found in your area.";
+        icon = Icons.location_off;
+        break;
+      default:
+        message = "No posts available at the moment.";
+        icon = Icons.post_add;
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+            if (currentSource == "follow")
+              Padding(
+                padding: const EdgeInsets.only(top: 24.0),
+                child: ElevatedButton(
+                  onPressed: () => navigateToSearchPage(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorLiked,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: Text('Find Users to Follow'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTimeoutError(String message) {
+    if (!mounted) return;
+
+    setState(() {
+      hasError = true;
+      errorMessage = message;
+    });
+
+    // Also show a SnackBar for immediate feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Retry',
+          onPressed: () => _loadPosts(source),
+        ),
+      ),
+    );
+  }
+
+  void _showGeneralError(String message) {
+    if (!mounted) return;
+
+    setState(() {
+      hasError = true;
+      errorMessage = message;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Retry',
+          onPressed: () => _loadPosts(source),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -505,33 +781,35 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
                       fit: BoxFit.contain,
                     ),
                   )
-                : posts.isEmpty
-                    ? const Center(child: Text("No posts available."))
-                    : SmartRefresher(
-                        controller: _refreshController,
-                        onRefresh: () => _loadPosts(source),
-                        child: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: MasonryGridView.count(
-                            crossAxisCount: 2, // Number of columns
-                            mainAxisSpacing:
-                                4.0, // Vertical space between items
-                            crossAxisSpacing:
-                                4.0, // Horizontal space between items
-                            itemCount: posts.length,
-                            itemBuilder: (context, index) {
-                              final post = posts[index];
-                              return GestureDetector(
-                                onTap: () => navigateToPostDetail(post),
-                                child: PostCard(
-                                  post: post,
-                                  onLikePressed: () => toggleLike(post),
-                                ),
-                              );
-                            },
+                : hasError
+                    ? _buildErrorView(errorMessage)
+                    : posts.isEmpty
+                        ? _buildEmptyView(source)
+                        : SmartRefresher(
+                            controller: _refreshController,
+                            onRefresh: () => _loadPosts(source),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: MasonryGridView.count(
+                                crossAxisCount: 2, // Number of columns
+                                mainAxisSpacing:
+                                    4.0, // Vertical space between items
+                                crossAxisSpacing:
+                                    4.0, // Horizontal space between items
+                                itemCount: posts.length,
+                                itemBuilder: (context, index) {
+                                  final post = posts[index];
+                                  return GestureDetector(
+                                    onTap: () => navigateToPostDetail(post),
+                                    child: PostCard(
+                                      post: post,
+                                      onLikePressed: () => toggleLike(post),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
           ),
         ],
       ),

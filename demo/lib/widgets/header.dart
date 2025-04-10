@@ -1,5 +1,4 @@
 import 'package:demo/main.dart';
-import 'package:demo/screens/feed_page.dart';
 import 'package:flutter/material.dart';
 import 'circle_tab_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -11,6 +10,8 @@ class Header extends StatelessWidget {
   final Function onSearchPressed;
   final Function onCreateUserPressed; // Callback for creating a user
   final Function onFilterPressed; // Callback for filter action
+  final bool isLoading;
+  final String currentSource;
 
   const Header({
     Key? key,
@@ -20,10 +21,23 @@ class Header extends StatelessWidget {
     required this.onSearchPressed,
     required this.onCreateUserPressed,
     required this.onFilterPressed, // Callback for filter action
+    this.isLoading = false,
+    this.currentSource = "explore",
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    int initialIndex;
+    switch (currentSource) {
+      case "follow":
+        initialIndex = 0;
+        break;
+      case "nearby":
+        initialIndex = 2;
+        break;
+      default:
+        initialIndex = 1; // explore
+    }
     return Container(
       height: 65,
       padding: EdgeInsets.only(top: 10), // Inside top margin

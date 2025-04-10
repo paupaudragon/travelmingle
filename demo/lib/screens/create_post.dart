@@ -12,6 +12,7 @@ import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../services/api_service.dart';
 
@@ -116,40 +117,107 @@ class _CreatePostPageState extends State<CreatePostPage>
         _isLoading = true;
       });
 
-      // Log before fetching position
-      print('Fetching current position...');
-      // Get current position
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      ).timeout(const Duration(seconds: 10), onTimeout: () {
-        throw Exception('Location request timed out. Please try again.');
-      });
+      // Try to get cached location first
+      LatLng? cachedLocation = await apiService.getCachedLocation();
 
-      // Log fetched position
-      print('Position fetched: ${position.latitude}, ${position.longitude}');
-
-      // Get address from coordinates using geocoding
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      print('Location name set to: $_locationName');
-
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
+      if (cachedLocation != null) {
+        print('Using cached location while fetching current location...');
+        // Use cached location temporarily
         setState(() {
           if (index == null) {
-            _selectedLocation = LatLng(position.latitude, position.longitude);
+            _selectedLocation = cachedLocation;
+            _locationName = "Loading address..."; // Placeholder text
+            controller.text = "Loading address...";
           } else if (index < _multiDayTrips.length) {
-            _multiDayTrips[index]['multiSelectedLocation'] =
-                LatLng(position.latitude, position.longitude);
-            _multiDayTrips[index]['latitude'] = position.latitude;
-            _multiDayTrips[index]['longitude'] = position.longitude;
+            _multiDayTrips[index]['multiSelectedLocation'] = cachedLocation;
+            _multiDayTrips[index]['latitude'] = cachedLocation.latitude;
+            _multiDayTrips[index]['longitude'] = cachedLocation.longitude;
+            _multiDayTrips[index]['multiLocationController'].text =
+                "Loading address...";
           }
         });
-        _locationName = '${place.locality}, ${place.administrativeArea}';
-        controller.text = _locationName!;
+      }
+
+      // Log before fetching position
+      print('Fetching current position...');
+
+      // Try to get current position
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        ).timeout(const Duration(seconds: 10), onTimeout: () {
+          throw Exception('Location request timed out. Please try again.');
+        });
+
+        // Log fetched position
+        print('Position fetched: ${position.latitude}, ${position.longitude}');
+
+        // Get address from coordinates using geocoding
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks[0];
+
+          // Cache this successfully fetched location
+          apiService.cacheLocation(position.latitude, position.longitude);
+
+          setState(() {
+            if (index == null) {
+              _selectedLocation = LatLng(position.latitude, position.longitude);
+            } else if (index < _multiDayTrips.length) {
+              _multiDayTrips[index]['multiSelectedLocation'] =
+                  LatLng(position.latitude, position.longitude);
+              _multiDayTrips[index]['latitude'] = position.latitude;
+              _multiDayTrips[index]['longitude'] = position.longitude;
+            }
+            _locationName = '${place.locality}, ${place.administrativeArea}';
+            controller.text = _locationName!;
+          });
+        }
+      } catch (e) {
+        print('Error fetching current position: $e');
+
+        // If we already used a cached location, just update the location name
+        if (cachedLocation != null) {
+          try {
+            // Try to get address for the cached location
+            List<Placemark> placemarks = await placemarkFromCoordinates(
+              cachedLocation.latitude,
+              cachedLocation.longitude,
+            );
+
+            if (placemarks.isNotEmpty) {
+              Placemark place = placemarks[0];
+              setState(() {
+                _locationName =
+                    '${place.locality}, ${place.administrativeArea} (cached)';
+                controller.text = _locationName!;
+              });
+            }
+          } catch (addressError) {
+            // If even this fails, just use coordinates
+            setState(() {
+              _locationName =
+                  '${cachedLocation.latitude.toStringAsFixed(4)}, ${cachedLocation.longitude.toStringAsFixed(4)} (cached)';
+              controller.text = _locationName!;
+            });
+          }
+
+          // Inform user we're using cached location
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Using your last known location due to connection issues')),
+          );
+        } else {
+          // No cached location and couldn't get current - show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not get your location: $e')),
+          );
+        }
       }
     } catch (e) {
       print('Error in fetching location: $e');
@@ -819,8 +887,6 @@ class _CreatePostPageState extends State<CreatePostPage>
       ],
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
