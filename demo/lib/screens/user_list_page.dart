@@ -1,3 +1,4 @@
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../services/api_service.dart';
@@ -157,7 +158,7 @@ class _FollowListPageState extends State<FollowListPage>
         ),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: LoadingAnimation())
           : SmartRefresher(
               controller: _refreshController,
               onRefresh: _onRefresh,

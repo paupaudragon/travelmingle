@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:demo/models/message_model.dart';
 import 'package:demo/services/firebase_service.dart';
 import 'package:demo/services/notification_service.dart';
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/services/api_service.dart';
 
@@ -242,7 +243,7 @@ class _MessageDetailPageState extends State<MessageDetailPage> {
         children: [
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: LoadingAnimation())
                 : _buildMessageList(),
           ),
           _buildMessageInput(),

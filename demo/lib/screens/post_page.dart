@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:demo/main.dart';
 import 'package:demo/screens/location_posts_page.dart';
 import 'package:demo/screens/profile_page.dart';
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/comment_model.dart';
@@ -14,8 +15,9 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 class PostPage extends StatefulWidget {
   final int postId;
   final void Function(Post updatedPost)? onPostUpdated;
+  final bool showFooter; // ✅ New flag
 
-  const PostPage({super.key, required this.postId, this.onPostUpdated});
+  const PostPage({super.key, required this.postId, this.onPostUpdated, this.showFooter = true,});
 
   @override
   State<PostPage> createState() => _PostPageState();
@@ -325,6 +327,8 @@ class _PostPageState extends State<PostPage> {
                           MaterialPageRoute(
                             builder: (context) => ProfilePage(
                               userId: isCurrentUser ? null : post.user.id,
+                              showFooter: false,
+                              isFromPage: true,
                             ),
                           ),
                         );
@@ -709,7 +713,8 @@ Widget buildSingleDayContent(Post day) {
                                   );
                                 } else {
                                   return const Center(
-                                      child: CircularProgressIndicator());
+                                      child: LoadingAnimation()
+                                      );
                                 }
                               },
                             );
@@ -747,7 +752,7 @@ Widget buildSingleDayContent(Post day) {
                   ],
                 );
               } else {
-                return const Center(child: CircularProgressIndicator());
+                return const LoadingAnimation();
               }
             },
           ),
@@ -874,7 +879,7 @@ Widget buildSingleDayContent(Post day) {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(),
+            child: LoadingAnimation(),
           );
         } else if (snapshot.hasError) {
           return Center(
@@ -1233,7 +1238,7 @@ Widget buildSingleDayContent(Post day) {
           future: postFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: LoadingAnimation());
             } else if (snapshot.hasError) {
               return Center(child: Text("Error: ${snapshot.error}"));
             } else if (!snapshot.hasData) {

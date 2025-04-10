@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:demo/screens/direct_messages_list.dart';
 import 'package:demo/screens/message_detail_page.dart';
 import 'package:demo/services/firebase_service.dart';
+import 'package:demo/widgets/footer_builder.dart';
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/enums/notification_types.dart';
 import 'package:demo/models/message_category.dart';
@@ -19,6 +21,7 @@ class NotificationsScreen extends StatefulWidget {
   final VoidCallback? onMessagesPressed;
   final VoidCallback? onMePressed;
   final VoidCallback? onMapPressed;
+  final bool showFooter;
 
   const NotificationsScreen({
     Key? key,
@@ -28,6 +31,7 @@ class NotificationsScreen extends StatefulWidget {
     this.onMessagesPressed,
     this.onMePressed,
     this.onMapPressed,
+    this.showFooter = true,
   }) : super(key: key);
 
   @override
@@ -552,20 +556,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         body: RefreshIndicator(
           onRefresh: _fetchNotifications,
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: LoadingAnimation())
               : _error != null
                   ? _buildErrorView()
                   : _buildNotificationsView(),
         ),
-        bottomNavigationBar: Footer(
-          onHomePressed: widget.onHomePressed ?? () => Navigator.pop(context),
-          onSearchPressed: widget.onSearchPressed ?? () {},
-          onPlusPressed: widget.onPlusPressed ?? () {},
-          onMessagesPressed: _fetchNotifications,
-          onMePressed: widget.onMePressed ?? () {},
-          // onMapPressed: widget.onMapPressed ?? () {},
-          hasUnreadMessages: NotificationService().notificationState.hasUnread,
-        ),
+
+        bottomNavigationBar: widget.showFooter
+            ? StreamBuilder<bool>(
+                stream: NotificationService().notificationState.hasUnreadStream,
+                initialData: NotificationService().notificationState.hasUnread,
+                builder: (context, snapshot) {
+                  final hasUnread = snapshot.data ?? false;
+                  return buildFooter(context, hasUnread);
+                },
+              )
+            : null,
       ),
     );
   }

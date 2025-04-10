@@ -1,6 +1,7 @@
 import 'package:demo/enums/notification_types.dart';
 import 'package:demo/models/message_category.dart';
 import 'package:demo/screens/user_list_page.dart';
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:demo/services/notification_service.dart';
 import 'package:demo/screens/post_page.dart'; // Add this import
@@ -420,7 +421,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           title: Text(widget.category.name),
         ),
         body: const Center(
-          child: CircularProgressIndicator(),
+          child: LoadingAnimation(),
         ),
       );
     }

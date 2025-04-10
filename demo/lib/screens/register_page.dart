@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:demo/services/notification_service.dart';
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -200,7 +201,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 // Register button
                 isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: LoadingAnimation())
                     : ElevatedButton(
                         onPressed: _registerUser,
                         style: ElevatedButton.styleFrom(

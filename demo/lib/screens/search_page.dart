@@ -5,7 +5,8 @@ import '../models/post_model.dart';
 import '../widgets/post_card.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+    final bool showFooter;
+  const SearchPage({super.key, this.showFooter = true});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -64,10 +65,6 @@ class _SearchPageState extends State<SearchPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Search Posts"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),

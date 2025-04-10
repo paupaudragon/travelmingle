@@ -1,8 +1,17 @@
 import 'package:demo/main.dart';
+import 'package:demo/screens/create_post.dart';
+import 'package:demo/screens/feed_page.dart';
+import 'package:demo/screens/main_navigation_page.dart';
 import 'package:demo/screens/message_detail_page.dart';
+import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/post_page.dart';
 import 'package:demo/screens/recap_page.dart';
+import 'package:demo/screens/search_page.dart';
 import 'package:demo/screens/user_list_page.dart';
+import 'package:demo/services/notification_service.dart';
+import 'package:demo/widgets/footer.dart';
+import 'package:demo/widgets/footer_builder.dart';
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import '../models/post_model.dart';
@@ -15,10 +24,14 @@ final RouteObserver<ModalRoute<void>> routeObserver =
 
 class ProfilePage extends StatefulWidget {
   final int? userId;
+  final bool showFooter;
+  final bool isFromPage;
 
   const ProfilePage({
     super.key,
     this.userId,
+    this.showFooter = true,
+    this.isFromPage = true,
   });
 
   @override
@@ -43,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _initializeUserData();
+    
   }
 
   @override
@@ -466,8 +480,7 @@ class _ProfilePageState extends State<ProfilePage>
                               ? const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: LoadingAnimation(),
                                 )
                               : ElevatedButton(
                                   onPressed: toggleFollow,
@@ -581,7 +594,7 @@ class _ProfilePageState extends State<ProfilePage>
         controller: _refreshController,
         onRefresh: _onRefresh,
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: LoadingAnimation())
             : error != null
                 ? Center(child: Text(error!))
                 : Column(
@@ -616,6 +629,16 @@ class _ProfilePageState extends State<ProfilePage>
                     ],
                   ),
       ),
+      bottomNavigationBar: widget.showFooter && isCurrentUser && !widget.isFromPage
+          ? StreamBuilder<bool>(
+              stream: NotificationService().notificationState.hasUnreadStream,
+              initialData: NotificationService().notificationState.hasUnread,
+              builder: (context, snapshot) {
+                final hasUnread = snapshot.data ?? false;
+                return buildFooter(context, hasUnread);
+              },
+            )
+          : null,
     );
   }
 }

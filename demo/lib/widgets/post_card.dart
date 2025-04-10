@@ -150,6 +150,20 @@ class _PostCardState extends State<PostCard> {
                   overflow: TextOverflow.ellipsis,
                 ),
 
+              // Location name
+                if (post.location.address != null && post.location.address!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0, bottom: 4.0),
+                    child: Text(
+                      post.location.address!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 const SizedBox(height: 4),
 
                 // Content preview (if any)

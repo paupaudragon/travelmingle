@@ -1,4 +1,5 @@
 import 'package:demo/screens/S3Test.dart';
+import 'package:demo/screens/main_navigation_page.dart';
 import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/services/firebase_service.dart';
@@ -25,6 +26,8 @@ const Color insertBoxBgColor = Color(0xFFe0e0e0);
 const Color insertBoxTextColor = Color(0xFF1d1d1d);
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<MainNavigationPageState> mainNavKey =
+    GlobalKey<MainNavigationPageState>();
 
 // Use the top-level background handler defined in firebase_service.dart
 @pragma('vm:entry-point')
@@ -75,7 +78,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/login',
       routes: {
-        '/feed': (context) => const FeedPage(),
+        '/feed': (context) => MainNavigationPage(key: mainNavKey),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/map': (context) => const MapTestScreen(),

@@ -33,18 +33,7 @@ class Header extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Filter icon
-          // Filter icon
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/filter.svg',
-              width: 22,
-              height: 22,
-            ),
-            onPressed: () => onFilterPressed(),
-            tooltip: 'Filter by Categories',
-          ),
-
+          SizedBox(width: 50), // Small spacing between filter and tabs
           SizedBox(
             width: 220, // Set width
             height: 35,
@@ -90,7 +79,16 @@ class Header extends StatelessWidget {
             ),
           ),
 
-        SizedBox(width: 50), // Small spacing between filter and tabs
+          // Filter icon
+          IconButton(
+            icon: SvgPicture.asset(
+              'assets/icons/filter.svg',
+              width: 22,
+              height: 22,
+            ),
+            onPressed: () => onFilterPressed(),
+            tooltip: 'Filter by Categories',
+          ),
         ],
       ),
     );

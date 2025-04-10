@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:demo/main.dart';
 import 'package:demo/screens/S3Test.dart';
+import 'package:demo/screens/main_navigation_page.dart';
 import 'package:demo/screens/map_page.dart';
 import 'package:demo/screens/message_page.dart';
 import 'package:demo/screens/post_page.dart';
@@ -17,9 +18,13 @@ import '../models/post_model.dart';
 import '../widgets/post_card.dart';
 import 'create_post.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:demo/widgets/footer_builder.dart';
+import 'package:lottie/lottie.dart';
+
 
 class FeedPage extends StatefulWidget {
-  const FeedPage({super.key});
+  final bool showFooter;
+  const FeedPage({super.key, this.showFooter = true});
 
   @override
   State<FeedPage> createState() => _FeedPageState();
@@ -96,27 +101,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       print("❌ Error initializing notification services: $e");
     }
   }
-
-  // Future<void> _initializeNotificationServices() async {
-  //   try {
-  //     final userId = await _apiService.getCurrentUserId();
-  //     if (userId != null) {
-  //       // Initialize notification service
-  //       await NotificationService().initialize(userId: userId);
-
-  //       // Listen for notification updates
-  //       NotificationService().notificationUpdateStream.listen((hasUnread) {
-  //         if (mounted) {
-  //           setState(() {
-  //             // Update UI if needed
-  //           });
-  //         }
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print("❌ Error initializing notification services: $e");
-  //   }
-  // }
 
   @override
   void didChangeDependencies() {
@@ -298,10 +282,14 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
 //Navigation section
   Future<void> navigateToFeedPage() async {
     requireLogin(context, onSuccess: () async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => FeedPage()),
-      );
+      // await Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => FeedPage()),
+      // );
+
+      final navState =
+          context.findAncestorStateOfType<MainNavigationPageState>();
+      navState?.setState(() => navState.selectedIndex = 0); // or 1, 2, 3, 4
     });
   }
 
@@ -312,6 +300,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         MaterialPageRoute(
           builder: (context) => PostPage(
             postId: post.id,
+            showFooter: false,
             onPostUpdated: (updatedPost) {
               if (!mounted) return;
               setState(() {
@@ -338,10 +327,13 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
 
   void navigateToProfilePage() {
     requireLogin(context, onSuccess: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      ).then((_) => _loadPosts(source));
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => const ProfilePage()),
+      // ).then((_) => _loadPosts(source));
+      final navState =
+          context.findAncestorStateOfType<MainNavigationPageState>();
+      navState?.switchTab(4); // For Profile
     });
   }
 
@@ -504,7 +496,15 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         children: [
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                // ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: Lottie.asset(
+                      'assets/animations/feed_loading.json',
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.contain,
+                    ),
+                  )
                 : posts.isEmpty
                     ? const Center(child: Text("No posts available."))
                     : SmartRefresher(
@@ -536,33 +536,17 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
         ],
       ),
 
-      //Footer (Navigation Bar)
-      bottomNavigationBar: StreamBuilder<bool>(
-        stream: NotificationService().notificationState.hasUnreadStream,
-        initialData: NotificationService().notificationState.hasUnread,
-        builder: (context, snapshot) {
-          final hasUnread = snapshot.data ?? false;
-          print(
-              "🔔 Feed footer rebuilding - hasUnread: $hasUnread"); // Debug log
-          return Footer(
-            onHomePressed: () => _loadPosts("explore"),
-            onSearchPressed: () => navigateToSearchPage(),
-            onPlusPressed: () {
-              navigateToCreatePost();
-            },
-            onMessagesPressed: () {
-              navigateToMessagePage();
-            },
-            onMePressed: () {
-              navigateToProfilePage();
-            },
-            // onMapPressed: () => requireLogin(context, onSuccess: () {
-            //   Navigator.pushNamed(context, '/map');
-            // }),
-            hasUnreadMessages: hasUnread, // Use the stream's current value
-          );
-        },
-      ),
+      bottomNavigationBar: widget.showFooter
+          ? StreamBuilder<bool>(
+              stream: NotificationService().notificationState.hasUnreadStream,
+              initialData: NotificationService().notificationState.hasUnread,
+              builder: (context, snapshot) {
+                final hasUnread = snapshot.data ?? false;
+                return buildFooter(context, hasUnread);
+              },
+            )
+          : null,
+
       floatingActionButton: Builder(
         builder: (context) {
           // Only show in debug mode

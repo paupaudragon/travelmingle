@@ -1,3 +1,4 @@
+import 'package:demo/widgets/loading_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -116,9 +117,7 @@ class _S3TestPageState extends State<S3TestPage> {
             ElevatedButton(
               onPressed: _isLoading ? null : _testDirectAccess,
               child: _isLoading
-                  ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    )
+                  ? const LoadingAnimation()
                   : const Text('Test Access'),
             ),
             const SizedBox(height: 16),

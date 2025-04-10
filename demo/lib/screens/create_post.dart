@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:demo/main.dart';
+import 'package:demo/screens/main_navigation_page.dart';
+import 'package:demo/services/notification_service.dart';
+import 'package:demo/widgets/footer_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,10 +11,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'dart:io';
 import '../services/api_service.dart';
 
 class CreatePostPage extends StatefulWidget {
+  final bool showFooter;
+  const CreatePostPage({Key? key, this.showFooter = true}) : super(key: key);
+
   @override
   _CreatePostPageState createState() => _CreatePostPageState();
 }
@@ -398,7 +406,19 @@ class _CreatePostPageState extends State<CreatePostPage>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Post created successfully!')),
       );
-      Navigator.pop(context, true);
+      // if (mounted) {
+      //   Navigator.pop(context, true);
+      // }
+
+      // ✅ Pop back to the root of the navigation stack
+      Navigator.popUntil(context, (route) => route.isFirst);
+
+// ✅ Switch to Feed tab using MainNavigationPageState
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navState =
+            context.findAncestorStateOfType<MainNavigationPageState>();
+        navState?.switchTab(0); // 0 = Feed tab
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error creating post: $e')),
@@ -800,6 +820,8 @@ class _CreatePostPageState extends State<CreatePostPage>
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -821,7 +843,7 @@ class _CreatePostPageState extends State<CreatePostPage>
               child: TextButton(
                 onPressed: _isLoading ? null : _submitPost,
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -855,6 +877,16 @@ class _CreatePostPageState extends State<CreatePostPage>
           _buildMultiDayPostUI(),
         ],
       ),
+      // bottomNavigationBar: widget.showFooter
+      //     ? StreamBuilder<bool>(
+      //         stream: NotificationService().notificationState.hasUnreadStream,
+      //         initialData: NotificationService().notificationState.hasUnread,
+      //         builder: (context, snapshot) {
+      //           final hasUnread = snapshot.data ?? false;
+      //           return buildFooter(context, hasUnread);
+      //         },
+      //       )
+      //     : null,
     );
   }
 }
