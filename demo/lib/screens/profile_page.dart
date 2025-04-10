@@ -56,7 +56,6 @@ class _ProfilePageState extends State<ProfilePage>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _initializeUserData();
-    
   }
 
   @override
@@ -303,7 +302,8 @@ class _ProfilePageState extends State<ProfilePage>
     try {
       await ApiService().logout();
       print("Logged out successfully.");
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/login', (Route<dynamic> route) => false);
     } catch (e) {
       print("Error during logout: $e");
       // Optionally, show an error message to the user
@@ -629,7 +629,9 @@ class _ProfilePageState extends State<ProfilePage>
                     ],
                   ),
       ),
-      bottomNavigationBar: widget.showFooter && isCurrentUser && !widget.isFromPage
+      bottomNavigationBar: widget.showFooter &&
+              isCurrentUser &&
+              !widget.isFromPage
           ? StreamBuilder<bool>(
               stream: NotificationService().notificationState.hasUnreadStream,
               initialData: NotificationService().notificationState.hasUnread,

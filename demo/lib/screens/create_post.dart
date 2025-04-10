@@ -45,6 +45,7 @@ class _CreatePostPageState extends State<CreatePostPage>
   //Location data
   String? _locationName;
   LatLng? _selectedLocation;
+  bool _isLocationLoading = false;
 
   final ApiService apiService = ApiService();
   bool _isLoading = false;
@@ -97,6 +98,11 @@ class _CreatePostPageState extends State<CreatePostPage>
 
   Future<void> _getCurrentLocation(
       TextEditingController controller, int? index) async {
+    if (_isLocationLoading) {
+      print(
+          'Location retrieval already in progress, ignoring additional request');
+      return;
+    }
     try {
       // Log initial state
       print('Checking location permissions...');
@@ -115,6 +121,7 @@ class _CreatePostPageState extends State<CreatePostPage>
 
       setState(() {
         _isLoading = true;
+        _isLocationLoading = true;
       });
 
       // Try to get cached location first
@@ -227,6 +234,7 @@ class _CreatePostPageState extends State<CreatePostPage>
     } finally {
       setState(() {
         _isLoading = false;
+        _isLocationLoading = false;
       });
     }
   }
@@ -249,10 +257,12 @@ class _CreatePostPageState extends State<CreatePostPage>
                 children: [
                   // Current Location Button
                   ElevatedButton.icon(
-                    onPressed: () async {
-                      await _getCurrentLocation(controller, index);
-                      Navigator.pop(context);
-                    },
+                    onPressed: _isLocationLoading
+                        ? null
+                        : () async {
+                            await _getCurrentLocation(controller, index);
+                            Navigator.pop(context);
+                          },
                     icon: const Icon(Icons.my_location),
                     label: const Text('Use Current Location'),
                     style: ElevatedButton.styleFrom(
@@ -651,10 +661,12 @@ class _CreatePostPageState extends State<CreatePostPage>
                 ),
                 IconButton(
                   icon: const Icon(Icons.search),
-                  onPressed: () {
-                    _showLocationSearchDialog(
-                        controller, index, selectedLocation ?? LatLng(0, 0));
-                  },
+                  onPressed: _isLocationLoading
+                      ? null
+                      : () {
+                          _showLocationSearchDialog(controller, index,
+                              selectedLocation ?? LatLng(0, 0));
+                        },
                   tooltip: 'Search location',
                 ),
               ],
