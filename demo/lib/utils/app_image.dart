@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -30,6 +32,7 @@ class AppNetworkImage extends StatelessWidget {
   final Widget? placeholder;
   final Widget? errorWidget;
   final bool enableRetry;
+  final FilterQuality? filterQuality;
 
   const AppNetworkImage({
     Key? key,
@@ -41,6 +44,7 @@ class AppNetworkImage extends StatelessWidget {
     this.placeholder,
     this.errorWidget,
     this.enableRetry = false,
+    this.filterQuality,
   }) : super(key: key);
 
   @override
@@ -50,12 +54,18 @@ class AppNetworkImage extends StatelessWidget {
       return _buildPlaceholder();
     }
 
-    // Process the URL if needed (S3 transform)
-    final processedUrl =
-        useS3Transform ? ApiService().transformS3Url(imageUrl) : imageUrl!;
+    String processedUrl;
 
-    // For debugging
-    // print('🖼️ Loading image: $processedUrl');
+    try {
+      processedUrl =
+          useS3Transform ? ApiService().transformS3Url(imageUrl) : imageUrl!;
+      if (processedUrl.isEmpty) {
+        return _buildPlaceholder();
+      }
+    } catch (e) {
+      print('❌ URL processing error: $e');
+      return _buildPlaceholder();
+    }
 
     return CachedNetworkImage(
       imageUrl: processedUrl,
@@ -65,7 +75,11 @@ class AppNetworkImage extends StatelessWidget {
       cacheManager: AppCacheManager().instance,
       // Important: Set proper image quality settings for Impeller compatibility
       // Medium is safer than Low with mipmaps
-      filterQuality: FilterQuality.medium,
+      filterQuality:
+          Platform.isAndroid ? FilterQuality.low : FilterQuality.medium,
+      fadeInDuration: Platform.isAndroid
+          ? Duration.zero
+          : const Duration(milliseconds: 300),
       // Disable mipmapping explicitly through image provider settings
       imageBuilder: (context, imageProvider) {
         return Image(
@@ -74,13 +88,14 @@ class AppNetworkImage extends StatelessWidget {
           width: width,
           height: height,
           // This is important to prevent mipmapping issues with Impeller
-          filterQuality: FilterQuality.medium,
+          filterQuality:
+              Platform.isAndroid ? FilterQuality.low : FilterQuality.medium,
         );
       },
       placeholder: (context, url) => placeholder ?? _buildDefaultPlaceholder(),
       errorWidget: (context, url, error) {
         // Log error but don't flood console
-        // print('❌ Image load error: $error for URL: $url');
+        print('❌ Image load error: $error for URL: $url');
 
         if (enableRetry) {
           return _buildRetryWidget(context, processedUrl);

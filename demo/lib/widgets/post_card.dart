@@ -114,6 +114,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final post = widget.post;
 
@@ -126,18 +127,10 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (post.images.isNotEmpty)
-            _buildPostImage()
-          else
-            Container(
-              height: 180,
-              color: Colors.grey[300],
-              child: Center(
-                child: Icon(Icons.photo_outlined, color: Colors.grey[600]),
-              ),
-            ),
+          // Only include the image section if the post has images
+          if (post.images.isNotEmpty) _buildPostImage(),
 
-          // Post Title & Content
+          // Post Title & Content - always shown
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
@@ -171,12 +164,18 @@ class _PostCardState extends State<PostCard> {
                   ),
                 const SizedBox(height: 4),
 
-                // Content preview (if any)
+                // Content preview - make it more prominent for posts without images
                 if (post.content != null && post.content!.isNotEmpty)
                   Text(
                     post.content!,
-                    style: const TextStyle(fontSize: 14),
-                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: post.images.isEmpty ? 15 : 14,
+                      // Make text more prominent for text-only posts
+                      color:
+                          post.images.isEmpty ? Colors.black87 : Colors.black54,
+                    ),
+                    // Allow more lines for text-only posts
+                    maxLines: post.images.isEmpty ? 4 : 2,
                     overflow: TextOverflow.ellipsis,
                   ),
 
@@ -189,7 +188,7 @@ class _PostCardState extends State<PostCard> {
                     // User avatar and username
                     Row(
                       children: [
-                        // Use our unified image loader for the avatar too
+                        // Use our unified image loader for the avatar
                         SizedBox(
                           width: 24,
                           height: 24,
@@ -199,6 +198,9 @@ class _PostCardState extends State<PostCard> {
                               width: 24,
                               height: 24,
                               fit: BoxFit.cover,
+                              filterQuality: FilterQuality.low,
+                              enableRetry: true,
+                              useS3Transform: true,
                             ),
                           ),
                         ),
@@ -257,41 +259,52 @@ class _PostCardState extends State<PostCard> {
 
     final imageUrl = widget.post.images[0].imageUrl;
 
-    // If we have cached dimensions, use them for the aspect ratio
-    if (_cachedImageSize != null && _isImageLoaded) {
-      double width = _cachedImageSize!.width;
-      double height = _cachedImageSize!.height;
+    //   // If we have cached dimensions, use them for the aspect ratio
+    //   if (_cachedImageSize != null && _isImageLoaded) {
+    //     double width = _cachedImageSize!.width;
+    //     double height = _cachedImageSize!.height;
 
-      // Ensure we have positive values for both dimensions
-      if (width <= 0) width = 1.0;
-      if (height <= 0) height = 1.0;
+    //     // Ensure we have positive values for both dimensions
+    //     if (width <= 0) width = 1.0;
+    //     if (height <= 0) height = 1.0;
 
-      // Calculate aspect ratio with safety checks
-      double aspectRatio = width / height;
+    //     // Calculate aspect ratio with safety checks
+    //     double aspectRatio = width / height;
 
-      // Apply safety checks
-      if (!aspectRatio.isFinite || aspectRatio <= 0) {
-        aspectRatio = 16 / 9; // Default to 16:9 if calculation fails
-      } else {
-        // Clamp to reasonable limits to prevent extreme aspect ratios
-        aspectRatio = aspectRatio.clamp(0.5, 2.0);
-      }
+    //     // Apply safety checks
+    //     if (!aspectRatio.isFinite || aspectRatio <= 0) {
+    //       aspectRatio = 16 / 9; // Default to 16:9 if calculation fails
+    //     } else {
+    //       // Clamp to reasonable limits to prevent extreme aspect ratios
+    //       aspectRatio = aspectRatio.clamp(0.5, 2.0);
+    //     }
 
-      return AspectRatio(
-        aspectRatio: aspectRatio,
-        child: AppNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
+    //     return AspectRatio(
+    //       aspectRatio: aspectRatio,
+    //       child: AppNetworkImage(
+    //         imageUrl: imageUrl,
+    //         fit: BoxFit.cover,
+    //       ),
+    //     );
+    //   }
 
-    // Fallback fixed height approach when dimensions aren't available
-    return AppNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      height: 180, // Fixed height as fallback
+    //   // Fallback fixed height approach when dimensions aren't available
+    //   return AppNetworkImage(
+    //     imageUrl: imageUrl,
+    //     fit: BoxFit.cover,
+    //     height: 180, // Fixed height as fallback
+    //     width: double.infinity,
+    //   );
+    // }
+
+    return Container(
+      height: 180,
       width: double.infinity,
+      child: AppNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        enableRetry: true,
+      ),
     );
   }
 }

@@ -1183,36 +1183,24 @@ class ApiService {
   //S3 uploading
   String transformS3Url(String? url) {
     if (url == null || url.isEmpty) {
-      return ''; // Return empty string for null/empty URLs
+      return '';
     }
 
     try {
-      // 1. Check if this is already a complete URL
-      if (url.startsWith('http')) {
-        // Just ensure URL is properly encoded
-        return Uri.encodeFull(url);
-      }
+      // print('🔍 S3 URL before transform: $url');
 
-      // 2. Check if this is an S3 URL without the region
+      String transformedUrl = url;
+
+      // Handle .s3.amazonaws.com format without region
       if (url.contains('.s3.amazonaws.com')) {
-        // Add the us-east-1 region (update if your region is different)
-        String transformedUrl = url.replaceFirst(
+        transformedUrl = url.replaceFirst(
             '.s3.amazonaws.com', '.s3.us-east-1.amazonaws.com');
-        return Uri.encodeFull(transformedUrl);
       }
 
-      // 3. Handle relative paths (like "media/postImages/abc123.jpg")
-      if (url.startsWith('media/')) {
-        return Uri.encodeFull(
-            'https://travelmingle-media.s3.us-east-1.amazonaws.com/$url');
-      }
-
-      // 4. If none of the above, assume it's a relative path with no prefix
-      return Uri.encodeFull(
-          'https://travelmingle-media.s3.us-east-1.amazonaws.com/media/$url');
+      // print('✅ S3 URL after transform: $transformedUrl');
+      return transformedUrl;
     } catch (e) {
       print('❌ Error transforming S3 URL: $e');
-      // Return a fallback URL or empty string
       return '';
     }
   }
