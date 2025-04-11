@@ -1,3 +1,5 @@
+from celery import shared_task
+
 # 1. First, fix the upload_post_image task in tasks.py
 @shared_task
 def upload_post_image(post_id, image_bytes, image_name, is_child=False):
