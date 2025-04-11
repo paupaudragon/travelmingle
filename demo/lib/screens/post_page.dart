@@ -856,15 +856,10 @@ class _PostPageState extends State<PostPage> {
   }
 
   Widget buildPostContent(Post post) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: post.period == 'multipleday'
-          ? buildMultiDayPost(post)
-          : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: buildSingleDayContent(post),
-            ),
-    );
+    return post.period == 'multipleday'
+        ? buildMultiDayPost(post)
+        : buildSingleDayContent(
+            post); // already wrapped with SingleChildScrollView
   }
 
   Widget buildCommentsSection() {

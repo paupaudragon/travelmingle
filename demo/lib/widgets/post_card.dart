@@ -259,43 +259,35 @@ class _PostCardState extends State<PostCard> {
 
     final imageUrl = widget.post.images[0].imageUrl;
 
-    //   // If we have cached dimensions, use them for the aspect ratio
-    //   if (_cachedImageSize != null && _isImageLoaded) {
-    //     double width = _cachedImageSize!.width;
-    //     double height = _cachedImageSize!.height;
+    // If we have cached dimensions, use them for the aspect ratio
+    if (_cachedImageSize != null && _isImageLoaded) {
+      double width = _cachedImageSize!.width;
+      double height = _cachedImageSize!.height;
 
-    //     // Ensure we have positive values for both dimensions
-    //     if (width <= 0) width = 1.0;
-    //     if (height <= 0) height = 1.0;
+      // Ensure we have positive values for both dimensions
+      if (width <= 0) width = 1.0;
+      if (height <= 0) height = 1.0;
 
-    //     // Calculate aspect ratio with safety checks
-    //     double aspectRatio = width / height;
+      // Calculate aspect ratio with safety checks
+      double aspectRatio = width / height;
 
-    //     // Apply safety checks
-    //     if (!aspectRatio.isFinite || aspectRatio <= 0) {
-    //       aspectRatio = 16 / 9; // Default to 16:9 if calculation fails
-    //     } else {
-    //       // Clamp to reasonable limits to prevent extreme aspect ratios
-    //       aspectRatio = aspectRatio.clamp(0.5, 2.0);
-    //     }
+      // Apply safety checks
+      if (!aspectRatio.isFinite || aspectRatio <= 0) {
+        aspectRatio = 16 / 9; // Default to 16:9 if calculation fails
+      } else {
+        // Clamp to reasonable limits to prevent extreme aspect ratios
+        aspectRatio = aspectRatio.clamp(0.5, 2.0);
+      }
 
-    //     return AspectRatio(
-    //       aspectRatio: aspectRatio,
-    //       child: AppNetworkImage(
-    //         imageUrl: imageUrl,
-    //         fit: BoxFit.cover,
-    //       ),
-    //     );
-    //   }
-
-    //   // Fallback fixed height approach when dimensions aren't available
-    //   return AppNetworkImage(
-    //     imageUrl: imageUrl,
-    //     fit: BoxFit.cover,
-    //     height: 180, // Fixed height as fallback
-    //     width: double.infinity,
-    //   );
-    // }
+      return AspectRatio(
+        aspectRatio: aspectRatio,
+        child: AppNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          enableRetry: true,
+        ),
+      );
+    }
 
     return Container(
       height: 180,
