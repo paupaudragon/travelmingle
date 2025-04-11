@@ -7,6 +7,7 @@ import '../widgets/header.dart';
 import '../services/api_service.dart';
 import '../models/post_model.dart';
 import '../widgets/post_card.dart';
+import 'package:demo/screens/post_page.dart';
 
 class LocationPostsPage extends StatefulWidget {
   final String locationName;
