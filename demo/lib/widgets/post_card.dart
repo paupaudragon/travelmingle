@@ -130,20 +130,7 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (post.images.isNotEmpty)
-            S3ImageWithRetry(
-              imageUrl: post.images.first.imageUrl,
-              height: 180,
-              fit: BoxFit.cover,
-            )
-          else
-            Container(
-              height: 180,
-              color: Colors.grey[300],
-              child: Center(
-                child: Icon(Icons.photo_outlined, color: Colors.grey[600]),
-              ),
-            ),
+          if (post.images.isNotEmpty) _buildPostImage(),
 
           // Post Title & Content
           Padding(
