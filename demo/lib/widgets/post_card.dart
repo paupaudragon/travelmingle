@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:demo/main.dart';
 import 'package:demo/models/post_model.dart';
-import 'package:demo/utils/cache_manager.dart';
-import 'package:demo/widgets/s3_image_with_retry.dart';
+import 'package:demo/utils/app_image.dart'; // Updated import for our new unified image loader
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -24,85 +23,82 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   Size? _cachedImageSize;
+  bool _isImageLoaded = false;
 
   @override
   void initState() {
     super.initState();
     // Pre-calculate image dimensions if post has images
     if (widget.post.images.isNotEmpty) {
-      _calculateImageSize(widget.post.images[0].imageUrl);
+      _preloadAndCalculateImageSize(widget.post.images[0].imageUrl);
     }
   }
 
-  Future<void> _calculateImageSize(String imageUrl) async {
+  Future<void> _preloadAndCalculateImageSize(String imageUrl) async {
     try {
-      final imageProvider = CachedNetworkImageProvider(imageUrl);
+      // Preload the image
+      await AppNetworkImage.preloadImage(context, imageUrl);
+
+      // Calculate dimensions - use a simplified approach that's less likely to cause issues
+      final imageProvider = CachedNetworkImageProvider(
+        imageUrl,
+        headers: const {},
+        // CachedNetworkImageProvider doesn't accept filterQuality directly
+      );
+
+      // Use a standard approach to get image dimensions
       final completer = Completer<Size>();
 
-      imageProvider.resolve(ImageConfiguration()).addListener(
-            ImageStreamListener((ImageInfo info, bool _) {
-              if (mounted) {
-                setState(() {
-                  _cachedImageSize = Size(
-                    info.image.width.toDouble(),
-                    info.image.height.toDouble(),
-                  );
-                });
-              }
-              completer.complete(_cachedImageSize);
-            }, onError: (exception, stackTrace) {
-              print('Error loading image: $exception');
-              completer.completeError(exception);
-            }),
-          );
+      final ImageStream stream = imageProvider.resolve(ImageConfiguration());
+      final listener = ImageStreamListener(
+        (ImageInfo info, bool _) {
+          if (!completer.isCompleted) {
+            final Size size = Size(
+              info.image.width.toDouble(),
+              info.image.height.toDouble(),
+            );
+            completer.complete(size);
+
+            if (mounted) {
+              setState(() {
+                _cachedImageSize = size;
+                _isImageLoaded = true;
+              });
+            }
+          }
+        },
+        onError: (dynamic exception, StackTrace? stackTrace) {
+          if (!completer.isCompleted) {
+            completer.completeError(exception, stackTrace);
+
+            if (mounted) {
+              setState(() {
+                _isImageLoaded = false;
+              });
+            }
+          }
+        },
+      );
+
+      stream.addListener(listener);
+
+      // Set a timeout to prevent hanging
+      Future.delayed(const Duration(seconds: 5), () {
+        if (!completer.isCompleted) {
+          stream.removeListener(listener);
+          completer.completeError(TimeoutException('Image load timed out'));
+        }
+      });
 
       await completer.future;
     } catch (e) {
-      print('Error calculating image size: $e');
-    }
-  }
-
-  Widget _buildPostImage() {
-    if (widget.post.images.isEmpty) {
-      return Container(); // No image
-    }
-
-    final imageUrl = widget.post.images[0].imageUrl;
-
-    // If we have cached dimensions, use them for the aspect ratio
-    if (_cachedImageSize != null) {
-      double width = _cachedImageSize!.width;
-      double height = _cachedImageSize!.height;
-
-      if (height <= 0) height = 1.0;
-      if (width <= 0) width = 1.0;
-
-      double aspectRatio = width / height;
-
-      if (!aspectRatio.isFinite) {
-        aspectRatio =
-            1.0; // Default to square aspect ratio if calculation fails
-      } else {
-        // Clamp to reasonable limits
-        aspectRatio = aspectRatio.clamp(0.5, 1.5);
+      // Handle errors gracefully
+      if (mounted) {
+        setState(() {
+          _isImageLoaded = false;
+        });
       }
-
-      return AspectRatio(
-        aspectRatio: aspectRatio,
-        child: OptimizedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-        ),
-      );
     }
-
-    // Fallback fixed height approach
-    return OptimizedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      height: 200,
-      width: double.infinity,
-    );
   }
 
   String formatNumber(int number) {
@@ -131,11 +127,7 @@ class _PostCardState extends State<PostCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (post.images.isNotEmpty)
-            S3ImageWithRetry(
-              imageUrl: post.images.first.imageUrl,
-              height: 180,
-              fit: BoxFit.cover,
-            )
+            _buildPostImage()
           else
             Container(
               height: 180,
@@ -197,10 +189,17 @@ class _PostCardState extends State<PostCard> {
                     // User avatar and username
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundImage: CachedNetworkImageProvider(
-                            post.user.profilePictureUrl,
+                        // Use our unified image loader for the avatar too
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: ClipOval(
+                            child: AppNetworkImage(
+                              imageUrl: post.user.profilePictureUrl,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -248,6 +247,51 @@ class _PostCardState extends State<PostCard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPostImage() {
+    if (widget.post.images.isEmpty) {
+      return Container(); // No image
+    }
+
+    final imageUrl = widget.post.images[0].imageUrl;
+
+    // If we have cached dimensions, use them for the aspect ratio
+    if (_cachedImageSize != null && _isImageLoaded) {
+      double width = _cachedImageSize!.width;
+      double height = _cachedImageSize!.height;
+
+      // Ensure we have positive values for both dimensions
+      if (width <= 0) width = 1.0;
+      if (height <= 0) height = 1.0;
+
+      // Calculate aspect ratio with safety checks
+      double aspectRatio = width / height;
+
+      // Apply safety checks
+      if (!aspectRatio.isFinite || aspectRatio <= 0) {
+        aspectRatio = 16 / 9; // Default to 16:9 if calculation fails
+      } else {
+        // Clamp to reasonable limits to prevent extreme aspect ratios
+        aspectRatio = aspectRatio.clamp(0.5, 2.0);
+      }
+
+      return AspectRatio(
+        aspectRatio: aspectRatio,
+        child: AppNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // Fallback fixed height approach when dimensions aren't available
+    return AppNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      height: 180, // Fixed height as fallback
+      width: double.infinity,
     );
   }
 }
