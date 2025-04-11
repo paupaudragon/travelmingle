@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:demo/main.dart';
 import 'package:demo/models/post_model.dart';
 import 'package:demo/utils/cache_manager.dart';
+import 'package:demo/widgets/s3_image_with_retry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -130,8 +130,20 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Post Image
-          if (post.images.isNotEmpty) _buildPostImage(),
+          if (post.images.isNotEmpty)
+            S3ImageWithRetry(
+              imageUrl: post.images.first.imageUrl,
+              height: 180,
+              fit: BoxFit.cover,
+            )
+          else
+            Container(
+              height: 180,
+              color: Colors.grey[300],
+              child: Center(
+                child: Icon(Icons.photo_outlined, color: Colors.grey[600]),
+              ),
+            ),
 
           // Post Title & Content
           Padding(
@@ -150,8 +162,9 @@ class _PostCardState extends State<PostCard> {
                   overflow: TextOverflow.ellipsis,
                 ),
 
-              // Location name
-                if (post.location.address != null && post.location.address!.isNotEmpty)
+                // Location name
+                if (post.location.address != null &&
+                    post.location.address!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2.0, bottom: 4.0),
                     child: Text(

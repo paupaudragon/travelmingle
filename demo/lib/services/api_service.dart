@@ -1181,16 +1181,40 @@ class ApiService {
   }
 
   //S3 uploading
-
-  /// Transforms S3 URLs to ensure they have the correct region format
-  String transformS3Url(String url) {
-    // Check if this is an S3 URL without the region
-    if (url.contains('.s3.amazonaws.com')) {
-      // Add the us-east-1 region (update if your region is different)
-      return url.replaceFirst(
-          '.s3.amazonaws.com', '.s3.us-east-1.amazonaws.com');
+  String transformS3Url(String? url) {
+    if (url == null || url.isEmpty) {
+      return ''; // Return empty string for null/empty URLs
     }
-    return url;
+
+    try {
+      // 1. Check if this is already a complete URL
+      if (url.startsWith('http')) {
+        // Just ensure URL is properly encoded
+        return Uri.encodeFull(url);
+      }
+
+      // 2. Check if this is an S3 URL without the region
+      if (url.contains('.s3.amazonaws.com')) {
+        // Add the us-east-1 region (update if your region is different)
+        String transformedUrl = url.replaceFirst(
+            '.s3.amazonaws.com', '.s3.us-east-1.amazonaws.com');
+        return Uri.encodeFull(transformedUrl);
+      }
+
+      // 3. Handle relative paths (like "media/postImages/abc123.jpg")
+      if (url.startsWith('media/')) {
+        return Uri.encodeFull(
+            'https://travelmingle-media.s3.us-east-1.amazonaws.com/$url');
+      }
+
+      // 4. If none of the above, assume it's a relative path with no prefix
+      return Uri.encodeFull(
+          'https://travelmingle-media.s3.us-east-1.amazonaws.com/media/$url');
+    } catch (e) {
+      print('❌ Error transforming S3 URL: $e');
+      // Return a fallback URL or empty string
+      return '';
+    }
   }
 
   Future<http.Response> makeAuthenticatedRequest({
