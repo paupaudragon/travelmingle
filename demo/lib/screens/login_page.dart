@@ -29,6 +29,9 @@ class _LoginPageState extends State<LoginPage> {
     'assets/wallpapers/sample3.jpg',
     'assets/wallpapers/sample4.jpg',
     'assets/wallpapers/sample5.jpg',
+    'assets/wallpapers/sample6.jpg',
+    'assets/wallpapers/sample7.jpg',
+    'assets/wallpapers/sample8.jpg',
   ];
 
   @override
