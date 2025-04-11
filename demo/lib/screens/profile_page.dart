@@ -462,20 +462,21 @@ class _ProfilePageState extends State<ProfilePage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            userInfo!['username'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (widget.userId != null &&
-                            widget.userId != currentUserId) ...[
-                          const SizedBox(width: 8),
+                    // Row 1: Username
+                    Text(
+                      userInfo!['username'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Row 2: Follow & Message Buttons
+                    if (widget.userId != null &&
+                        widget.userId != currentUserId) ...[
+                      Row(
+                        children: [
                           isUpdatingFollow
                               ? const SizedBox(
                                   width: 24,
@@ -503,7 +504,6 @@ class _ProfilePageState extends State<ProfilePage>
                                   ),
                                 ),
                           const SizedBox(width: 8),
-                          // New Message Button
                           ElevatedButton(
                             onPressed: () => _navigateToChat(userInfo!['id']),
                             style: ElevatedButton.styleFrom(
@@ -517,14 +517,19 @@ class _ProfilePageState extends State<ProfilePage>
                             child: const Text("Message"),
                           ),
                         ],
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // Bio
                     if (userInfo!['bio'] != null &&
                         userInfo!['bio'].isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(userInfo!['bio']),
+                      const SizedBox(height: 8),
                     ],
-                    const SizedBox(height: 8),
+
+                    // Row 3: Follow counts
                     Row(
                       children: [
                         _buildFollowCount(
