@@ -17,7 +17,12 @@ class PostPage extends StatefulWidget {
   final void Function(Post updatedPost)? onPostUpdated;
   final bool showFooter; // ✅ New flag
 
-  const PostPage({super.key, required this.postId, this.onPostUpdated, this.showFooter = true,});
+  const PostPage({
+    super.key,
+    required this.postId,
+    this.onPostUpdated,
+    this.showFooter = true,
+  });
 
   @override
   State<PostPage> createState() => _PostPageState();
@@ -395,31 +400,31 @@ class _PostPageState extends State<PostPage> {
                     ),
                 ] else ...[
                   Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: _currentDayIndex > 0
-                            ? _goToPreviousDay
-                            : null,
-                      ),
-                      Text(
-                        'Day ${_currentDayIndex + 1}/${post.childPosts!.length}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          onPressed:
+                              _currentDayIndex > 0 ? _goToPreviousDay : null,
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: _currentDayIndex < post.childPosts!.length - 1
-                            ? () => _goToNextDay(post.childPosts!.length)
-                            : null,
-                      ),
-                    ],
+                        Text(
+                          'Day ${_currentDayIndex + 1}/${post.childPosts!.length}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          onPressed:
+                              _currentDayIndex < post.childPosts!.length - 1
+                                  ? () => _goToNextDay(post.childPosts!.length)
+                                  : null,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 ]
               ],
             );
@@ -444,8 +449,7 @@ class _PostPageState extends State<PostPage> {
               color: Colors.grey,
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(
-                  16, 12, 12, 12), // l，up，r，d
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12), // l，up，r，d
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -634,193 +638,194 @@ class _PostPageState extends State<PostPage> {
   //      - If the current image's aspect ratio is wider than the first image's aspect ratio, use `BoxFit.fitWidth`.
   //      - If the current image's aspect ratio is taller than the first image's aspect ratio, use `BoxFit.fitHeight`.
   // # post each day
-Widget buildSingleDayContent(Post day) {
-  final PageController _imageController = PageController();
-  // Add a ValueNotifier to track current page
-  final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
+  Widget buildSingleDayContent(Post day) {
+    final PageController _imageController = PageController();
+    // Add a ValueNotifier to track current page
+    final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
 
-  return SingleChildScrollView(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (day.images.isNotEmpty)
-          FutureBuilder<Size>(
-            future: _getImageSize(day.images[0].imageUrl),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done &&
-                  snapshot.hasData) {
-                double firstImageAspectRatio =
-                    snapshot.data!.width / snapshot.data!.height;
-                const double minAspectRatio = 5 / 7;
-                const double maxAspectRatio = 4 / 3;
-                double clampedAspectRatio = firstImageAspectRatio.clamp(
-                    minAspectRatio, maxAspectRatio);
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (day.images.isNotEmpty)
+            FutureBuilder<Size>(
+              future: _getImageSize(day.images[0].imageUrl),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done &&
+                    snapshot.hasData) {
+                  double firstImageAspectRatio =
+                      snapshot.data!.width / snapshot.data!.height;
+                  const double minAspectRatio = 5 / 7;
+                  const double maxAspectRatio = 4 / 3;
+                  double clampedAspectRatio = firstImageAspectRatio.clamp(
+                      minAspectRatio, maxAspectRatio);
 
-                return Column(
-                  children: [
-                    AspectRatio(
-                      aspectRatio: clampedAspectRatio,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(0),
-                        child: PageView.builder(
-                          controller: _imageController,
-                          itemCount: day.images.length,
-                          onPageChanged: (index) {
-                            _currentPageNotifier.value = index;
-                          },
-                          itemBuilder: (context, index) {
-                            return FutureBuilder<Size>(
-                              future: _getImageSize(day.images[index].imageUrl),
-                              builder: (context, sizeSnapshot) {
-                                if (sizeSnapshot.connectionState ==
-                                        ConnectionState.done &&
-                                    sizeSnapshot.hasData) {
-                                  double imageAspectRatio =
-                                      sizeSnapshot.data!.width /
-                                          sizeSnapshot.data!.height;
-                                  BoxFit fit;
-                                  if (index == 0) {
-                                    fit = BoxFit.cover;
-                                  } else {
-                                    bool isAspectRatioSimilar =
-                                        (imageAspectRatio -
-                                                    firstImageAspectRatio)
-                                                .abs() <=
-                                            firstImageAspectRatio * 0.05;
-                                    bool isBothBelowMin =
-                                        imageAspectRatio < minAspectRatio &&
-                                            firstImageAspectRatio <
-                                                minAspectRatio;
-                                    bool isBothAboveMax =
-                                        imageAspectRatio > maxAspectRatio &&
-                                            firstImageAspectRatio >
-                                                maxAspectRatio;
-                                    if (isAspectRatioSimilar ||
-                                        isBothBelowMin ||
-                                        isBothAboveMax) {
+                  return Column(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: clampedAspectRatio,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: PageView.builder(
+                            controller: _imageController,
+                            itemCount: day.images.length,
+                            onPageChanged: (index) {
+                              _currentPageNotifier.value = index;
+                            },
+                            itemBuilder: (context, index) {
+                              return FutureBuilder<Size>(
+                                future:
+                                    _getImageSize(day.images[index].imageUrl),
+                                builder: (context, sizeSnapshot) {
+                                  if (sizeSnapshot.connectionState ==
+                                          ConnectionState.done &&
+                                      sizeSnapshot.hasData) {
+                                    double imageAspectRatio =
+                                        sizeSnapshot.data!.width /
+                                            sizeSnapshot.data!.height;
+                                    BoxFit fit;
+                                    if (index == 0) {
                                       fit = BoxFit.cover;
                                     } else {
-                                      fit = imageAspectRatio >
-                                              firstImageAspectRatio
-                                          ? BoxFit.fitWidth
-                                          : BoxFit.fitHeight;
+                                      bool isAspectRatioSimilar =
+                                          (imageAspectRatio -
+                                                      firstImageAspectRatio)
+                                                  .abs() <=
+                                              firstImageAspectRatio * 0.05;
+                                      bool isBothBelowMin =
+                                          imageAspectRatio < minAspectRatio &&
+                                              firstImageAspectRatio <
+                                                  minAspectRatio;
+                                      bool isBothAboveMax =
+                                          imageAspectRatio > maxAspectRatio &&
+                                              firstImageAspectRatio >
+                                                  maxAspectRatio;
+                                      if (isAspectRatioSimilar ||
+                                          isBothBelowMin ||
+                                          isBothAboveMax) {
+                                        fit = BoxFit.cover;
+                                      } else {
+                                        fit = imageAspectRatio >
+                                                firstImageAspectRatio
+                                            ? BoxFit.fitWidth
+                                            : BoxFit.fitHeight;
+                                      }
                                     }
+                                    return Image.network(
+                                      day.images[index].imageUrl,
+                                      fit: fit,
+                                      width: double.infinity,
+                                    );
+                                  } else {
+                                    return const Center(
+                                        child: LoadingAnimation());
                                   }
-                                  return Image.network(
-                                    day.images[index].imageUrl,
-                                    fit: fit,
-                                    width: double.infinity,
-                                  );
-                                } else {
-                                  return const Center(
-                                      child: LoadingAnimation()
-                                      );
-                                }
-                              },
-                            );
-                          },
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                    // Add the indicator here
-                    if (day.images.length > 1) // Only show if multiple images
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: ValueListenableBuilder<int>(
-                          valueListenable: _currentPageNotifier,
-                          builder: (context, currentPage, child) {
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List<Widget>.generate(
-                                day.images.length,
-                                (index) => Container(
-                                  width: 8.0,
-                                  height: 8.0,
-                                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: currentPage == index
-                                        ? primaryColor
-                                        : Colors.grey.withOpacity(0.4),
+                      // Add the indicator here
+                      if (day.images.length > 1) // Only show if multiple images
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: _currentPageNotifier,
+                            builder: (context, currentPage, child) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List<Widget>.generate(
+                                  day.images.length,
+                                  (index) => Container(
+                                    width: 8.0,
+                                    height: 8.0,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4.0),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: currentPage == index
+                                          ? primaryColor
+                                          : Colors.grey.withOpacity(0.4),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                );
-              } else {
-                return const LoadingAnimation();
-              }
-            },
-          ),
-        // Rest of your content...
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                day.title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                day.content ?? "No content provided",
-                style: const TextStyle(
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LocationPostsPage(
-                          locationName: day.location.name,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        color: Colors.grey,
-                        size: 17,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          day.location.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.blue,
-                            decoration: TextDecoration.underline,
+                              );
+                            },
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
                     ],
+                  );
+                } else {
+                  return const LoadingAnimation();
+                }
+              },
+            ),
+          // Rest of your content...
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  day.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  day.content ?? "No content provided",
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LocationPostsPage(
+                            locationName: day.location.name,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.grey,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            day.location.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget buildMultiDayPost(Post post) {
     if (post.childPosts == null || post.childPosts!.isEmpty) {
@@ -851,15 +856,10 @@ Widget buildSingleDayContent(Post day) {
   }
 
   Widget buildPostContent(Post post) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: post.period == 'multipleday'
-          ? buildMultiDayPost(post)
-          : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: buildSingleDayContent(post),
-            ),
-    );
+    return post.period == 'multipleday'
+        ? buildMultiDayPost(post)
+        : buildSingleDayContent(
+            post); // already wrapped with SingleChildScrollView
   }
 
   Widget buildCommentsSection() {
@@ -1071,7 +1071,8 @@ Widget buildSingleDayContent(Post day) {
                         // Input box
                         Expanded(
                           child: Container(
-                            height: 45, // Set the height as per your requirement
+                            height:
+                                45, // Set the height as per your requirement
                             child: TextField(
                               controller: _commentController,
                               focusNode: _commentFocusNode,
