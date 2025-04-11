@@ -489,7 +489,7 @@ class _CreatePostPageState extends State<CreatePostPage>
       // }
 
       // ✅ Pop back to the root of the navigation stack
-      Navigator.popUntil(context, (route) => route.isFirst);
+      Navigator.pushNamedAndRemoveUntil(context, '/feed', (route) => false);
 
 // ✅ Switch to Feed tab using MainNavigationPageState
       WidgetsBinding.instance.addPostFrameCallback((_) {

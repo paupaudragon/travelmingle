@@ -78,7 +78,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/login',
       routes: {
-        '/feed': (context) => MainNavigationPage(key: mainNavKey),
+        '/feed': (context) => const MainNavigationPage(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/map': (context) => const MapTestScreen(),
