@@ -44,7 +44,7 @@ def upload_post_image(post_id, image_bytes, image_name, is_child=False):
             object_key,
             ExtraArgs={
                 'ContentType': 'image/jpeg',
-                'ACL': 'public-read'  # Make sure bucket permissions allow this
+               # 'ACL': 'public-read'  # Make sure bucket permissions allow this
             }
         )
         print("✅ S3 upload complete")
