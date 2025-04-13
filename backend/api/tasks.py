@@ -1,7 +1,11 @@
 from celery import shared_task
 from PIL import Image  
+from io import BytesIO
+import boto3
+import uuid 
+from api.models import Comments 
 
-# 1. First, fix the upload_post_image task in tasks.py
+
 @shared_task
 def upload_post_image(post_id, image_bytes, image_name, is_child=False):
     print(f"📤 Starting upload_post_image for post {post_id}")

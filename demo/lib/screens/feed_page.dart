@@ -171,108 +171,6 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     }
   }
 
-  // Future<void> _loadPosts(String source) async {
-  //   if (!mounted) return;
-
-  //   setState(() {
-  //     isLoading = true;
-  //     this.source = source;
-
-  //     // Store filters properly
-  //     travelFilters =
-  //         selectedTravelTypes.map((type) => type.toLowerCase()).toList();
-  //     periodFilters = selectedPeriods
-  //         .map((period) => period.toLowerCase().replaceAll(' ', ''))
-  //         .toList();
-  //   });
-
-  //   try {
-  //     // Start connectivity check in parallel but don't wait for it immediately
-  //     final connectivityFuture = Connectivity().checkConnectivity();
-
-  //     // Prepare parameters for API call
-  //     List<Post> fetchedPosts = [];
-  //     Position? position;
-
-  //     // Only get location if we need it (nearby source)
-  //     if (source == "nearby") {
-  //       try {
-  //         // Set a shorter timeout for location services
-  //         position = await _apiService
-  //             .getCurrentLocation()
-  //             .timeout(const Duration(seconds: 5));
-  //       } catch (e) {
-  //         print('Location error: $e');
-  //         // We'll handle this below - don't exit yet
-  //       }
-  //     }
-
-  //     // Now check connectivity result
-  //     final connectivityResult = await connectivityFuture;
-  //     if (connectivityResult == ConnectivityResult.none) {
-  //       if (!mounted) return;
-  //       setState(() {
-  //         isLoading = false;
-  //         posts = [];
-  //       });
-
-  //       _showTimeoutError(
-  //           'No internet connection. Please check your network settings and try again.');
-  //       return;
-  //     }
-
-  //     // Fetch posts based on source
-  //     if (source == "nearby") {
-  //       // If we couldn't get location, show appropriate error
-  //       if (position == null) {
-  //         if (!mounted) return;
-  //         setState(() {
-  //           isLoading = false;
-  //           posts = [];
-  //         });
-  //         _showTimeoutError(
-  //             'Unable to determine your location. Please check your location settings and try again.');
-  //         return;
-  //       }
-
-  //       // Fetch nearby posts with location
-  //       fetchedPosts = await _apiService.fetchPostsBySource(
-  //         source: "nearby",
-  //         latitude: position.latitude,
-  //         longitude: position.longitude,
-  //         radius: _radius,
-  //         travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
-  //         periods: periodFilters.isNotEmpty ? periodFilters : null,
-  //         // Shorter timeout for nearby results
-  //         timeout: const Duration(seconds: 10),
-  //       );
-  //     } else {
-  //       // Fetch other types (explore, follow)
-  //       fetchedPosts = await _apiService.fetchPostsBySource(
-  //         source: source,
-  //         travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
-  //         periods: periodFilters.isNotEmpty ? periodFilters : null,
-  //       );
-  //     }
-
-  //     // Update UI once posts are fetched
-  //     if (!mounted) return;
-  //     setState(() {
-  //       posts = fetchedPosts;
-  //       isLoading = false;
-  //       hasError = false;
-  //     });
-  //   } catch (e) {
-  //     if (!mounted) return;
-  //     setState(() {
-  //       isLoading = false;
-  //       hasError = true;
-  //       errorMessage = 'Unable to load posts. Please try again.';
-  //     });
-  //     print('Error loading posts: $e');
-  //   }
-  // }
-
   Future<void> _loadPosts(String source) async {
     if (!mounted) return;
 
@@ -302,7 +200,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
           // Set a shorter timeout for location services
           position = await _apiService
               .getCurrentLocation()
-              .timeout(const Duration(seconds: 5));
+              .timeout(const Duration(seconds: 15));
         } catch (e) {
           print('Location error: $e');
           // We'll handle this below - don't exit yet
