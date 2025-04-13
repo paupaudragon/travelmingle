@@ -99,8 +99,11 @@ class _CreatePostPageState extends State<CreatePostPage>
   Future<void> _getCurrentLocation(
       TextEditingController controller, int? index) async {
     if (_isLocationLoading) {
-      print(
-          'Location retrieval already in progress, ignoring additional request');
+      // Visual reminder to the user that location retrieval is in progress
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Location retrieval in progress, please wait...')),
+      );
       return;
     }
     try {
@@ -123,6 +126,26 @@ class _CreatePostPageState extends State<CreatePostPage>
         _isLoading = true;
         _isLocationLoading = true;
       });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Getting your location...'),
+                ],
+              ),
+            ),
+          );
+        },
+      );
 
       // Try to get cached location first
       LatLng? cachedLocation = await apiService.getCachedLocation();
@@ -153,6 +176,10 @@ class _CreatePostPageState extends State<CreatePostPage>
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         ).timeout(const Duration(seconds: 10), onTimeout: () {
+          // Close loading dialog on timeout
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
           throw Exception('Location request timed out. Please try again.');
         });
 
@@ -185,6 +212,9 @@ class _CreatePostPageState extends State<CreatePostPage>
           });
         }
       } catch (e) {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context); // Pop the loading dialog
+        }
         print('Error fetching current position: $e');
 
         // If we already used a cached location, just update the location name
@@ -227,12 +257,19 @@ class _CreatePostPageState extends State<CreatePostPage>
         }
       }
     } catch (e) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // Pop the loading dialog
+      }
+
       print('Error in fetching location: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error getting location: $e')),
       );
     } finally {
       setState(() {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context); // Pop the loading dialog
+        }
         _isLoading = false;
         _isLocationLoading = false;
       });

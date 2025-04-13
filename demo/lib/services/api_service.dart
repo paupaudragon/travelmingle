@@ -245,7 +245,7 @@ class ApiService {
         // For nearby posts, use a more aggressive timeout strategy
         if (operationName.contains("nearby")) {
           // Use a timeout that scales based on retry count
-          final timeout = Duration(seconds: 5 + (retryCount * 2));
+          final timeout = Duration(seconds: 15 + (retryCount * 2));
           return await operation().timeout(timeout);
         } else {
           return await operation();
@@ -293,10 +293,23 @@ class ApiService {
       if (cachedTimestamp != null &&
           DateTime.now().millisecondsSinceEpoch - cachedTimestamp < 300000) {
         final cachedData = prefs.getString('nearby_cache_data');
+
         if (cachedData != null) {
           try {
-            List<dynamic> data = jsonDecode(cachedData);
-            final cachedPosts = data
+            final dynamic data = jsonDecode(cachedData);
+            List<dynamic> postsList;
+
+            if (data is List) {
+              postsList = data;
+            } else if (data is Map && data.containsKey('posts')) {
+              // Some responses might wrap posts in a map with 'posts' key
+              postsList = data['posts'] as List;
+            } else {
+              // For any other format, just skip cache
+              throw FormatException('Invalid cache format');
+            }
+
+            final cachedPosts = postsList
                 .map((json) => Post.fromJson(json as Map<String, dynamic>))
                 .toList();
 
@@ -411,6 +424,13 @@ class ApiService {
 
   Future<void> _cacheNearbyPosts(String responseBody) async {
     try {
+      // Before saving, verify the format is correct
+      final dynamic data = jsonDecode(responseBody);
+
+      if (!(data is List || (data is Map && data.containsKey('posts')))) {
+        print('⚠️ Skipping cache: unexpected data format');
+        return;
+      }
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('nearby_cache_data', responseBody);
       await prefs.setInt(
@@ -988,27 +1008,45 @@ class ApiService {
   }
 
   Future<Position> getCurrentLocation(
-      {Duration timeout = const Duration(seconds: 5)}) async {
-    // Check if location services are enabled
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Location services are disabled');
-    }
-
-    // Check if we have permission
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw Exception('Location permission denied');
+      {Duration timeout = const Duration(seconds: 10)}) async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled');
       }
-    }
 
-    // Get current position with timeout
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy:
-          LocationAccuracy.medium, // Use medium accuracy for faster results
-    ).timeout(timeout);
+      // Check if we have permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permission denied');
+        }
+      }
+
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        // Cache the last known position so we can use it if we timeout
+        cacheLocation(lastKnown.latitude, lastKnown.longitude);
+      }
+
+      // Get current position with timeout
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy:
+            LocationAccuracy.medium, // Use medium accuracy for faster results
+      ).timeout(timeout, onTimeout: () {
+        // If we have a last known position, use it instead of crashing
+        if (lastKnown != null) {
+          print('✅ Location request timed out, using last known position');
+          return lastKnown;
+        }
+        throw TimeoutException(
+            'Location request timed out after ${timeout.inSeconds} seconds');
+      });
+    } catch (e) {
+      print('❌ Error in getCurrentLocation: $e');
+      rethrow;
+    }
   }
 
   Future<void> saveToken(String token) async {

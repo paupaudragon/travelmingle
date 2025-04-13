@@ -197,13 +197,49 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
       // Only get location if we need it (nearby source)
       if (source == "nearby") {
         try {
-          // Set a shorter timeout for location services
           position = await _apiService
-              .getCurrentLocation()
-              .timeout(const Duration(seconds: 15));
+              .getCurrentLocation(timeout: const Duration(seconds: 8))
+              .timeout(const Duration(seconds: 10), onTimeout: () {
+            print(
+                'Location request is taking too long, using cached location if available');
+            throw TimeoutException('Location timed out');
+          });
         } catch (e) {
           print('Location error: $e');
-          // We'll handle this below - don't exit yet
+
+          // Try to use cached location even if there's an error
+          final cachedLocation = await _apiService.getCachedLocation();
+          if (cachedLocation != null) {
+            // Instead of creating a Position object, directly use the LatLng
+            // for posts fetching
+            fetchedPosts = await _apiService.fetchPostsBySource(
+              source: "nearby",
+              latitude: cachedLocation.latitude,
+              longitude: cachedLocation.longitude,
+              radius: _radius,
+              travelTypes: travelFilters.isNotEmpty ? travelFilters : null,
+              periods: periodFilters.isNotEmpty ? periodFilters : null,
+              timeout: const Duration(seconds: 10),
+            );
+
+            // Show message to user
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Using cached location due to location service issues'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+
+            // Skip the normal fetch logic that uses position
+            if (!mounted) return;
+            setState(() {
+              posts = fetchedPosts;
+              isLoading = false;
+              hasError = false;
+            });
+            return; // Exit the method to avoid duplicate fetching
+          }
         }
       }
 
@@ -617,7 +653,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: Duration(seconds: 5),
+        duration: Duration(seconds: 15),
         action: SnackBarAction(
           label: 'Retry',
           onPressed: () => _loadPosts(source),
@@ -637,7 +673,7 @@ class _FeedPageState extends State<FeedPage> with WidgetsBindingObserver {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: Duration(seconds: 5),
+        duration: Duration(seconds: 15),
         action: SnackBarAction(
           label: 'Retry',
           onPressed: () => _loadPosts(source),
