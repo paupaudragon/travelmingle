@@ -1,4 +1,5 @@
 from celery import shared_task
+from PIL import Image  
 
 # 1. First, fix the upload_post_image task in tasks.py
 @shared_task
