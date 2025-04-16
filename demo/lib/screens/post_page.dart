@@ -870,7 +870,7 @@ class _PostPageState extends State<PostPage> {
     if (commentsCache != null && commentsCache!.isNotEmpty) {
       return ListView.builder(
         shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const NeverScrollableScrollPhysics(), // Keep this
         itemCount: commentsCache!.length,
         itemBuilder: (context, index) {
           return buildCommentTree(commentsCache![index]);
@@ -1014,9 +1014,12 @@ class _PostPageState extends State<PostPage> {
             ),
           ),
           // If the comment has replies, show "View # replies" button
-          if (comment.replies.isNotEmpty && depth == 0)
+          if (comment.replies.isNotEmpty &&
+              depth < 2) // Changed from depth == 0 to depth < 2
             Padding(
-              padding: const EdgeInsets.only(left: 15.0), // Indent replies
+              padding: EdgeInsets.only(
+                  left: 15.0 +
+                      (depth * 10.0)), // Dynamic indentation based on depth
               child: TextButton(
                 onPressed: () {
                   toggleExpand(comment.id);
@@ -1026,17 +1029,16 @@ class _PostPageState extends State<PostPage> {
                     : 'View ${comment.replies.length} replies'),
               ),
             ),
-          // If replies are expanded, display them
+// If replies are expanded, display them
           if (expandedComments[comment.id] == true)
             Padding(
               padding: EdgeInsets.only(
-                left: depth == 0 ? 25.0 : 0.0, // Indent only if depth == 1
+                left:
+                    25.0 + (depth * 10.0), // Dynamic indentation based on depth
               ),
               child: Column(
                 children: comment.replies
-                    .map((reply) => buildCommentTree(reply,
-                        depth: depth +
-                            1)) // Recursively build replies with increased depth
+                    .map((reply) => buildCommentTree(reply, depth: depth + 1))
                     .toList(),
               ),
             ),
@@ -1085,18 +1087,29 @@ class _PostPageState extends State<PostPage> {
   Widget _buildReplyIndicator() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey[100], // 浅灰色背景
+      color: Colors.grey[100],
       child: Row(
         children: [
-          const Text(
-            "Replying to ",
-            style: TextStyle(color: Colors.grey),
-          ),
-          Text(
-            replyingToUsername ?? '',
-            style: const TextStyle(
-              color: Colors.blue,
-              fontWeight: FontWeight.bold,
+          Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(
+                  text: "Replying to ",
+                  style: TextStyle(color: Colors.grey),
+                ),
+                if (_commentController.text.isNotEmpty)
+                  TextSpan(
+                    text: ": ${_commentController.text}",
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                TextSpan(
+                  text: "@${replyingToUsername ?? ''}",
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
           const Spacer(),
@@ -1236,34 +1249,31 @@ class _PostPageState extends State<PostPage> {
                 ),
 
                 // ✅ Comment Section (Scrollable)
-                if (_isCommentsVisible) // Only show comment section when expanded
+                if (_isCommentsVisible)
                   Expanded(
-                    flex:
-                        9, // Comment section takes up 9 parts of the space (90%)
-                    child: GestureDetector(
-                      onTap: () {
-                        // Clicking inside the comment section does not collapse it
-                        // Prevent event from bubbling up
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(
-                                0), // Top rounded corners: can't make it transparent
+                    flex: 9,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, -3),
                           ),
-                          // boxShadow: [
-                          //   BoxShadow(
-                          //     color:
-                          //         Colors.black.withOpacity(0.3), // Shadow color
-                          //     blurRadius: 8, // Shadow blur radius
-                          //     offset: const Offset(0, -2), // Shadow offset
-                          //   ),
-                          // ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 16),
-                          child: buildCommentsSection(),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0, vertical: 16),
+                              child: buildCommentsSection(),
+                            ),
+                          ],
                         ),
                       ),
                     ),
