@@ -284,7 +284,8 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           );
 
-          await Navigator.pushReplacementNamed(context, "/feed");
+          await Navigator.pushNamedAndRemoveUntil(
+              context, "/feed", (route) => false);
         } else if (response != null && response["error"] != null) {
           // Handle specific error format from the API
           final errors = response["error"];
