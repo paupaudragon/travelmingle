@@ -435,6 +435,18 @@ class _PostPageState extends State<PostPage> {
   }
 
 // # button bar
+
+  int _countAllComments(List<Comment>? comments) {
+    if (comments == null) return 0;
+
+    int count = 0;
+    for (var comment in comments) {
+      count++; // Count the current comment
+      count += _countAllComments(comment.replies); // Recursively count replies
+    }
+    return count;
+  }
+
   Widget buildPostActions(Post post) {
     return Container(
       color: whiteColor,
@@ -475,9 +487,12 @@ class _PostPageState extends State<PostPage> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    formatNumber(commentsCache?.length ?? 0),
+                    formatNumber(_countAllComments(
+                        commentsCache)), // Use the helper method
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w400),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
 
                   const SizedBox(width: 10),
