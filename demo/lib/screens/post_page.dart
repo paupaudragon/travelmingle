@@ -1045,178 +1045,142 @@ class _PostPageState extends State<PostPage> {
     );
   }
 
-  Widget buildCommentInput() {
-    return Container(
-        color: whiteColor,
-        child: SafeArea(
-            bottom: true,
-            child: Column(
-              children: [
-                const Divider(
-                  height: 1,
-                  thickness: 0.2,
-                  color: Colors.grey,
+  Widget _buildImagePreview() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              _commentImage!,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: _removeCommentImage,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
                 ),
-                Container(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Back button
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back), // Back icon
-                          onPressed: () {
-                            setState(() {
-                              _isCommentInputVisible =
-                                  false; // Return to buildPostActions
-                            });
-                          },
-                        ),
-                        // Input box
-                        Expanded(
-                          child: Container(
-                            height:
-                                45, // Set the height as per your requirement
-                            child: TextField(
-                              controller: _commentController,
-                              focusNode: _commentFocusNode,
-                              decoration: InputDecoration(
-                                hintText: activeReplyToCommentId == null
-                                    ? "Say something..."
-                                    : "Replying...",
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: BorderSide.none,
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFE8E8E8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // // Image selection button
-                        // GestureDetector(
-                        //   onTap: () => _pickCommentImage,
-                        //   child: Column(children: [
-                        //     SvgPicture.asset(
-                        //       'assets/icons/gallery.svg',
-                        //       width: 32,
-                        //       height: 32,
-                        //       colorFilter:                             ColorFilter.mode(iconColor, BlendMode.dst))
-                        //   ],)
-                        // ),
-                        IconButton(
-                          icon: const Icon(Icons.photo),
-                          onPressed: _pickCommentImage,
-                        ),
-                        // Send button
-                        IconButton(
-                          icon: const Icon(Icons.send),
-                          onPressed: () => addComment(widget.postId),
-                        ),
-                      ],
-                    ))
-              ],
-            )));
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget buildCommentInput1() {
+  Widget _buildReplyIndicator() {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0),
-        borderRadius: BorderRadius.circular(16),
-      ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
+      color: Colors.grey[100], // 浅灰色背景
+      child: Row(
         children: [
-          if (activeReplyToCommentId != null)
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFD6D6D6),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '@$replyingToUsername',
-                      style: TextStyle(color: Colors.grey[900]),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.cancel),
-                    onPressed: cancelReply,
-                  ),
-                ],
-              ),
-            ),
-          // Reply section
-          Row(
-            children: [
-              // Back button
-              IconButton(
-                icon: const Icon(Icons.arrow_back), // Back icon
-                onPressed: () {
-                  setState(() {
-                    _isCommentInputVisible =
-                        false; // Return to buildPostActions
-                  });
-                },
-              ),
-              // Input box
-              Expanded(
-                child: Container(
-                  height: 50, // Set the height as per your requirement
-                  child: TextField(
-                    controller: _commentController,
-                    focusNode: _commentFocusNode,
-                    decoration: InputDecoration(
-                      hintText: activeReplyToCommentId == null
-                          ? "Say something..."
-                          : "Replying...",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFE8E8E8),
-                    ),
-                  ),
-                ),
-              ),
-              // Image selection button
-              IconButton(
-                icon: const Icon(Icons.photo),
-                onPressed: _pickCommentImage,
-              ),
-              // Send button
-              IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: () => addComment(widget.postId),
-              ),
-            ],
+          const Text(
+            "Replying to ",
+            style: TextStyle(color: Colors.grey),
           ),
-          if (_commentImage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Stack(
-                alignment: Alignment.topRight,
+          Text(
+            replyingToUsername ?? '',
+            style: const TextStyle(
+              color: Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: cancelReply,
+            child: const Icon(
+              Icons.close,
+              size: 18,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildCommentInput() {
+    return Container(
+      color: whiteColor,
+      child: SafeArea(
+        bottom: true,
+        child: Column(
+          children: [
+            const Divider(height: 1, thickness: 0.2, color: Colors.grey),
+            if (activeReplyToCommentId != null) _buildReplyIndicator(),
+            // image preview
+            if (_commentImage != null) _buildImagePreview(),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Image.file(
-                    _commentImage!,
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.cover,
+                  // Back button
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      setState(() {
+                        _isCommentInputVisible = false;
+                        // Unfocus when closing the input
+                        _commentFocusNode?.unfocus();
+                      });
+                    },
+                  ),
+                  // Input box
+                  Expanded(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxHeight: 120, // max hight
+                      ),
+                      child: TextField(
+                        controller: _commentController,
+                        focusNode: _commentFocusNode,
+                        autofocus: true,
+                        minLines: 1,
+                        maxLines: 5,
+                        keyboardType: TextInputType.multiline,
+                        decoration: InputDecoration(
+                          hintText: activeReplyToCommentId == null
+                              ? "Say something..."
+                              : "Replying...",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFE8E8E8),
+                        ),
+                      ),
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.cancel, color: Colors.red),
-                    onPressed: _removeCommentImage,
+                    icon: const Icon(Icons.photo),
+                    onPressed: _pickCommentImage,
+                  ),
+                  // Send button
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: () => addComment(widget.postId),
                   ),
                 ],
               ),
-            ),
-        ],
+            )
+          ],
+        ),
       ),
     );
   }
