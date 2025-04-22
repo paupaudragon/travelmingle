@@ -882,14 +882,15 @@ class _PostPageState extends State<PostPage> {
   }
 
   Widget buildCommentsSection() {
-    if (commentsCache != null && commentsCache!.isNotEmpty) {
-      return ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(), // Keep this
-        itemCount: commentsCache!.length,
-        itemBuilder: (context, index) {
-          return buildCommentTree(commentsCache![index]);
-        },
+    if (commentsCache != null && commentsCache!.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32),
+          child: Text(
+            "No comments yet.",
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          ),
+        ),
       );
     }
 
@@ -905,7 +906,18 @@ class _PostPageState extends State<PostPage> {
             child: Text("Error loading comments: ${snapshot.error}"),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Text("No comments yet.");
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 100),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  "No comments yet.",
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                ),
+              ),
+            ),
+          );
         }
 
         final comments = snapshot.data!;
