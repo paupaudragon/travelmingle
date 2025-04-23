@@ -43,6 +43,7 @@ class _PostPageState extends State<PostPage> {
   File? _commentImage;
   final PageController _pageController = PageController();
   int _currentDayIndex = 0;
+  bool isAddingComment = false;
 
   @override
   void initState() {
@@ -238,11 +239,12 @@ class _PostPageState extends State<PostPage> {
   Future<void> addComment(int postId) async {
     final commentContent = _commentController.text.trim();
     if (commentContent.isEmpty && _commentImage == null) return;
+    if (isAddingComment) return;
 
     // Disable the comment button to prevent multiple submissions
-    // setState(() {
-    //   isAddingComment = true;
-    // });
+    setState(() {
+      isAddingComment = true;
+    });
 
     try {
       final newComment = await apiService.addComment(
@@ -270,6 +272,11 @@ class _PostPageState extends State<PostPage> {
       });
     } catch (e) {
       print("Error adding comment: $e");
+    } finally {
+      // Re-enable the comment button
+      setState(() {
+        isAddingComment = false;
+      });
     }
   }
 
